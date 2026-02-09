@@ -59,6 +59,14 @@ import LabourSubscription from '../modules/labour/pages/Subscription';
 import CreateLabourCard from '../modules/labour/pages/CreateLabourCard';
 import LabourMyCard from '../modules/labour/pages/LabourMyCard';
 
+// Admin Pages
+import AdminLogin from '../modules/admin/pages/AdminLogin';
+import ProfessionalDashboard, { DashboardHome } from '../modules/admin/pages/ProfessionalDashboard';
+import UserManagement from '../modules/admin/pages/UserManagement';
+import LabourManagement from '../modules/admin/pages/LabourManagement';
+import ContractorManagement from '../modules/admin/pages/ContractorManagement';
+import VerificationManagement from '../modules/admin/pages/VerificationManagement';
+
 const AppRoutes = () => {
     return (
         <Routes>
@@ -120,6 +128,17 @@ const AppRoutes = () => {
             <Route path="/labour/subscription" element={<LabourSubscription />} />
             <Route path="/labour/create-card" element={<CreateLabourCard />} />
             <Route path="/labour/my-card" element={<LabourMyCard />} />
+
+            {/* Admin Module Routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/dashboard" element={<ProfessionalDashboard />}>
+                <Route index element={<DashboardHome />} />
+                <Route path="home" element={<DashboardHome />} />
+                <Route path="users" element={<UserManagement />} />
+                <Route path="labours" element={<LabourManagement />} />
+                <Route path="contractors" element={<ContractorManagement />} />
+                <Route path="verification" element={<VerificationManagement />} />
+            </Route>
         </Routes>
     );
 };
