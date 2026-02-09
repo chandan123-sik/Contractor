@@ -73,6 +73,7 @@ const AppRoutes = () => {
         <Routes>
             {/* Auth Routes */}
             <Route path="/" element={<GetStarted />} />
+            <Route path="/get-started" element={<GetStarted />} />
             <Route path="/mobile-login" element={<MobileInput />} />
             <Route path="/otp-verify" element={<OTPVerification />} />
             <Route path="/complete-profile" element={<CompleteProfile />} />

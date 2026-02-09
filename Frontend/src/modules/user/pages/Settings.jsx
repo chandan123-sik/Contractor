@@ -17,13 +17,18 @@ const Settings = () => {
         { icon: Shield, label: 'Legal', path: '/user/legal', color: 'text-gray-700' },
         { icon: Phone, label: 'Contact us', path: '/user/contact-us', color: 'text-gray-700' },
         { icon: HelpCircle, label: 'About us', path: '/user/about-us', color: 'text-gray-700' },
-        { icon: MessageSquare, label: 'Feedback', action: 'feedback', color: 'text-gray-700' },
+        { icon: MessageSquare, label: 'Feedback and Reports', action: 'feedback', color: 'text-gray-700' },
         { icon: LogOut, label: 'Log out', path: '/mobile-login', color: 'text-red-500' }
     ];
 
     const handleMenuClick = (item) => {
         if (item.action === 'feedback') {
             setShowFeedbackModal(true);
+        } else if (item.path === '/mobile-login') {
+            // Clear all localStorage data on logout
+            localStorage.clear();
+            // Use replace to prevent going back to settings
+            navigate('/mobile-login', { replace: true });
         } else if (item.path) {
             navigate(item.path);
         }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bell, Crown, Plus, Search, SlidersHorizontal } from 'lucide-react';
+import { Bell, Crown, Search, SlidersHorizontal, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import LabourBottomNav from '../components/LabourBottomNav';
 import LabourJobCard from '../components/LabourJobCard';
@@ -8,20 +8,71 @@ const FindUser = () => {
     const navigate = useNavigate();
     const [labourName, setLabourName] = useState('');
     const [jobs, setJobs] = useState([]);
+    const [filteredJobs, setFilteredJobs] = useState([]);
     const [selectedJob, setSelectedJob] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showFilterModal, setShowFilterModal] = useState(false);
+    const [selectedCity, setSelectedCity] = useState('');
+
+    const cities = ['Indore', 'Bhopal', 'Dewas', 'Ujjain', 'Jabalpur', 'Gwalior', 'Ratlam'];
 
     useEffect(() => {
-        const profile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
-        if (profile.firstName) {
-            setLabourName(profile.firstName);
-        }
+        // Function to update labour name from localStorage
+        const updateLabourName = () => {
+            try {
+                const profile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
+                if (profile.firstName) {
+                    setLabourName(profile.firstName);
+                } else {
+                    setLabourName('User');
+                }
+            } catch (error) {
+                console.error('Error reading labour profile:', error);
+                setLabourName('User');
+            }
+        };
+
+        // Initial load
+        updateLabourName();
 
         // Load jobs from localStorage (user created jobs)
         const savedJobs = JSON.parse(localStorage.getItem('user_jobs') || '[]');
         console.log('All saved jobs:', savedJobs);
         setJobs(savedJobs);
+        setFilteredJobs(savedJobs);
+
+        // Listen for storage changes
+        window.addEventListener('storage', updateLabourName);
+
+        // Cleanup
+        return () => {
+            window.removeEventListener('storage', updateLabourName);
+        };
     }, []);
+
+    // Filter jobs based on selected city and search query
+    useEffect(() => {
+        let filtered = jobs;
+
+        // Filter by city
+        if (selectedCity) {
+            filtered = filtered.filter(job => 
+                job.city.toLowerCase() === selectedCity.toLowerCase()
+            );
+        }
+
+        // Filter by search query
+        if (searchQuery.trim()) {
+            filtered = filtered.filter(job =>
+                job.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                job.jobTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                job.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                job.category.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+        }
+
+        setFilteredJobs(filtered);
+    }, [selectedCity, searchQuery, jobs]);
 
     const handleViewDetails = (job) => {
         setSelectedJob(job);
@@ -32,12 +83,26 @@ const FindUser = () => {
         console.log('Apply Now clicked for job:', jobId);
     };
 
-    const handleCreateCard = () => {
-        navigate('/labour/create-card');
-    };
-
     const handleCloseModal = () => {
         setSelectedJob(null);
+    };
+
+    const handleOpenFilter = () => {
+        setShowFilterModal(true);
+    };
+
+    const handleCloseFilter = () => {
+        setShowFilterModal(false);
+    };
+
+    const handleCitySelect = (city) => {
+        setSelectedCity(city);
+        setShowFilterModal(false);
+    };
+
+    const handleClearFilter = () => {
+        setSelectedCity('');
+        setShowFilterModal(false);
     };
 
     return (
@@ -45,32 +110,34 @@ const FindUser = () => {
             {/* Header */}
             <div className="bg-white px-4 py-4 shadow-sm">
                 <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-sm text-gray-500">Welcome Back,</p>
-                        <h1 className="text-2xl font-bold text-gray-900">
-                            Namaste,
-                        </h1>
-                        <h2 className="text-2xl font-bold text-gray-900">{labourName || 'User'}</h2>
+                    <div className="flex items-center gap-3">
+                        {/* Profile Icon */}
+                        <div className="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <span className="text-2xl">👤</span>
+                        </div>
+                        {/* Welcome Text and Name */}
+                        <div>
+                            <p className="text-sm text-gray-500">Hey, Welcome 👋</p>
+                            <h1 className="text-xl font-bold text-gray-900">
+                                {labourName || 'User'}
+                            </h1>
+                        </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button
-                            onClick={handleCreateCard}
-                            className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-4 py-3 rounded-full flex items-center gap-2 shadow-md transition-all active:scale-95"
-                        >
-                            <span className="text-sm">Create Card</span>
-                            <Plus className="w-5 h-5" />
-                        </button>
                         <button 
                             onClick={() => navigate('/labour/notifications')}
-                            className="bg-yellow-400 hover:bg-yellow-500 p-3 rounded-full shadow-md transition-all"
+                            className="bg-blue-500 hover:bg-blue-600 p-3 rounded-full shadow-md transition-all relative"
                         >
-                            <Bell className="w-5 h-5 text-gray-900" />
+                            <Bell className="w-5 h-5 text-white" />
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                                0
+                            </span>
                         </button>
                         <button 
                             onClick={() => navigate('/labour/subscription')}
-                            className="bg-yellow-400 hover:bg-yellow-500 p-3 rounded-full shadow-md transition-all"
+                            className="bg-gray-200 hover:bg-gray-300 p-3 rounded-full shadow-md transition-all"
                         >
-                            <Crown className="w-5 h-5 text-gray-900" />
+                            <Crown className="w-5 h-5 text-gray-700" />
                         </button>
                     </div>
                 </div>
@@ -83,31 +150,69 @@ const FindUser = () => {
                         <Search className="w-5 h-5 text-gray-400 mr-2" />
                         <input
                             type="text"
-                            placeholder="Search"
+                            placeholder="Search jobs..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="flex-1 bg-transparent outline-none text-gray-700 placeholder-gray-400"
                         />
                     </div>
-                    <button className="p-2 bg-gray-100 rounded-lg">
-                        <SlidersHorizontal className="w-5 h-5 text-gray-600" />
+                    <button 
+                        onClick={handleOpenFilter}
+                        className={`p-2 rounded-lg relative ${selectedCity ? 'bg-blue-500' : 'bg-gray-100'}`}
+                    >
+                        <SlidersHorizontal className={`w-5 h-5 ${selectedCity ? 'text-white' : 'text-gray-600'}`} />
+                        {selectedCity && (
+                            <span className="absolute -top-1 -right-1 bg-red-500 w-3 h-3 rounded-full"></span>
+                        )}
                     </button>
                 </div>
+                {/* Active Filter Badge */}
+                {selectedCity && (
+                    <div className="mt-2 flex items-center gap-2">
+                        <span className="text-xs text-gray-600">Filtered by:</span>
+                        <div className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                            <span>{selectedCity}</span>
+                            <button onClick={handleClearFilter} className="hover:bg-blue-200 rounded-full p-0.5">
+                                <X className="w-3 h-3" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Content Area */}
             <div className="flex-1 overflow-y-auto p-4 pb-20">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Available Jobs</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-4">
+                    Available Jobs
+                    {selectedCity && <span className="text-sm font-normal text-gray-600"> in {selectedCity}</span>}
+                    <span className="text-sm font-normal text-gray-600"> ({filteredJobs.length})</span>
+                </h2>
                 
-                {jobs.length === 0 ? (
+                {filteredJobs.length === 0 ? (
                     <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-                        <p className="text-gray-600">No jobs available at the moment</p>
+                        <p className="text-gray-600">
+                            {selectedCity || searchQuery 
+                                ? 'No jobs found matching your criteria' 
+                                : 'No jobs available at the moment'}
+                        </p>
+                        {(selectedCity || searchQuery) && (
+                            <button
+                                onClick={() => {
+                                    setSelectedCity('');
+                                    setSearchQuery('');
+                                }}
+                                className="mt-3 text-blue-500 hover:text-blue-600 font-medium"
+                            >
+                                Clear filters
+                            </button>
+                        )}
                     </div>
                 ) : (
-                    jobs.map(job => (
+                    filteredJobs.map((job, index) => (
                         <LabourJobCard
                             key={job.id}
                             job={job}
+                            index={index}
                             onViewDetails={handleViewDetails}
                             onApplyNow={handleApplyNow}
                         />
@@ -187,6 +292,66 @@ const FindUser = () => {
                                 className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 rounded-lg transition-all active:scale-95"
                             >
                                 Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Filter Modal */}
+            {showFilterModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
+                    <div className="bg-white rounded-t-3xl w-full max-w-md animate-slide-up">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-6 border-b">
+                            <h2 className="text-2xl font-bold text-gray-900">Filter by City</h2>
+                            <button
+                                onClick={handleCloseFilter}
+                                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <X className="w-6 h-6 text-gray-500" />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6 max-h-[60vh] overflow-y-auto">
+                            <div className="space-y-2">
+                                {/* All Cities Option */}
+                                <button
+                                    onClick={handleClearFilter}
+                                    className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
+                                        !selectedCity 
+                                            ? 'bg-blue-500 text-white font-medium' 
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    All Cities
+                                </button>
+
+                                {/* City Options */}
+                                {cities.map((city) => (
+                                    <button
+                                        key={city}
+                                        onClick={() => handleCitySelect(city)}
+                                        className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
+                                            selectedCity === city 
+                                                ? 'bg-blue-500 text-white font-medium' 
+                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        {city}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-6 border-t">
+                            <button
+                                onClick={handleCloseFilter}
+                                className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 rounded-lg transition-all active:scale-95"
+                            >
+                                Apply Filter
                             </button>
                         </div>
                     </div>

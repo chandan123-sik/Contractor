@@ -1,12 +1,12 @@
 import { MapPin, Briefcase, Calendar, IndianRupee } from 'lucide-react';
 
-const LabourJobCard = ({ job, onViewDetails, onApplyNow }) => {
+const LabourJobCard = ({ job, onViewDetails, onApplyNow, index = 0 }) => {
     return (
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+        <div className="premium-card card-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
             {/* Header with User Info and Status */}
             <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center">
+                    <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-md">
                         <span className="text-lg font-bold text-gray-900">
                             {job.userName.charAt(0).toUpperCase()}
                         </span>
@@ -19,7 +19,7 @@ const LabourJobCard = ({ job, onViewDetails, onApplyNow }) => {
                         </div>
                     </div>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                <span className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
                     job.status === 'Open' 
                         ? 'bg-green-100 text-green-700' 
                         : 'bg-gray-100 text-gray-700'
@@ -32,10 +32,10 @@ const LabourJobCard = ({ job, onViewDetails, onApplyNow }) => {
             <h2 className="text-lg font-bold text-gray-900 mb-2">{job.jobTitle}</h2>
 
             {/* Job Description */}
-            <p className="text-gray-600 text-sm mb-4">{job.jobDescription}</p>
+            <p className="text-gray-600 text-sm mb-4 line-clamp-2">{job.jobDescription}</p>
 
             {/* Job Details */}
-            <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
+            <div className="flex items-center gap-4 mb-4 text-sm text-gray-600 flex-wrap">
                 <div className="flex items-center gap-1">
                     <Briefcase className="w-4 h-4" />
                     <span>{job.category}</span>
@@ -58,13 +58,13 @@ const LabourJobCard = ({ job, onViewDetails, onApplyNow }) => {
             <div className="flex gap-3">
                 <button
                     onClick={() => onViewDetails(job)}
-                    className="flex-1 bg-white border-2 border-blue-500 text-blue-500 font-medium py-2 rounded-lg hover:bg-blue-50 transition-all"
+                    className="flex-1 btn-secondary"
                 >
                     View Details
                 </button>
                 <button
                     onClick={() => onApplyNow(job.id)}
-                    className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-2 rounded-lg transition-all active:scale-95"
+                    className="flex-1 btn-primary"
                 >
                     Apply Now
                 </button>

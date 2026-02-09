@@ -26,7 +26,7 @@ const MobileInput = () => {
         <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
             {/* Header */}
             <div className="p-4 flex items-center">
-                <button onClick={() => navigate(-1)} className="p-2">
+                <button onClick={() => navigate('/get-started')} className="p-2">
                     <ChevronLeft className="w-6 h-6 text-gray-800" />
                 </button>
             </div>

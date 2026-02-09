@@ -68,12 +68,14 @@ const CompleteProfile = () => {
         if (formData.userType === 'User') {
             // Save to localStorage for persistence
             localStorage.setItem('user_profile', JSON.stringify(formData));
+            console.log('User profile saved:', formData);
             navigate('/user/hire-workers', { state: { profile: formData } });
         } else if (formData.userType === 'Contractor') {
             // Save to localStorage for persistence
             const existingProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
-            localStorage.setItem('contractor_profile', JSON.stringify({ ...existingProfile, ...formData }));
-
+            const contractorProfile = { ...existingProfile, ...formData };
+            localStorage.setItem('contractor_profile', JSON.stringify(contractorProfile));
+            console.log('Contractor profile saved:', contractorProfile);
             navigate('/contractor/business-details');
         } else if (formData.userType === 'Labour') {
             // Save to localStorage for persistence
@@ -93,7 +95,7 @@ const CompleteProfile = () => {
                 aadharNumber: formData.aadharNumber
             };
             localStorage.setItem('labour_profile', JSON.stringify(labourProfile));
-
+            console.log('Labour profile saved:', labourProfile);
             navigate('/labour/details');
         }
     };

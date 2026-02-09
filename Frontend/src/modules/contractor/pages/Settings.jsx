@@ -14,11 +14,12 @@ const Settings = () => {
     const handleMenuClick = (path) => {
         if (path === '/contractor/feedback') {
             setShowFeedbackModal(true);
+        } else if (path === '/mobile-login') {
+            // Clear all localStorage data on logout
+            localStorage.clear();
+            // Use replace to prevent going back to settings
+            navigate('/mobile-login', { replace: true });
         } else {
-            if (path === '/mobile-login') {
-                // Clear contractor profile on logout
-                localStorage.removeItem('contractor_profile');
-            }
             navigate(path);
         }
     };

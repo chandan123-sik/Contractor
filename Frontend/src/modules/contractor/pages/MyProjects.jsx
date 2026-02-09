@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import ContractorPageHeader from '../components/ContractorPageHeader';
 import ContractorProfileCard from '../components/ContractorProfileCard';
 
@@ -32,20 +33,43 @@ const MyProjects = () => {
         setSelectedCard(null);
     };
 
+    const handlePostJob = () => {
+        navigate('/contractor/post-job');
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
-            <ContractorPageHeader title="My Projects" backPath="/contractor/settings" />
+            <ContractorPageHeader 
+                title="My Projects" 
+                backPath="/contractor/settings"
+                rightButton={cards.length > 0 && (
+                    <button
+                        onClick={handlePostJob}
+                        className="bg-yellow-400 hover:bg-yellow-500 p-2 rounded-full shadow-md transition-all active:scale-95"
+                    >
+                        <Plus className="w-5 h-5 text-gray-900" />
+                    </button>
+                )}
+            />
             
             <div className="p-4 pb-20">
                 {cards.length === 0 ? (
-                    <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-                        <p className="text-gray-600">No contractor cards created yet</p>
+                    <div className="flex flex-col items-center justify-center min-h-[60vh]">
+                        <button
+                            onClick={handlePostJob}
+                            className="w-32 h-32 bg-yellow-100 rounded-full flex items-center justify-center mb-6 hover:bg-yellow-200 transition-all active:scale-95"
+                        >
+                            <Plus className="w-16 h-16 text-yellow-600" />
+                        </button>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">No contractor cards created yet</h3>
+                        <p className="text-gray-500 text-center">Create your first card to see it here</p>
                     </div>
                 ) : (
-                    cards.map(card => (
+                    cards.map((card, index) => (
                         <ContractorProfileCard
                             key={card.id}
                             card={card}
+                            index={index}
                             onViewDetails={handleViewDetails}
                             onToggleStatus={handleToggleStatus}
                         />

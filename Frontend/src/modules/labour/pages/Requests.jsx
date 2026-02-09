@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bell, Crown, Plus } from 'lucide-react';
+import { Bell, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Briefcase, Users, ChevronRight } from 'lucide-react';
 import LabourBottomNav from '../components/LabourBottomNav';
@@ -9,47 +9,66 @@ const Requests = () => {
     const [labourName, setLabourName] = useState('');
 
     useEffect(() => {
-        const profile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
-        if (profile.firstName) {
-            setLabourName(profile.firstName);
-        }
-    }, []);
+        // Function to update labour name from localStorage
+        const updateLabourName = () => {
+            try {
+                const profile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
+                if (profile.firstName) {
+                    setLabourName(profile.firstName);
+                } else {
+                    setLabourName('User');
+                }
+            } catch (error) {
+                console.error('Error reading labour profile:', error);
+                setLabourName('User');
+            }
+        };
 
-    const handleCreateCard = () => {
-        navigate('/labour/create-card');
-    };
+        // Initial load
+        updateLabourName();
+
+        // Listen for storage changes
+        window.addEventListener('storage', updateLabourName);
+
+        // Cleanup
+        return () => {
+            window.removeEventListener('storage', updateLabourName);
+        };
+    }, []);
 
     return (
         <div className="h-screen bg-gray-50 flex flex-col">
             {/* Header */}
             <div className="bg-white px-4 py-4 shadow-sm">
                 <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-sm text-gray-500">Welcome Back,</p>
-                        <h1 className="text-2xl font-bold text-gray-900">
-                            Namaste,
-                        </h1>
-                        <h2 className="text-2xl font-bold text-gray-900">{labourName || 'User'}</h2>
+                    <div className="flex items-center gap-3">
+                        {/* Profile Icon */}
+                        <div className="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <span className="text-2xl">👤</span>
+                        </div>
+                        {/* Welcome Text and Name */}
+                        <div>
+                            <p className="text-sm text-gray-500">Hey, Welcome 👋</p>
+                            <h1 className="text-xl font-bold text-gray-900">
+                                {labourName || 'User'}
+                            </h1>
+                        </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button
-                            onClick={handleCreateCard}
-                            className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-4 py-3 rounded-full flex items-center gap-2 shadow-md transition-all active:scale-95"
-                        >
-                            <span className="text-sm">Create Card</span>
-                            <Plus className="w-5 h-5" />
-                        </button>
                         <button 
                             onClick={() => navigate('/labour/notifications')}
-                            className="bg-yellow-400 hover:bg-yellow-500 p-3 rounded-full shadow-md transition-all"
+                            className="bg-blue-500 hover:bg-blue-600 p-3 rounded-full shadow-md transition-all relative"
                         >
-                            <Bell className="w-5 h-5 text-gray-900" />
+                            <Bell className="w-5 h-5 text-white" />
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                                0
+                            </span>
                         </button>
                         <button 
                             onClick={() => navigate('/labour/subscription')}
-                            className="bg-yellow-400 hover:bg-yellow-500 p-3 rounded-full shadow-md transition-all"
+                            className="bg-gray-200 hover:bg-gray-300 p-3 rounded-full shadow-md transition-all"
                         >
-                            <Crown className="w-5 h-5 text-gray-900" />
+                            <Crown className="w-5 h-5 text-gray-700" />
                         </button>
                     </div>
                 </div>
