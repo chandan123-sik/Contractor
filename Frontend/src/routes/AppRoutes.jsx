@@ -66,6 +66,7 @@ import UserManagement from '../modules/admin/pages/UserManagement';
 import LabourManagement from '../modules/admin/pages/LabourManagement';
 import ContractorManagement from '../modules/admin/pages/ContractorManagement';
 import VerificationManagement from '../modules/admin/pages/VerificationManagement';
+import AdminSettings from '../modules/admin/pages/AdminSettings';
 
 const AppRoutes = () => {
     return (
@@ -138,6 +139,7 @@ const AppRoutes = () => {
                 <Route path="labours" element={<LabourManagement />} />
                 <Route path="contractors" element={<ContractorManagement />} />
                 <Route path="verification" element={<VerificationManagement />} />
+                <Route path="settings" element={<AdminSettings />} />
             </Route>
         </Routes>
     );

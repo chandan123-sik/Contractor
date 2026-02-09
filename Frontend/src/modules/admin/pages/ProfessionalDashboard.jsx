@@ -230,21 +230,21 @@ const ProfessionalDashboard = () => {
                         className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
                     >
                         <Users size={20} />
-                        <span>Users</span>
+                        <span>User Options</span>
                     </NavLink>
                     <NavLink
                         to="/admin/dashboard/labours"
                         className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
                     >
                         <HardHat size={20} />
-                        <span>Labours</span>
+                        <span>Labour Options</span>
                     </NavLink>
                     <NavLink
                         to="/admin/dashboard/contractors"
                         className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
                     >
                         <Briefcase size={20} />
-                        <span>Contractors</span>
+                        <span>Contractor Options</span>
                     </NavLink>
                     <NavLink
                         to="/admin/dashboard/verification"
@@ -257,10 +257,13 @@ const ProfessionalDashboard = () => {
                         <Bell size={20} />
                         <span>Broadcast</span>
                     </div>
-                    <div className="admin-nav-item">
+                    <NavLink
+                        to="/admin/dashboard/settings"
+                        className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
+                    >
                         <Settings size={20} />
                         <span>Settings</span>
-                    </div>
+                    </NavLink>
 
                     <div
                         className="admin-nav-item"
