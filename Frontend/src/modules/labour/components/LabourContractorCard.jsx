@@ -1,12 +1,12 @@
 import { MapPin, Briefcase, Phone, Calendar, IndianRupee } from 'lucide-react';
 
-const LabourContractorCard = ({ card, onViewDetails, onApplyNow }) => {
+const LabourContractorCard = ({ card, onViewDetails, onApplyNow, index = 0 }) => {
     return (
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+        <div className="premium-card card-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
             {/* Header with Contractor Info and Status Badge */}
             <div className="flex justify-between items-start mb-3">
                 <div className="flex items-start gap-3">
-                    <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center">
+                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-md">
                         <span className="text-2xl font-bold text-gray-900">
                             {card.contractorName.charAt(0).toUpperCase()}
                         </span>
@@ -19,7 +19,7 @@ const LabourContractorCard = ({ card, onViewDetails, onApplyNow }) => {
                         </div>
                     </div>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                <span className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
                     card.profileStatus === 'Active' 
                         ? 'bg-green-100 text-green-700' 
                         : 'bg-gray-100 text-gray-700'
@@ -30,7 +30,7 @@ const LabourContractorCard = ({ card, onViewDetails, onApplyNow }) => {
 
             {/* Primary Work */}
             <div className="mb-3">
-                <p className="text-sm text-gray-500">Primary Work:</p>
+                <p className="text-xs text-gray-500">Primary Work:</p>
                 <p className="text-lg font-bold text-gray-900">{card.labourSkill}</p>
             </div>
 
@@ -66,13 +66,13 @@ const LabourContractorCard = ({ card, onViewDetails, onApplyNow }) => {
             <div className="flex gap-3">
                 <button
                     onClick={() => onViewDetails(card)}
-                    className="flex-1 bg-white border-2 border-blue-500 text-blue-500 font-medium py-2 rounded-lg hover:bg-blue-50 transition-all"
+                    className="flex-1 btn-secondary"
                 >
                     View Details
                 </button>
                 <button
                     onClick={() => onApplyNow(card.id)}
-                    className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-2 rounded-lg transition-all active:scale-95"
+                    className="flex-1 btn-primary"
                 >
                     Apply Now
                 </button>

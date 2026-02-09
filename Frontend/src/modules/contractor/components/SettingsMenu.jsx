@@ -9,7 +9,7 @@ const SettingsMenu = ({ onMenuClick }) => {
         { icon: Shield, label: 'Legal', path: '/contractor/legal', color: 'text-gray-700' },
         { icon: Phone, label: 'Contact us', path: '/contractor/contact-us', color: 'text-gray-700' },
         { icon: HelpCircle, label: 'About us', path: '/contractor/about-us', color: 'text-gray-700' },
-        { icon: MessageSquare, label: 'Feedback', path: '/contractor/feedback', color: 'text-gray-700' },
+        { icon: MessageSquare, label: 'Feedback and Reports', path: '/contractor/feedback', color: 'text-gray-700' },
         { icon: LogOut, label: 'Log out', path: '/mobile-login', color: 'text-red-500' }
     ];
 

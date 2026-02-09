@@ -12,10 +12,9 @@ const LabourSettings = () => {
 
     const handleLogout = () => {
         // Clear all localStorage data
-        localStorage.removeItem('labour_profile');
-        localStorage.removeItem('user_type');
-        toast.success('Logged out successfully');
-        navigate('/mobile-login');
+        localStorage.clear();
+        // Use replace to prevent going back to settings
+        navigate('/mobile-login', { replace: true });
     };
 
     const handleMenuClick = (path) => {
@@ -45,7 +44,7 @@ const LabourSettings = () => {
         { icon: Briefcase, label: 'My Card', path: '/labour/my-card', color: 'text-gray-700' },
         { icon: Phone, label: 'Contact us', path: '/labour/contact-us', color: 'text-gray-700', divider: true },
         { icon: Info, label: 'About us', path: '/labour/about-us', color: 'text-gray-700' },
-        { icon: MessageSquare, label: 'Feedback', path: '/labour/feedback', color: 'text-gray-700' }
+        { icon: MessageSquare, label: 'Feedback and Reports', path: '/labour/feedback', color: 'text-gray-700' }
     ];
 
     return (

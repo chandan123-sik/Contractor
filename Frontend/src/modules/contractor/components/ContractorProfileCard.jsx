@@ -1,12 +1,12 @@
 import { MapPin, Briefcase, Phone, Calendar, IndianRupee } from 'lucide-react';
 
-const ContractorProfileCard = ({ card, onViewDetails, onToggleStatus }) => {
+const ContractorProfileCard = ({ card, onViewDetails, onToggleStatus, index = 0 }) => {
     return (
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+        <div className="premium-card card-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
             {/* Header with Contractor Info and Status Badge */}
             <div className="flex justify-between items-start mb-3">
                 <div className="flex items-start gap-3">
-                    <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center">
+                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-md">
                         <span className="text-2xl font-bold text-gray-900">
                             {card.contractorName.charAt(0).toUpperCase()}
                         </span>
@@ -66,21 +66,21 @@ const ContractorProfileCard = ({ card, onViewDetails, onToggleStatus }) => {
             <div className="flex gap-3">
                 <button
                     onClick={() => onViewDetails(card)}
-                    className="flex-1 bg-white border-2 border-blue-500 text-blue-500 font-medium py-2 rounded-lg hover:bg-blue-50 transition-all"
+                    className="btn-secondary flex-1"
                 >
                     View Details
                 </button>
                 {card.profileStatus === 'Active' ? (
                     <button
                         onClick={() => onToggleStatus(card.id)}
-                        className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-2 rounded-lg transition-all active:scale-95"
+                        className="btn-primary flex-1"
                     >
                         Close Job
                     </button>
                 ) : (
                     <button
                         onClick={() => onToggleStatus(card.id)}
-                        className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg transition-all active:scale-95"
+                        className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg transition-all duration-200 ease-out hover:shadow-lg active:scale-95"
                     >
                         Open Job
                     </button>

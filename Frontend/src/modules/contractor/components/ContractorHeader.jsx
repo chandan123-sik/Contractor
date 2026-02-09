@@ -1,24 +1,38 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Plus, Crown, Bell } from 'lucide-react';
+import { Crown, Bell } from 'lucide-react';
 
 const ContractorHeader = () => {
     const navigate = useNavigate();
-    const [contractorName, setContractorName] = useState(() => {
-        const profile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
-        return profile.firstName || 'Contractor';
-    });
+    const [contractorName, setContractorName] = useState('Contractor');
 
     useEffect(() => {
-        const profile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
-        if (profile.firstName && profile.firstName !== contractorName) {
-            setContractorName(profile.firstName);
-        }
-    }, [contractorName]);
+        // Function to update contractor name from localStorage
+        const updateContractorName = () => {
+            try {
+                const profile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
+                if (profile.firstName) {
+                    setContractorName(profile.firstName);
+                } else {
+                    setContractorName('Contractor');
+                }
+            } catch (error) {
+                console.error('Error reading contractor profile:', error);
+                setContractorName('Contractor');
+            }
+        };
 
-    const handlePostJob = () => {
-        navigate('/contractor/post-job');
-    };
+        // Initial load
+        updateContractorName();
+
+        // Listen for storage changes
+        window.addEventListener('storage', updateContractorName);
+
+        // Cleanup
+        return () => {
+            window.removeEventListener('storage', updateContractorName);
+        };
+    }, []);
 
     const handleNotifications = () => {
         navigate('/contractor/notifications');
@@ -31,36 +45,39 @@ const ContractorHeader = () => {
     return (
         <div className="bg-white shadow-sm p-4 sticky top-0 z-10">
             <div className="flex justify-between items-center">
-                {/* Left Side - Welcome Text */}
-                <div>
-                    <p className="text-sm text-gray-500">Welcome Back,</p>
-                    <h1 className="text-2xl font-bold text-gray-900">
-                        Namaste, {contractorName}
-                    </h1>
+                {/* Left Side - Profile Icon and Welcome Text */}
+                <div className="flex items-center gap-3">
+                    {/* Profile Icon */}
+                    <div className="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center">
+                        <span className="text-2xl">👤</span>
+                    </div>
+                    {/* Welcome Text and Name */}
+                    <div>
+                        <p className="text-sm text-gray-500">Hey, Welcome 👋</p>
+                        <h1 className="text-xl font-bold text-gray-900">
+                            {contractorName}
+                        </h1>
+                    </div>
                 </div>
 
-                {/* Right Side - Post Job Button, Bell Icon & Subscription Icon */}
+                {/* Right Side - Bell Icon & Subscription Icon */}
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={handlePostJob}
-                        className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-6 py-3 rounded-full flex items-center gap-2 shadow-md transition-all active:scale-95"
-                    >
-                        <span className="text-sm">Post Job</span>
-                        <Plus className="w-5 h-5" />
-                    </button>
-
-                    <button
                         onClick={handleNotifications}
-                        className="bg-yellow-400 hover:bg-yellow-500 p-3 rounded-full shadow-md transition-all active:scale-95"
+                        className="bg-blue-500 hover:bg-blue-600 p-3 rounded-full shadow-md transition-all active:scale-95 relative"
                     >
-                        <Bell className="w-6 h-6 text-gray-900" />
+                        <Bell className="w-6 h-6 text-white" />
+                        {/* Notification Badge */}
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                            0
+                        </span>
                     </button>
 
                     <button
                         onClick={handleSubscription}
-                        className="bg-yellow-400 hover:bg-yellow-500 p-3 rounded-full shadow-md transition-all active:scale-95"
+                        className="bg-gray-200 hover:bg-gray-300 p-3 rounded-full shadow-md transition-all active:scale-95"
                     >
-                        <Crown className="w-6 h-6 text-gray-900" />
+                        <Crown className="w-6 h-6 text-gray-700" />
                     </button>
                 </div>
             </div>

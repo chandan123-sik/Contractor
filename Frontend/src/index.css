@@ -19,3 +19,69 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
 }
+
+/* Slide Up Animation */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Card Fade In Animation */
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card-fade-in {
+  animation: cardFadeIn 0.4s ease-out forwards;
+}
+
+/* Stagger animation for multiple cards */
+.card-fade-in:nth-child(1) { animation-delay: 0.05s; }
+.card-fade-in:nth-child(2) { animation-delay: 0.1s; }
+.card-fade-in:nth-child(3) { animation-delay: 0.15s; }
+.card-fade-in:nth-child(4) { animation-delay: 0.2s; }
+.card-fade-in:nth-child(5) { animation-delay: 0.25s; }
+.card-fade-in:nth-child(n+6) { animation-delay: 0.3s; }
+
+/* Premium Card Base Style */
+.premium-card {
+  @apply bg-white rounded-2xl shadow-md border border-gray-200 p-4 mb-4;
+  @apply transition-all duration-300 ease-out;
+  @apply hover:shadow-xl hover:-translate-y-1 hover:border-blue-400;
+  opacity: 0;
+}
+
+/* Button Hover Effects */
+.btn-hover {
+  @apply transition-all duration-200 ease-out;
+  @apply hover:scale-105 active:scale-95;
+}
+
+.btn-primary {
+  @apply bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-2 px-4 rounded-lg;
+  @apply transition-all duration-200 ease-out;
+  @apply hover:shadow-lg active:scale-95;
+}
+
+.btn-secondary {
+  @apply bg-white border-2 border-blue-500 text-blue-500 font-medium py-2 px-4 rounded-lg;
+  @apply transition-all duration-200 ease-out;
+  @apply hover:bg-blue-50 hover:border-blue-600 active:scale-95;
+}
