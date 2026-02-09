@@ -1,0 +1,151 @@
+import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
+import ProfilePhotoUpload from '../../user/components/ProfilePhotoUpload';
+import FormInput from '../../user/components/FormInput';
+import FormSelect from '../../user/components/FormSelect';
+import FormTextarea from '../../user/components/FormTextarea';
+
+const PersonalDetailsForm = ({ onSave }) => {
+    const [formData, setFormData] = useState({
+        firstName: '',
+        middleName: '',
+        lastName: '',
+        gender: '',
+        state: '',
+        city: '',
+        address: '',
+        profileImage: null
+    });
+
+    useEffect(() => {
+        const contractorProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
+        
+        setFormData({
+            firstName: contractorProfile.firstName || '',
+            middleName: contractorProfile.middleName || '',
+            lastName: contractorProfile.lastName || '',
+            gender: contractorProfile.gender || '',
+            state: contractorProfile.state || '',
+            city: contractorProfile.city || '',
+            address: contractorProfile.address || '',
+            profileImage: contractorProfile.profileImage || null
+        });
+    }, []);
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleImageChange = (imageData) => {
+        setFormData(prev => ({ ...prev, profileImage: imageData }));
+    };
+
+    const handleSaveChanges = () => {
+        const contractorProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
+        const updatedProfile = {
+            ...contractorProfile,
+            ...formData
+        };
+        localStorage.setItem('contractor_profile', JSON.stringify(updatedProfile));
+
+        toast.success('Personal details updated successfully');
+        if (onSave) onSave();
+    };
+
+    const genderOptions = [
+        { value: 'Male', label: 'Male' },
+        { value: 'Female', label: 'Female' },
+        { value: 'Other', label: 'Other' }
+    ];
+
+    return (
+        <div className="p-4">
+            <ProfilePhotoUpload 
+                profileImage={formData.profileImage}
+                onImageChange={handleImageChange}
+            />
+
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Enter personal detail</h2>
+
+            <FormInput
+                label="First name"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleChange}
+                placeholder="Enter first name"
+            />
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-2">
+                        Middle name
+                    </label>
+                    <input
+                        type="text"
+                        name="middleName"
+                        value={formData.middleName}
+                        onChange={handleChange}
+                        placeholder="Enter middle name"
+                        className="w-full bg-gray-200 rounded-xl p-4 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-2">
+                        Last name
+                    </label>
+                    <input
+                        type="text"
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        placeholder="Enter last name"
+                        className="w-full bg-gray-200 rounded-xl p-4 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    />
+                </div>
+            </div>
+
+            <FormSelect
+                label="Gender"
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                options={genderOptions}
+            />
+
+            <FormInput
+                label="State"
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                placeholder="Enter state"
+            />
+
+            <FormInput
+                label="City"
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                placeholder="Enter city"
+            />
+
+            <FormTextarea
+                label="Address"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                placeholder="Enter address"
+                rows={3}
+            />
+
+            <button
+                onClick={handleSaveChanges}
+                className="w-full py-4 rounded-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold text-lg transition-all shadow-md active:scale-[0.98]"
+            >
+                Save changes
+            </button>
+        </div>
+    );
+};
+
+export default PersonalDetailsForm;
