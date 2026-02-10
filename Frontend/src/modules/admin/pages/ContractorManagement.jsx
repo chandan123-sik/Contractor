@@ -16,10 +16,10 @@ const ContractorManagement = () => {
     const contractorActionData = {
         1: {
             users: [
-                { id: 'U1', name: 'Rahul Sharma', phone: '9876543210', status: 'Active', date: '2024-02-10', time: '09:30 AM' }
+                { id: 'U1', name: 'Rahul Sharma', phone: '9876543210', status: 'Active', date: '2024-02-10', time: '09:30 AM', reqType: 'HIRE', reqContext: 'Audio' }
             ],
             labours: [
-                { id: 'L1', name: 'Chandan', trade: 'Plumber', city: 'Indore', phone: '9999999999', status: 'Active', date: '2024-02-10', time: '11:15 AM' }
+                { id: 'L1', name: 'Chandan', trade: 'Plumber', city: 'Indore', phone: '9999999999', status: 'Active', date: '2024-02-10', time: '11:15 AM', reqType: 'HIRE', reqContext: 'Text' }
             ]
         },
         2: { users: [], labours: [] },
@@ -207,6 +207,8 @@ const ContractorManagement = () => {
                                             <th>Mobile</th>
                                             <th>Date</th>
                                             <th>Time</th>
+                                            <th>Request Type</th>
+                                            <th>Request Context</th>
                                             <th>Contractor Action</th>
                                         </tr>
                                     </thead>
@@ -221,6 +223,8 @@ const ContractorManagement = () => {
                                                 <td>{u.phone}</td>
                                                 <td>{u.date}</td>
                                                 <td>{u.time}</td>
+                                                <td><span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#3b82f6' }}>{u.reqType}</span></td>
+                                                <td><span style={{ fontSize: '0.75rem', color: '#64748b' }}>{u.reqContext}</span></td>
                                                 <td>
                                                     <button className="btn-status-badge" style={{ background: '#3b82f6', color: 'white' }}>Contractor Requested User</button>
                                                 </td>
@@ -255,6 +259,8 @@ const ContractorManagement = () => {
                                             <th>Mobile</th>
                                             <th>Date</th>
                                             <th>Time</th>
+                                            <th>Request Type</th>
+                                            <th>Request Context</th>
                                             <th>Contractor Action</th>
                                         </tr>
                                     </thead>
@@ -269,6 +275,8 @@ const ContractorManagement = () => {
                                                 <td>{lab.phone}</td>
                                                 <td>{lab.date}</td>
                                                 <td>{lab.time}</td>
+                                                <td><span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#f97316' }}>{lab.reqType}</span></td>
+                                                <td><span style={{ fontSize: '0.75rem', color: '#64748b' }}>{lab.reqContext}</span></td>
                                                 <td>
                                                     <button className="btn-status-badge">Contractor Requested Labour</button>
                                                 </td>
@@ -339,7 +347,7 @@ const ContractorManagement = () => {
           flex-direction: column;
         }
         .admin-modal.large-modal {
-            width: 550px;
+            width: 900px;
             max-height: 85vh;
         }
         .action-icon-btn {
@@ -371,6 +379,7 @@ const ContractorManagement = () => {
             padding: 10px;
             background: #fff;
             overflow-y: auto;
+            overflow-x: auto;
             flex: 1;
         }
         .mini-table {
@@ -378,6 +387,7 @@ const ContractorManagement = () => {
             border-collapse: separate;
             border-spacing: 0 8px;
             font-size: 0.85rem;
+            min-width: 800px;
         }
         .mini-table th {
             padding: 10px;

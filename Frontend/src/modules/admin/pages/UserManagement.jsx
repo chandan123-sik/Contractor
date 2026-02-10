@@ -16,27 +16,27 @@ const UserManagement = () => {
     const userActionData = {
         1: {
             contractors: [
-                { id: 'C1', name: 'Krishna', city: 'Indore', work: 'Construction', phone: '5555555555', status: 'Open', color: '#facc15', date: '2024-02-09', time: '10:30 AM' },
-                { id: 'C2', name: 'Sohan', city: 'Bhopal', work: 'Plumbing', phone: '9998887776', status: 'Unavailable', color: '#fb923c', date: '2024-02-08', time: '02:15 PM' },
-                { id: 'C3', name: 'Ramesh', city: 'Gwalior', work: 'Electrical', phone: '8887776665', status: 'Open', color: '#60a5fa', date: '2024-02-07', time: '11:45 AM' }
+                { id: 'C1', name: 'Krishna', city: 'Indore', work: 'Construction', phone: '5555555555', status: 'Open', color: '#facc15', date: '2024-02-09', time: '10:30 AM', reqType: 'HIRE', reqContext: 'Audio' },
+                { id: 'C2', name: 'Sohan', city: 'Bhopal', work: 'Plumbing', phone: '9998887776', status: 'Unavailable', color: '#fb923c', date: '2024-02-08', time: '02:15 PM', reqType: 'INQUIRY', reqContext: 'Text' },
+                { id: 'C3', name: 'Ramesh', city: 'Gwalior', work: 'Electrical', phone: '8887776665', status: 'Open', color: '#60a5fa', date: '2024-02-07', time: '11:45 AM', reqType: 'HIRE', reqContext: 'HIRE' }
             ],
             labours: [
-                { id: 'L1', name: 'Chandan', trade: 'Plumber', city: 'Indore', phone: '9999999999', date: '2024-02-09', time: '09:00 AM' },
-                { id: 'L2', name: 'Deepak', trade: 'Mason', city: 'Ujjain', phone: '7776665554', date: '2024-02-08', time: '04:20 PM' }
+                { id: 'L1', name: 'Chandan', trade: 'Plumber', city: 'Indore', phone: '9999999999', date: '2024-02-09', time: '09:00 AM', reqType: 'HIRE', reqContext: 'Audio' },
+                { id: 'L2', name: 'Deepak', trade: 'Mason', city: 'Ujjain', phone: '7776665554', date: '2024-02-08', time: '04:20 PM', reqType: 'JOIN_TEAM', reqContext: 'Text' }
             ]
         },
         2: {
             contractors: [
-                { id: 'C4', name: 'Amit', city: 'Indore', work: 'Painting', phone: '1112223334', status: 'Open', color: '#facc15', date: '2024-02-05', time: '01:00 PM' }
+                { id: 'C4', name: 'Amit', city: 'Indore', work: 'Painting', phone: '1112223334', status: 'Open', color: '#facc15', date: '2024-02-05', time: '01:00 PM', reqType: 'HIRE', reqContext: 'HIRE' }
             ],
             labours: [
-                { id: 'L3', name: 'Priya', trade: 'Helper', city: 'Indore', phone: '4445556667', date: '2024-02-04', time: '10:15 AM' }
+                { id: 'L3', name: 'Priya', trade: 'Helper', city: 'Indore', phone: '4445556667', date: '2024-02-04', time: '10:15 AM', reqType: 'INQUIRY', reqContext: 'Audio' }
             ]
         },
         3: {
             contractors: [],
             labours: [
-                { id: 'L4', name: 'Ravi', trade: 'Electrician', city: 'Indore', phone: '8889990001', date: '2024-02-01', time: '12:30 PM' }
+                { id: 'L4', name: 'Ravi', trade: 'Electrician', city: 'Indore', phone: '8889990001', date: '2024-02-01', time: '12:30 PM', reqType: 'HIRE', reqContext: 'Text' }
             ]
         }
     };
@@ -208,6 +208,8 @@ const UserManagement = () => {
                                             <th>Mobile</th>
                                             <th>Date</th>
                                             <th>Time</th>
+                                            <th>Request Type</th>
+                                            <th>Request Context</th>
                                             <th>Contractor Action</th>
                                         </tr>
                                     </thead>
@@ -222,6 +224,8 @@ const UserManagement = () => {
                                                 <td>{contractor.phone}</td>
                                                 <td>{contractor.date}</td>
                                                 <td>{contractor.time}</td>
+                                                <td><span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6366f1' }}>{contractor.reqType}</span></td>
+                                                <td><span style={{ fontSize: '0.75rem', color: '#64748b' }}>{contractor.reqContext}</span></td>
                                                 <td>
                                                     <button className="btn-status-badge" disabled={contractor.status === 'Unavailable'}>
                                                         {contractor.status === 'Unavailable' ? 'Unavailable' : 'User Requested Contractor'}
@@ -258,6 +262,8 @@ const UserManagement = () => {
                                             <th>Mobile</th>
                                             <th>Date</th>
                                             <th>Time</th>
+                                            <th>Request Type</th>
+                                            <th>Request Context</th>
                                             <th>Labour Action</th>
                                         </tr>
                                     </thead>
@@ -272,6 +278,8 @@ const UserManagement = () => {
                                                 <td>{labour.phone}</td>
                                                 <td>{labour.date}</td>
                                                 <td>{labour.time}</td>
+                                                <td><span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#f97316' }}>{labour.reqType}</span></td>
+                                                <td><span style={{ fontSize: '0.75rem', color: '#64748b' }}>{labour.reqContext}</span></td>
                                                 <td>
                                                     <button className="btn-status-badge">User Requested Labour</button>
                                                 </td>
@@ -342,7 +350,7 @@ const UserManagement = () => {
           flex-direction: column;
         }
         .admin-modal.large-modal {
-            width: 550px;
+            width: 900px;
             max-height: 85vh;
         }
         .action-icon-btn {
@@ -391,6 +399,7 @@ const UserManagement = () => {
             padding: 10px;
             background: #fff;
             overflow-y: auto;
+            overflow-x: auto;
             flex: 1;
         }
         .mini-table {
@@ -398,6 +407,7 @@ const UserManagement = () => {
             border-collapse: separate;
             border-spacing: 0 8px;
             font-size: 0.85rem;
+            min-width: 800px;
         }
         .mini-table th {
             padding: 10px;

@@ -242,6 +242,34 @@ const AdminSettings = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            <div className="cms-section" style={{ marginTop: '40px' }}>
+                                <h4 className="cms-subtitle"><FileText size={18} /> Legal Content</h4>
+                                <div className="form-group">
+                                    <label>Terms & Conditions</label>
+                                    <textarea
+                                        rows="10"
+                                        value={cmsContent.terms}
+                                        onChange={(e) => setCmsContent({
+                                            ...cmsContent,
+                                            terms: e.target.value
+                                        })}
+                                        style={{ whiteSpace: 'pre-wrap' }}
+                                    />
+                                </div>
+                                <div className="form-group" style={{ marginTop: '20px' }}>
+                                    <label>Privacy Policy</label>
+                                    <textarea
+                                        rows="10"
+                                        value={cmsContent.privacy}
+                                        onChange={(e) => setCmsContent({
+                                            ...cmsContent,
+                                            privacy: e.target.value
+                                        })}
+                                        style={{ whiteSpace: 'pre-wrap' }}
+                                    />
+                                </div>
+                            </div>
                             <button type="submit" className="save-btn" style={{ marginTop: '20px' }}>
                                 <Save size={18} /> Update Content
                             </button>

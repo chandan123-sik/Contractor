@@ -16,17 +16,17 @@ const LabourManagement = () => {
     const labourActionData = {
         1: {
             contractors: [
-                { id: 'C1', name: 'Krishna', city: 'Indore', work: 'Construction', phone: '5555555555', status: 'Open', color: '#facc15', date: '2024-02-09', time: '11:00 AM' },
-                { id: 'C2', name: 'Sohan', city: 'Bhopal', work: 'Plumbing', phone: '9998887776', status: 'Unavailable', color: '#fb923c', date: '2024-02-08', time: '01:45 PM' }
+                { id: 'C1', name: 'Krishna', city: 'Indore', work: 'Construction', phone: '5555555555', status: 'Open', color: '#facc15', date: '2024-02-09', time: '11:00 AM', reqType: 'JOIN_TEAM', reqContext: 'Audio' },
+                { id: 'C2', name: 'Sohan', city: 'Bhopal', work: 'Plumbing', phone: '9998887776', status: 'Unavailable', color: '#fb923c', date: '2024-02-08', time: '01:45 PM', reqType: 'INQUIRY', reqContext: 'Text' }
             ],
             users: [
-                { id: 'U1', name: 'Rahul Sharma', phone: '9876543210', status: 'Active', date: '2024-02-09', time: '10:00 AM' }
+                { id: 'U1', name: 'Rahul Sharma', phone: '9876543210', status: 'Active', date: '2024-02-09', time: '10:00 AM', reqType: 'HIRE', reqContext: 'Audio' }
             ]
         },
         2: { contractors: [], users: [] },
         3: {
             contractors: [
-                { id: 'C3', name: 'Ramesh', city: 'Gwalior', work: 'Electrical', phone: '8887776665', status: 'Open', color: '#60a5fa', date: '2024-02-05', time: '03:15 PM' }
+                { id: 'C3', name: 'Ramesh', city: 'Gwalior', work: 'Electrical', phone: '8887776665', status: 'Open', color: '#60a5fa', date: '2024-02-05', time: '03:15 PM', reqType: 'HIRE', reqContext: 'HIRE' }
             ],
             users: []
         }
@@ -214,6 +214,8 @@ const LabourManagement = () => {
                                             <th>Mobile</th>
                                             <th>Date</th>
                                             <th>Time</th>
+                                            <th>Request Type</th>
+                                            <th>Request Context</th>
                                             <th>Labour Action</th>
                                         </tr>
                                     </thead>
@@ -228,6 +230,8 @@ const LabourManagement = () => {
                                                 <td>{contractor.phone}</td>
                                                 <td>{contractor.date}</td>
                                                 <td>{contractor.time}</td>
+                                                <td><span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#f97316' }}>{contractor.reqType}</span></td>
+                                                <td><span style={{ fontSize: '0.75rem', color: '#64748b' }}>{contractor.reqContext}</span></td>
                                                 <td>
                                                     <button className="btn-status-badge" disabled={contractor.status === 'Unavailable'}>
                                                         {contractor.status === 'Unavailable' ? 'Unavailable' : 'Labour Requested Contractor'}
@@ -264,6 +268,8 @@ const LabourManagement = () => {
                                             <th>Mobile</th>
                                             <th>Date</th>
                                             <th>Time</th>
+                                            <th>Request Type</th>
+                                            <th>Request Context</th>
                                             <th>Labour Action</th>
                                         </tr>
                                     </thead>
@@ -278,6 +284,8 @@ const LabourManagement = () => {
                                                 <td>{u.phone}</td>
                                                 <td>{u.date}</td>
                                                 <td>{u.time}</td>
+                                                <td><span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#3b82f6' }}>{u.reqType}</span></td>
+                                                <td><span style={{ fontSize: '0.75rem', color: '#64748b' }}>{u.reqContext}</span></td>
                                                 <td>
                                                     <button className="btn-status-badge" style={{ background: '#3b82f6', color: 'white' }}>Labour Requested User</button>
                                                 </td>
@@ -348,7 +356,7 @@ const LabourManagement = () => {
           flex-direction: column;
         }
         .admin-modal.large-modal {
-            width: 550px;
+            width: 900px;
             max-height: 85vh;
         }
         .action-icon-btn {
@@ -380,6 +388,7 @@ const LabourManagement = () => {
             padding: 10px;
             background: #fff;
             overflow-y: auto;
+            overflow-x: auto;
             flex: 1;
         }
         .mini-table {
@@ -387,6 +396,7 @@ const LabourManagement = () => {
             border-collapse: separate;
             border-spacing: 0 8px;
             font-size: 0.85rem;
+            min-width: 800px;
         }
         .mini-table th {
             padding: 10px;
