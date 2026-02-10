@@ -1,26 +1,45 @@
+import { useState, useEffect } from 'react';
 import { Mail, Phone, Clock } from 'lucide-react';
 import ContactInfoItem from '../../user/components/ContactInfoItem';
 
 const ContactUsContent = () => {
+    const [contactData, setContactData] = useState({
+        email: 'support@yourapp.com',
+        phone: '+91 9XXXXXXXXX',
+        workingHours: ['Monday - Saturday: 10:00 AM - 6:00 PM', 'Sunday: Closed']
+    });
+
+    useEffect(() => {
+        const savedCms = localStorage.getItem('cmsContent');
+        if (savedCms) {
+            const cms = JSON.parse(savedCms);
+            setContactData({
+                email: cms.contactUs.email || contactData.email,
+                phone: cms.contactUs.phone || contactData.phone,
+                workingHours: [cms.contactUs.workingHours || contactData.workingHours[0], 'Sunday: Closed']
+            });
+        }
+    }, []);
+
     const contactInfo = [
         {
             icon: Mail,
             title: 'Support Email',
-            details: 'support@yourapp.com',
+            details: contactData.email,
             bgColor: 'bg-blue-50',
             iconColor: 'text-blue-600'
         },
         {
             icon: Phone,
             title: 'Support Phone',
-            details: '+91 9XXXXXXXXX',
+            details: contactData.phone,
             bgColor: 'bg-green-50',
             iconColor: 'text-green-600'
         },
         {
             icon: Clock,
             title: 'Working Hours',
-            details: ['Monday - Saturday: 10:00 AM - 6:00 PM', 'Sunday: Closed'],
+            details: contactData.workingHours,
             bgColor: 'bg-purple-50',
             iconColor: 'text-purple-600'
         }
@@ -34,7 +53,7 @@ const ContactUsContent = () => {
                 <p className="text-gray-600 mb-6">
                     Need help with your account, projects, or payments? We're here to assist you. Reach out to us through any of the following channels:
                 </p>
-                
+
                 <div className="space-y-4">
                     {contactInfo.map((info, index) => (
                         <ContactInfoItem key={index} {...info} />

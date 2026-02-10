@@ -7,6 +7,26 @@ import FeatureCard from '../components/FeatureCard';
 const AboutUs = () => {
     const navigate = useNavigate();
 
+    const [content, setContent] = useState({
+        title: 'Welcome to Our Platform',
+        description: 'This platform connects users with skilled labours and verified contractors for construction and home service needs. We make it easy to find the right people for your projects and help workers find meaningful employment opportunities.',
+        vision: 'To create employment opportunities with easy hiring, making it simple for everyone to find work or hire the right talent for their needs.',
+        mission: 'Connecting the right people with the right work by providing a trusted, transparent, and efficient platform for users, contractors, and labours.'
+    });
+
+    useEffect(() => {
+        const savedCms = localStorage.getItem('cmsContent');
+        if (savedCms) {
+            const cms = JSON.parse(savedCms);
+            setContent({
+                title: cms.aboutUs.title || content.title,
+                description: cms.aboutUs.description || content.description,
+                vision: cms.aboutUs.vision || content.vision,
+                mission: cms.aboutUs.mission || content.mission
+            });
+        }
+    }, []);
+
     const features = [
         {
             icon: Users,
@@ -50,10 +70,10 @@ const AboutUs = () => {
                         <div className="bg-yellow-400 p-2 rounded-full">
                             <Info className="w-6 h-6 text-gray-900" />
                         </div>
-                        <h2 className="text-xl font-bold text-gray-900 mt-1">Welcome to Our Platform</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mt-1">{content.title}</h2>
                     </div>
                     <p className="text-gray-700 leading-relaxed">
-                        This platform connects users with skilled labours and verified contractors for construction and home service needs. We make it easy to find the right people for your projects and help workers find meaningful employment opportunities.
+                        {content.description}
                     </p>
                 </div>
 
@@ -62,7 +82,7 @@ const AboutUs = () => {
                     <p className="text-gray-600 mb-6">
                         Our platform serves three types of users, each with unique features designed to meet their specific needs:
                     </p>
-                    
+
                     <div className="space-y-4">
                         {features.map((feature, index) => (
                             <FeatureCard key={index} {...feature} />
@@ -78,7 +98,7 @@ const AboutUs = () => {
                     <p className="text-gray-600 mb-4">
                         We provide a reliable and efficient platform that benefits everyone:
                     </p>
-                    
+
                     <div className="space-y-3">
                         {benefits.map((benefit, index) => (
                             <div key={index} className="flex items-start gap-3">
@@ -98,7 +118,7 @@ const AboutUs = () => {
                             <h2 className="text-xl font-bold text-gray-900">Our Vision</h2>
                         </div>
                         <p className="text-gray-700 leading-relaxed">
-                            To create employment opportunities with easy hiring, making it simple for everyone to find work or hire the right talent for their needs.
+                            {content.vision}
                         </p>
                     </div>
 
@@ -110,7 +130,7 @@ const AboutUs = () => {
                             <h2 className="text-xl font-bold text-gray-900">Our Mission</h2>
                         </div>
                         <p className="text-gray-700 leading-relaxed">
-                            Connecting the right people with the right work by providing a trusted, transparent, and efficient platform for users, contractors, and labours.
+                            {content.mission}
                         </p>
                     </div>
                 </div>

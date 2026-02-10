@@ -12,6 +12,13 @@ const ContactUs = () => {
         message: ''
     });
 
+    const [contactInfo, setContactInfo] = useState({
+        email: 'support@yourapp.com',
+        phone: '+91 9XXXXXXXXX',
+        workingHours: 'Monday to Saturday',
+        time: '10 AM – 6 PM'
+    });
+
     useEffect(() => {
         // Auto-fill name from profile
         const profile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
@@ -20,6 +27,17 @@ const ContactUs = () => {
                 ...prev,
                 fullName: `${profile.firstName} ${profile.lastName || ''}`.trim()
             }));
+        }
+
+        const savedCms = localStorage.getItem('cmsContent');
+        if (savedCms) {
+            const cms = JSON.parse(savedCms);
+            setContactInfo({
+                email: cms.contactUs.email || contactInfo.email,
+                phone: cms.contactUs.phone || contactInfo.phone,
+                workingHours: cms.contactUs.workingHours || contactInfo.workingHours,
+                time: '' // Combined in workingHours from admin side
+            });
         }
     }, []);
 
@@ -30,7 +48,7 @@ const ContactUs = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        
+
         if (!formData.phoneNumber.trim()) {
             toast.error('Please enter your phone number');
             return;
@@ -43,7 +61,7 @@ const ContactUs = () => {
 
         // Show success message
         toast.success('Thanks for contacting us. Our support team will get back to you soon.');
-        
+
         // Reset form
         setFormData(prev => ({
             ...prev,
@@ -56,7 +74,7 @@ const ContactUs = () => {
         <div className="h-screen bg-gray-50 flex flex-col">
             {/* Header */}
             <div className="bg-white px-4 py-4 shadow-sm flex items-center gap-3">
-                <button 
+                <button
                     onClick={() => navigate(-1)}
                     className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                 >
@@ -70,7 +88,7 @@ const ContactUs = () => {
                 {/* Contact Details */}
                 <div className="bg-white rounded-2xl p-6 mb-4 shadow-sm">
                     <h2 className="text-lg font-bold text-gray-900 mb-4">Get in Touch</h2>
-                    
+
                     <div className="space-y-4">
                         {/* Email */}
                         <div className="flex items-start gap-3">
@@ -79,7 +97,7 @@ const ContactUs = () => {
                             </div>
                             <div>
                                 <p className="text-sm font-semibold text-gray-900 mb-1">Support Email</p>
-                                <p className="text-sm text-gray-600">support@yourapp.com</p>
+                                <p className="text-sm text-gray-600">{contactInfo.email}</p>
                             </div>
                         </div>
 
@@ -90,7 +108,7 @@ const ContactUs = () => {
                             </div>
                             <div>
                                 <p className="text-sm font-semibold text-gray-900 mb-1">Support Phone</p>
-                                <p className="text-sm text-gray-600">+91 9XXXXXXXXX</p>
+                                <p className="text-sm text-gray-600">{contactInfo.phone}</p>
                             </div>
                         </div>
 
@@ -101,8 +119,8 @@ const ContactUs = () => {
                             </div>
                             <div>
                                 <p className="text-sm font-semibold text-gray-900 mb-1">Working Hours</p>
-                                <p className="text-sm text-gray-600">Monday to Saturday</p>
-                                <p className="text-sm text-gray-600">10 AM – 6 PM</p>
+                                <p className="text-sm text-gray-600">{contactInfo.workingHours}</p>
+                                {contactInfo.time && <p className="text-sm text-gray-600">{contactInfo.time}</p>}
                             </div>
                         </div>
                     </div>
@@ -111,7 +129,7 @@ const ContactUs = () => {
                 {/* Contact Form */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm">
                     <h2 className="text-lg font-bold text-gray-900 mb-4">Send us a Message</h2>
-                    
+
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {/* Full Name */}
                         <div>

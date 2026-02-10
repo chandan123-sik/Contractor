@@ -1,6 +1,27 @@
+import { useState, useEffect } from 'react';
 import { Info, CheckCircle, Briefcase, Eye, Target } from 'lucide-react';
 
 const AboutUsContent = () => {
+    const [content, setContent] = useState({
+        title: 'Welcome to Our Platform',
+        description: 'This platform helps contractors connect with users and skilled labours, manage projects efficiently, and grow their business digitally.',
+        vision: 'Empower contractors with digital tools to grow their business and reach more customers efficiently.',
+        mission: 'Connect contractors, users, and labours on one trusted platform, making project management simple and efficient.'
+    });
+
+    useEffect(() => {
+        const savedCms = localStorage.getItem('cmsContent');
+        if (savedCms) {
+            const cms = JSON.parse(savedCms);
+            setContent({
+                title: cms.aboutUs.title || content.title,
+                description: cms.aboutUs.description || content.description,
+                vision: cms.aboutUs.vision || content.vision,
+                mission: cms.aboutUs.mission || content.mission
+            });
+        }
+    }, []);
+
     const features = [
         'Create and manage business profile',
         'Apply for user projects',
@@ -25,10 +46,10 @@ const AboutUsContent = () => {
                     <div className="bg-yellow-400 p-2 rounded-full">
                         <Info className="w-6 h-6 text-gray-900" />
                     </div>
-                    <h2 className="text-xl font-bold text-gray-900 mt-1">Welcome to Our Platform</h2>
+                    <h2 className="text-xl font-bold text-gray-900 mt-1">{content.title}</h2>
                 </div>
                 <p className="text-gray-700 leading-relaxed">
-                    This platform helps contractors connect with users and skilled labours, manage projects efficiently, and grow their business digitally.
+                    {content.description}
                 </p>
             </div>
 
@@ -38,7 +59,7 @@ const AboutUsContent = () => {
                     <Briefcase className="w-6 h-6 text-blue-600" />
                     <h2 className="text-xl font-bold text-gray-900">What Contractors Can Do</h2>
                 </div>
-                
+
                 <div className="space-y-3">
                     {features.map((feature, index) => (
                         <div key={index} className="flex items-start gap-3">
@@ -58,7 +79,7 @@ const AboutUsContent = () => {
                 <p className="text-gray-600 mb-4">
                     Key benefits that help you grow your business:
                 </p>
-                
+
                 <div className="space-y-3">
                     {benefits.map((benefit, index) => (
                         <div key={index} className="flex items-start gap-3">
@@ -80,7 +101,7 @@ const AboutUsContent = () => {
                         <h2 className="text-xl font-bold text-gray-900">Our Vision</h2>
                     </div>
                     <p className="text-gray-700 leading-relaxed">
-                        Empower contractors with digital tools to grow their business and reach more customers efficiently.
+                        {content.vision}
                     </p>
                 </div>
 
@@ -93,7 +114,7 @@ const AboutUsContent = () => {
                         <h2 className="text-xl font-bold text-gray-900">Our Mission</h2>
                     </div>
                     <p className="text-gray-700 leading-relaxed">
-                        Connect contractors, users, and labours on one trusted platform, making project management simple and efficient.
+                        {content.mission}
                     </p>
                 </div>
             </div>

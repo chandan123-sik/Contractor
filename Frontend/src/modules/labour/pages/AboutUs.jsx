@@ -1,9 +1,30 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Briefcase, Search, Users, TrendingUp, Shield, Target, Eye, CheckCircle } from 'lucide-react';
 import LabourBottomNav from '../components/LabourBottomNav';
 
 const AboutUs = () => {
     const navigate = useNavigate();
+
+    const [content, setContent] = useState({
+        title: 'Welcome to Our Platform',
+        description: 'This platform helps skilled labours find genuine work opportunities from verified users and contractors in their local area.',
+        vision: 'Provide regular work opportunities and financial stability to skilled labours.',
+        mission: 'Connect labours directly with users and contractors through a trusted digital platform.'
+    });
+
+    useEffect(() => {
+        const savedCms = localStorage.getItem('cmsContent');
+        if (savedCms) {
+            const cms = JSON.parse(savedCms);
+            setContent({
+                title: cms.aboutUs.title || content.title,
+                description: cms.aboutUs.description || content.description,
+                vision: cms.aboutUs.vision || content.vision,
+                mission: cms.aboutUs.mission || content.mission
+            });
+        }
+    }, []);
 
     const features = [
         'Create and manage their labour profile',
@@ -26,7 +47,7 @@ const AboutUs = () => {
         <div className="h-screen bg-gray-50 flex flex-col">
             {/* Header */}
             <div className="bg-white px-4 py-4 shadow-sm flex items-center gap-3">
-                <button 
+                <button
                     onClick={() => navigate(-1)}
                     className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                 >
@@ -43,10 +64,10 @@ const AboutUs = () => {
                         <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
                             <Briefcase className="w-6 h-6 text-yellow-600" />
                         </div>
-                        <h2 className="text-lg font-bold text-gray-900">Welcome to Our Platform</h2>
+                        <h2 className="text-lg font-bold text-gray-900">{content.title}</h2>
                     </div>
                     <p className="text-gray-700 leading-relaxed">
-                        This platform helps skilled labours find genuine work opportunities from verified users and contractors in their local area.
+                        {content.description}
                     </p>
                 </div>
 
@@ -93,7 +114,7 @@ const AboutUs = () => {
                             <h3 className="text-base font-bold text-gray-900">Our Vision</h3>
                         </div>
                         <p className="text-gray-700 text-sm leading-relaxed ml-13">
-                            Provide regular work opportunities and financial stability to skilled labours.
+                            {content.vision}
                         </p>
                     </div>
 
@@ -105,7 +126,7 @@ const AboutUs = () => {
                             <h3 className="text-base font-bold text-gray-900">Our Mission</h3>
                         </div>
                         <p className="text-gray-700 text-sm leading-relaxed ml-13">
-                            Connect labours directly with users and contractors through a trusted digital platform.
+                            {content.mission}
                         </p>
                     </div>
                 </div>
