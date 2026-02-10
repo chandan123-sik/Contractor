@@ -15,11 +15,34 @@ const AdminLogin = () => {
 
         // Simulating API call
         setTimeout(() => {
-            if (formData.username === 'admin' && formData.password === 'admin123') {
+            const adminCredentials = {
+                'admin': { password: 'admin123', role: 'SUPER_ADMIN' },
+                'user_admin': { password: 'admin123', role: 'ADMIN_USER' },
+                'labour_admin': { password: 'admin123', role: 'ADMIN_LABOUR' },
+                'contractor_admin': { password: 'admin123', role: 'ADMIN_CONTRACTOR' }
+            };
+
+            // Check if there are any updated passwords in localStorage
+            const storedPasswords = JSON.parse(localStorage.getItem('adminPasswords') || '{}');
+
+            const user = adminCredentials[formData.username];
+            let isValid = false;
+
+            if (user) {
+                // If a new password is set for this user, use it. Otherwise use default.
+                const correctPassword = storedPasswords[formData.username] || user.password;
+                if (formData.password === correctPassword) {
+                    isValid = true;
+                }
+            }
+
+            if (isValid) {
                 localStorage.setItem('adminAuth', 'true');
+                localStorage.setItem('adminRole', user.role);
+                localStorage.setItem('adminUsername', formData.username); // Store username for password update
                 navigate('/admin/dashboard');
             } else {
-                alert('Invalid credentials. Hint: use admin/admin123');
+                alert('Invalid credentials. \nTry: \n- admin/admin123 (Super Admin)\n- user_admin/admin123 (User Admin)\n- labour_admin/admin123 (Labour Admin)\n- contractor_admin/admin123 (Contractor Admin)');
                 setIsLoading(false);
             }
         }, 1000);
@@ -155,7 +178,7 @@ const AdminLogin = () => {
 
                 <div style={{ textAlign: 'center', marginTop: '24px' }}>
                     <p style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                        Protected by Rajghar Security System
+                        Protected by Rajghar Security System v1.1
                     </p>
                 </div>
             </div>

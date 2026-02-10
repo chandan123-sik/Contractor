@@ -17,7 +17,8 @@ import {
     CheckCircle,
     AlertCircle,
     MoreVertical,
-    LogOut
+    LogOut,
+    SlidersHorizontal
 } from 'lucide-react';
 import { Outlet, useNavigate, useLocation, Link, NavLink } from 'react-router-dom';
 import './AdminDashboard.css';
@@ -203,10 +204,26 @@ const ProfessionalDashboard = () => {
     const [isChatOpen, setIsChatOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
+    const adminRole = localStorage.getItem('adminRole');
 
     const handleLogout = () => {
         localStorage.removeItem('adminAuth');
+        localStorage.removeItem('adminRole');
         navigate('/admin/login');
+    };
+
+    const hasAccess = (allowedRoles) => {
+        return allowedRoles.includes(adminRole);
+    };
+
+    const getRoleTitle = () => {
+        switch (adminRole) {
+            case 'SUPER_ADMIN': return 'Super Admin';
+            case 'ADMIN_USER': return 'User Admin';
+            case 'ADMIN_LABOUR': return 'Labour Admin';
+            case 'ADMIN_CONTRACTOR': return 'Contractor Admin';
+            default: return 'Admin';
+        }
     };
 
     return (
@@ -225,34 +242,56 @@ const ProfessionalDashboard = () => {
                         <LayoutDashboard size={20} />
                         <span>Dashboard</span>
                     </NavLink>
-                    <NavLink
-                        to="/admin/dashboard/users"
-                        className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
-                    >
-                        <Users size={20} />
-                        <span>User Options</span>
-                    </NavLink>
-                    <NavLink
-                        to="/admin/dashboard/labours"
-                        className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
-                    >
-                        <HardHat size={20} />
-                        <span>Labour Options</span>
-                    </NavLink>
-                    <NavLink
-                        to="/admin/dashboard/contractors"
-                        className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
-                    >
-                        <Briefcase size={20} />
-                        <span>Contractor Options</span>
-                    </NavLink>
-                    <NavLink
-                        to="/admin/dashboard/verification"
-                        className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
-                    >
-                        <CheckCircle size={20} />
-                        <span>Verification</span>
-                    </NavLink>
+
+                    {hasAccess(['SUPER_ADMIN', 'ADMIN_USER']) && (
+                        <NavLink
+                            to="/admin/dashboard/users"
+                            className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
+                        >
+                            <Users size={20} />
+                            <span>User Options</span>
+                        </NavLink>
+                    )}
+
+                    {hasAccess(['SUPER_ADMIN', 'ADMIN_LABOUR']) && (
+                        <NavLink
+                            to="/admin/dashboard/labours"
+                            className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
+                        >
+                            <HardHat size={20} />
+                            <span>Labour Options</span>
+                        </NavLink>
+                    )}
+
+                    {hasAccess(['SUPER_ADMIN', 'ADMIN_LABOUR']) && (
+                        <NavLink
+                            to="/admin/dashboard/categories"
+                            className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
+                        >
+                            <SlidersHorizontal size={20} />
+                            <span>Labour Category</span>
+                        </NavLink>
+                    )}
+
+                    {hasAccess(['SUPER_ADMIN', 'ADMIN_CONTRACTOR']) && (
+                        <NavLink
+                            to="/admin/dashboard/contractors"
+                            className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
+                        >
+                            <Briefcase size={20} />
+                            <span>Contractor Options</span>
+                        </NavLink>
+                    )}
+
+                    {hasAccess(['SUPER_ADMIN']) && (
+                        <NavLink
+                            to="/admin/dashboard/verification"
+                            className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
+                        >
+                            <CheckCircle size={20} />
+                            <span>Verification</span>
+                        </NavLink>
+                    )}
                     <div className="admin-nav-item">
                         <Bell size={20} />
                         <span>Broadcast</span>
@@ -291,7 +330,7 @@ const ProfessionalDashboard = () => {
                             </div>
                             <div style={{ cursor: 'default' }}>
                                 <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0 }}>Sagar Chauhan</p>
-                                <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>Super Admin</p>
+                                <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>{getRoleTitle()}</p>
                             </div>
                         </div>
                     </div>
@@ -317,7 +356,7 @@ const ProfessionalDashboard = () => {
             </div>
 
             {isChatOpen && <ChatOverlay onClose={() => setIsChatOpen(false)} />}
-        </div>
+        </div >
     );
 };
 

@@ -8,7 +8,9 @@ const AdminSettings = () => {
         name: 'Sagar Chauhan',
         email: 'admin@rajghar.com',
         phone: '+91 9876543210',
-        role: 'Super Admin'
+        role: 'Super Admin',
+        currentPassword: '',
+        newPassword: ''
     });
 
     const [cmsContent, setCmsContent] = useState({
@@ -28,7 +30,11 @@ const AdminSettings = () => {
 
     useEffect(() => {
         const savedProfile = localStorage.getItem('adminProfile');
-        if (savedProfile) setAdminProfile(JSON.parse(savedProfile));
+        if (savedProfile) {
+            const parsed = JSON.parse(savedProfile);
+            // Merge saved profile with initial state to keep password fields
+            setAdminProfile(prev => ({ ...prev, ...parsed, currentPassword: '', newPassword: '' }));
+        }
 
         const savedCms = localStorage.getItem('cmsContent');
         if (savedCms) setCmsContent(JSON.parse(savedCms));
@@ -36,8 +42,39 @@ const AdminSettings = () => {
 
     const handleProfileSave = (e) => {
         e.preventDefault();
-        localStorage.setItem('adminProfile', JSON.stringify(adminProfile));
-        alert('Profile updated successfully!');
+
+        const username = localStorage.getItem('adminUsername') || 'admin';
+        const storedPasswords = JSON.parse(localStorage.getItem('adminPasswords') || '{}');
+        const currentStoredPassword = storedPasswords[username] || 'admin123';
+
+        // Password Validation
+        if (adminProfile.newPassword) {
+            if (!adminProfile.currentPassword) {
+                alert('Please enter your current password to set a new one.');
+                return;
+            }
+            if (adminProfile.currentPassword !== currentStoredPassword) {
+                alert('Current password is incorrect!');
+                return;
+            }
+
+            // Save new password
+            storedPasswords[username] = adminProfile.newPassword;
+            localStorage.setItem('adminPasswords', JSON.stringify(storedPasswords));
+        }
+
+        // Save Profile Info
+        const { currentPassword, newPassword, ...profileToSave } = adminProfile;
+        localStorage.setItem('adminProfile', JSON.stringify(profileToSave));
+
+        if (adminProfile.newPassword) {
+            alert('Profile and Password updated successfully!');
+        } else {
+            alert('Profile updated successfully!');
+        }
+
+        // Clear password fields for security
+        setAdminProfile(prev => ({ ...prev, currentPassword: '', newPassword: '' }));
     };
 
     const handleCmsSave = (e) => {
@@ -108,6 +145,30 @@ const AdminSettings = () => {
                                             value={adminProfile.phone}
                                             onChange={(e) => setAdminProfile({ ...adminProfile, phone: e.target.value })}
                                             placeholder="Enter phone number"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="form-group">
+                                    <label>Current Password</label>
+                                    <div className="input-with-icon">
+                                        <Lock size={18} />
+                                        <input
+                                            type="password"
+                                            value={adminProfile.currentPassword || ''}
+                                            onChange={(e) => setAdminProfile({ ...adminProfile, currentPassword: e.target.value })}
+                                            placeholder="Enter current password"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="form-group">
+                                    <label>New Password</label>
+                                    <div className="input-with-icon">
+                                        <Lock size={18} />
+                                        <input
+                                            type="password"
+                                            value={adminProfile.newPassword || ''}
+                                            onChange={(e) => setAdminProfile({ ...adminProfile, newPassword: e.target.value })}
+                                            placeholder="Enter new password"
                                         />
                                     </div>
                                 </div>
