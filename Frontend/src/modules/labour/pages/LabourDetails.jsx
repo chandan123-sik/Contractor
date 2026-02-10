@@ -1,11 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Upload, Star } from 'lucide-react';
+import { MapPin, Upload, Star, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const LabourDetails = () => {
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
+    const dropdownRef = useRef(null);
+    const [isSkillDropdownOpen, setIsSkillDropdownOpen] = useState(false);
     const [formData, setFormData] = useState({
         skillType: '',
         experience: '',
@@ -16,18 +18,53 @@ const LabourDetails = () => {
     });
 
     const skillTypes = [
-        'Plumber',
-        'Electrician',
-        'Mason',
+        'Mason / Mistri',
+        'Helper / General Labour',
         'Carpenter',
         'Painter',
+        'Plumber',
+        'Electrician',
+        'Tile Fitter',
+        'Marble / Granite Worker',
+        'Shuttering Carpenter',
+        'Steel Fixer (Saria)',
+        'POP / False Ceiling Worker',
+        'Furniture Fitter',
         'Welder',
-        'Daily Wager'
+        'Fabricator',
+        'AC Technician',
+        'Refrigerator Technician',
+        'Washing Machine Technician',
+        'CCTV Technician',
+        'Solar Panel Installer',
+        'Waterproofing Worker',
+        'Road Construction Worker',
+        'Loader / Unloader',
+        'Housekeeping / Cleaning Staff',
+        'Security Guard',
+        'Gardener / Landscaper'
     ];
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsSkillDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSkillSelect = (skill) => {
+        setFormData(prev => ({ ...prev, skillType: skill }));
+        setIsSkillDropdownOpen(false);
     };
 
     const handlePhotoUpload = () => {
@@ -81,26 +118,40 @@ const LabourDetails = () => {
             <h1 className="text-xl font-bold text-gray-900 mb-4 text-center">Labour Details</h1>
 
             <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
-                {/* Skill Type */}
-                <div className="mb-4">
+                {/* Skill Type - Custom Dropdown */}
+                <div className="mb-4" ref={dropdownRef}>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Skill Type <span className="text-red-500">*</span>
                     </label>
-                    <select
-                        name="skillType"
-                        value={formData.skillType}
-                        onChange={handleChange}
-                        className={`w-full bg-white border-2 rounded-xl p-3 text-sm focus:ring-2 focus:ring-yellow-400 outline-none transition-all ${
-                            formData.skillType ? 'text-gray-700 border-yellow-400' : 'text-gray-400 border-gray-200'
-                        }`}
-                    >
-                        <option value="" disabled hidden>Plumber</option>
-                        {skillTypes.map(skill => (
-                            <option key={skill} value={skill} className="text-gray-700">
-                                {skill}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onClick={() => setIsSkillDropdownOpen(!isSkillDropdownOpen)}
+                            className={`w-full bg-white border-2 rounded-xl p-3 text-sm focus:ring-2 focus:ring-yellow-400 outline-none transition-all flex items-center justify-between ${
+                                formData.skillType ? 'text-gray-700 border-yellow-400' : 'text-gray-400 border-gray-200'
+                            }`}
+                        >
+                            <span>{formData.skillType || 'Select Skill Type'}</span>
+                            <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform duration-300 ${isSkillDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {isSkillDropdownOpen && (
+                            <div className="absolute z-10 w-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 max-h-64 overflow-y-auto custom-scrollbar" style={{ scrollBehavior: 'smooth' }}>
+                                {skillTypes.map((skill) => (
+                                    <button
+                                        key={skill}
+                                        type="button"
+                                        onClick={() => handleSkillSelect(skill)}
+                                        className={`w-full text-left px-4 py-3 hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0 ${
+                                            formData.skillType === skill ? 'bg-yellow-50 text-yellow-700 font-medium' : 'text-gray-900'
+                                        }`}
+                                    >
+                                        {skill}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Experience */}
@@ -165,7 +216,7 @@ const LabourDetails = () => {
                 {/* Self Rating */}
                 <div className="mb-4">
                     <label className="block text-sm font-semibold text-gray-900 mb-2 text-center">
-                        Self Rating (HK Rating)
+                        Self Rating
                     </label>
                     <div className="flex justify-center gap-2 mb-2">
                         {[1, 2, 3, 4, 5].map((star) => (

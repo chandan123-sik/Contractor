@@ -7,6 +7,7 @@ import OTPVerification from '../modules/auth/pages/OTPVerification';
 import CompleteProfile from '../modules/auth/pages/CompleteProfile';
 
 // User Pages
+import UserHome from '../modules/user/pages/UserHome';
 import HireWorkers from '../modules/user/pages/HireWorkers';
 import FindContractor from '../modules/user/pages/FindContractor';
 import Requests from '../modules/user/pages/Requests';
@@ -23,6 +24,7 @@ import Subscription from '../modules/user/pages/Subscription';
 import Notifications from '../modules/user/pages/Notifications';
 
 // Contractor Pages
+import ContractorHome from '../modules/contractor/pages/ContractorHome';
 import ContractorBusinessDetails from '../modules/contractor/pages/BusinessDetails';
 import ContractorHireWorkers from '../modules/contractor/pages/HireWorkers';
 import ContractorFindUser from '../modules/contractor/pages/FindUser';
@@ -78,6 +80,7 @@ const AppRoutes = () => {
             <Route path="/complete-profile" element={<CompleteProfile />} />
 
             {/* User Module Routes */}
+            <Route path="/user/home" element={<UserHome />} />
             <Route path="/user/hire-workers" element={<HireWorkers />} />
             <Route path="/user/find-contractor" element={<FindContractor />} />
             <Route path="/user/requests" element={<Requests />} />
@@ -94,6 +97,7 @@ const AppRoutes = () => {
             <Route path="/user/notifications" element={<Notifications />} />
 
             {/* Contractor Module Routes */}
+            <Route path="/contractor/home" element={<ContractorHome />} />
             <Route path="/contractor/business-details" element={<ContractorBusinessDetails />} />
             <Route path="/contractor/hire-workers" element={<ContractorHireWorkers />} />
             <Route path="/contractor/find-user" element={<ContractorFindUser />} />

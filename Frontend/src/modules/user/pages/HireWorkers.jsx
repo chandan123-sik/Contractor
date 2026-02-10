@@ -1,27 +1,107 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import UserBottomNav from '../components/UserBottomNav';
 import UserHeader from '../components/UserHeader';
 
 const HireWorkers = () => {
+    const location = useLocation();
     const [labourCards, setLabourCards] = useState([]);
     const [filteredCards, setFilteredCards] = useState([]);
     const [selectedCard, setSelectedCard] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [selectedCity, setSelectedCity] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('');
 
     const cities = ['Indore', 'Bhopal', 'Dewas', 'Ujjain', 'Jabalpur', 'Gwalior', 'Ratlam'];
 
+    // Dummy cards for all categories
+    const dummyCards = [
+        // Electrician
+        { id: 'e1', fullName: 'Rajesh Kumar', primarySkill: 'Electrician', rating: 4, gender: 'Male', city: 'Indore', mobileNumber: '9876543210', experience: '5', availability: 'Full Time', address: 'Vijay Nagar, Indore', skills: 'Wiring, Panel Installation' },
+        { id: 'e2', fullName: 'Amit Sharma', primarySkill: 'Electrician', rating: 5, gender: 'Male', city: 'Bhopal', mobileNumber: '9876543211', experience: '7', availability: 'Part Time', address: 'MP Nagar, Bhopal', skills: 'Electrical Repairs, Maintenance' },
+        { id: 'e3', fullName: 'Suresh Patel', primarySkill: 'Electrician', rating: 3, gender: 'Male', city: 'Ujjain', mobileNumber: '9876543212', experience: '3', availability: 'Full Time', address: 'Freeganj, Ujjain', skills: 'Home Wiring, Commercial Work' },
+        
+        // Plumber
+        { id: 'p1', fullName: 'Rahul Verma', primarySkill: 'Plumber', rating: 4, gender: 'Male', city: 'Indore', mobileNumber: '9876543213', experience: '6', availability: 'Full Time', address: 'Palasia, Indore', skills: 'Pipe Fitting, Leak Repair' },
+        { id: 'p2', fullName: 'Mohan Singh', primarySkill: 'Plumber', rating: 5, gender: 'Male', city: 'Dewas', mobileNumber: '9876543214', experience: '8', availability: 'Full Time', address: 'Civil Lines, Dewas', skills: 'Bathroom Fitting, Water Tank' },
+        { id: 'p3', fullName: 'Vikram Joshi', primarySkill: 'Plumber', rating: 3, gender: 'Male', city: 'Bhopal', mobileNumber: '9876543215', experience: '4', availability: 'Part Time', address: 'Arera Colony, Bhopal', skills: 'Drainage, Pipe Installation' },
+        
+        // Carpenter
+        { id: 'c1', fullName: 'Ramesh Yadav', primarySkill: 'Carpenter', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543216', experience: '10', availability: 'Full Time', address: 'Rau, Indore', skills: 'Furniture Making, Door Fitting' },
+        { id: 'c2', fullName: 'Dinesh Kumar', primarySkill: 'Carpenter', rating: 4, gender: 'Male', city: 'Jabalpur', mobileNumber: '9876543217', experience: '6', availability: 'Full Time', address: 'Napier Town, Jabalpur', skills: 'Wood Work, Cabinet Making' },
+        { id: 'c3', fullName: 'Prakash Gupta', primarySkill: 'Carpenter', rating: 4, gender: 'Male', city: 'Gwalior', mobileNumber: '9876543218', experience: '5', availability: 'Part Time', address: 'Lashkar, Gwalior', skills: 'Interior Work, Furniture Repair' },
+        
+        // Painter
+        { id: 'pa1', fullName: 'Anil Mishra', primarySkill: 'Painter', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543219', experience: '7', availability: 'Full Time', address: 'Bhawarkua, Indore', skills: 'Wall Painting, Texture Work' },
+        { id: 'pa2', fullName: 'Sanjay Tiwari', primarySkill: 'Painter', rating: 4, gender: 'Male', city: 'Bhopal', mobileNumber: '9876543220', experience: '5', availability: 'Full Time', address: 'Kolar Road, Bhopal', skills: 'Interior Painting, Exterior Work' },
+        { id: 'pa3', fullName: 'Manoj Dubey', primarySkill: 'Painter', rating: 3, gender: 'Male', city: 'Ujjain', mobileNumber: '9876543221', experience: '4', availability: 'Part Time', address: 'Nanakheda, Ujjain', skills: 'Home Painting, Office Painting' },
+        
+        // Mechanic
+        { id: 'm1', fullName: 'Ravi Chouhan', primarySkill: 'Mechanic', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543222', experience: '9', availability: 'Full Time', address: 'Aerodrome, Indore', skills: 'Car Repair, Bike Service' },
+        { id: 'm2', fullName: 'Deepak Solanki', primarySkill: 'Mechanic', rating: 4, gender: 'Male', city: 'Dewas', mobileNumber: '9876543223', experience: '6', availability: 'Full Time', address: 'Station Road, Dewas', skills: 'Engine Repair, AC Service' },
+        { id: 'm3', fullName: 'Ashok Patidar', primarySkill: 'Mechanic', rating: 4, gender: 'Male', city: 'Ratlam', mobileNumber: '9876543224', experience: '5', availability: 'Part Time', address: 'Mhow Road, Ratlam', skills: 'Vehicle Maintenance, Electrical Work' },
+        
+        // Electronics Repair
+        { id: 'er1', fullName: 'Karan Malviya', primarySkill: 'Electronics Repair', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543225', experience: '8', availability: 'Full Time', address: 'Sapna Sangeeta, Indore', skills: 'TV Repair, Mobile Repair' },
+        { id: 'er2', fullName: 'Nitin Jain', primarySkill: 'Electronics Repair', rating: 4, gender: 'Male', city: 'Bhopal', mobileNumber: '9876543226', experience: '6', availability: 'Full Time', address: 'New Market, Bhopal', skills: 'Laptop Repair, AC Repair' },
+        { id: 'er3', fullName: 'Vishal Agrawal', primarySkill: 'Electronics Repair', rating: 3, gender: 'Male', city: 'Jabalpur', mobileNumber: '9876543227', experience: '4', availability: 'Part Time', address: 'Gohalpur, Jabalpur', skills: 'Home Appliances, Gadget Repair' },
+        
+        // Room Shifting
+        { id: 'rs1', fullName: 'Mukesh Rao', primarySkill: 'Room Shifting', rating: 4, gender: 'Male', city: 'Indore', mobileNumber: '9876543228', experience: '7', availability: 'Full Time', address: 'Kanadiya Road, Indore', skills: 'Packing, Loading, Unloading' },
+        { id: 'rs2', fullName: 'Santosh Meena', primarySkill: 'Room Shifting', rating: 5, gender: 'Male', city: 'Bhopal', mobileNumber: '9876543229', experience: '10', availability: 'Full Time', address: 'Hoshangabad Road, Bhopal', skills: 'Home Shifting, Office Shifting' },
+        { id: 'rs3', fullName: 'Ganesh Bhil', primarySkill: 'Room Shifting', rating: 4, gender: 'Male', city: 'Ujjain', mobileNumber: '9876543230', experience: '5', availability: 'Part Time', address: 'Agar Road, Ujjain', skills: 'Furniture Moving, Safe Transport' },
+        
+        // Welder
+        { id: 'w1', fullName: 'Sunil Barela', primarySkill: 'Welder', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543231', experience: '12', availability: 'Full Time', address: 'Sanwer Road, Indore', skills: 'Arc Welding, Gas Welding' },
+        { id: 'w2', fullName: 'Rajendra Damor', primarySkill: 'Welder', rating: 4, gender: 'Male', city: 'Dewas', mobileNumber: '9876543232', experience: '8', availability: 'Full Time', address: 'Industrial Area, Dewas', skills: 'Metal Fabrication, Pipe Welding' },
+        { id: 'w3', fullName: 'Bharat Ninama', primarySkill: 'Welder', rating: 4, gender: 'Male', city: 'Gwalior', mobileNumber: '9876543233', experience: '6', availability: 'Part Time', address: 'Morar, Gwalior', skills: 'Steel Work, Gate Welding' },
+        
+        // News Paper Ads
+        { id: 'na1', fullName: 'Ajay Sharma', primarySkill: 'News Paper Ads', rating: 4, gender: 'Male', city: 'Indore', mobileNumber: '9876543234', experience: '5', availability: 'Full Time', address: 'Press Complex, Indore', skills: 'Ad Design, Publishing' },
+        { id: 'na2', fullName: 'Vijay Saxena', primarySkill: 'News Paper Ads', rating: 5, gender: 'Male', city: 'Bhopal', mobileNumber: '9876543235', experience: '7', availability: 'Full Time', address: 'Press Complex, Bhopal', skills: 'Classified Ads, Display Ads' },
+        { id: 'na3', fullName: 'Rohit Pandey', primarySkill: 'News Paper Ads', rating: 3, gender: 'Male', city: 'Jabalpur', mobileNumber: '9876543236', experience: '3', availability: 'Part Time', address: 'Civil Lines, Jabalpur', skills: 'Advertisement Booking' },
+        
+        // Cleaner
+        { id: 'cl1', fullName: 'Sunita Devi', primarySkill: 'Cleaner', rating: 5, gender: 'Female', city: 'Indore', mobileNumber: '9876543237', experience: '6', availability: 'Full Time', address: 'Rajendra Nagar, Indore', skills: 'House Cleaning, Office Cleaning' },
+        { id: 'cl2', fullName: 'Rekha Bai', primarySkill: 'Cleaner', rating: 4, gender: 'Female', city: 'Bhopal', mobileNumber: '9876543238', experience: '5', availability: 'Part Time', address: 'Bairagarh, Bhopal', skills: 'Deep Cleaning, Daily Cleaning' },
+        { id: 'cl3', fullName: 'Kamla Devi', primarySkill: 'Cleaner', rating: 4, gender: 'Female', city: 'Ujjain', mobileNumber: '9876543239', experience: '4', availability: 'Full Time', address: 'Mahakal Road, Ujjain', skills: 'Home Cleaning, Sanitization' },
+        
+        // Women's Parlour
+        { id: 'wp1', fullName: 'Priya Malhotra', primarySkill: "Women's Parlour", rating: 5, gender: 'Female', city: 'Indore', mobileNumber: '9876543240', experience: '8', availability: 'Full Time', address: 'South Tukoganj, Indore', skills: 'Hair Styling, Makeup, Facial' },
+        { id: 'wp2', fullName: 'Neha Kapoor', primarySkill: "Women's Parlour", rating: 4, gender: 'Female', city: 'Bhopal', mobileNumber: '9876543241', experience: '6', availability: 'Full Time', address: 'Bittan Market, Bhopal', skills: 'Bridal Makeup, Hair Treatment' },
+        { id: 'wp3', fullName: 'Anjali Verma', primarySkill: "Women's Parlour", rating: 5, gender: 'Female', city: 'Jabalpur', mobileNumber: '9876543242', experience: '7', availability: 'Part Time', address: 'Sadar Bazar, Jabalpur', skills: 'Beauty Services, Spa' },
+        
+        // Mistri
+        { id: 'mi1', fullName: 'Kalyan Singh', primarySkill: 'Mistri', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543243', experience: '15', availability: 'Full Time', address: 'Limbodi, Indore', skills: 'Construction, Masonry, Plastering' },
+        { id: 'mi2', fullName: 'Ramkaran Patel', primarySkill: 'Mistri', rating: 4, gender: 'Male', city: 'Dewas', mobileNumber: '9876543244', experience: '10', availability: 'Full Time', address: 'Tonk Phatak, Dewas', skills: 'Building Work, Tile Fitting' },
+        { id: 'mi3', fullName: 'Shyam Lal', primarySkill: 'Mistri', rating: 4, gender: 'Male', city: 'Ratlam', mobileNumber: '9876543245', experience: '8', availability: 'Part Time', address: 'Jaora Road, Ratlam', skills: 'Brick Work, Concrete Work' }
+    ];
+
     useEffect(() => {
         const savedCards = JSON.parse(localStorage.getItem('labour_cards') || '[]');
-        setLabourCards(savedCards);
-        setFilteredCards(savedCards);
-    }, []);
+        // Combine saved cards with dummy cards
+        const allCards = [...savedCards, ...dummyCards];
+        setLabourCards(allCards);
+        setFilteredCards(allCards);
 
-    // Filter cards based on selected city and search query
+        // Check if category was passed from home page
+        if (location.state?.selectedCategory) {
+            setSelectedCategory(location.state.selectedCategory);
+        }
+    }, [location.state]);
+
+    // Filter cards based on selected city, category, and search query
     useEffect(() => {
         let filtered = labourCards;
+
+        // Filter by category
+        if (selectedCategory) {
+            filtered = filtered.filter(card => 
+                card.primarySkill.toLowerCase() === selectedCategory.toLowerCase()
+            );
+        }
 
         // Filter by city
         if (selectedCity) {
@@ -40,7 +120,7 @@ const HireWorkers = () => {
         }
 
         setFilteredCards(filtered);
-    }, [selectedCity, searchQuery, labourCards]);
+    }, [selectedCity, selectedCategory, searchQuery, labourCards]);
 
     const handleViewDetails = (card) => {
         setSelectedCard(card);
@@ -96,40 +176,53 @@ const HireWorkers = () => {
                         )}
                     </button>
                 </div>
-                {/* Active Filter Badge */}
-                {selectedCity && (
-                    <div className="mt-2 flex items-center gap-2">
-                        <span className="text-xs text-gray-600">Filtered by:</span>
-                        <div className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                            <span>{selectedCity}</span>
-                            <button onClick={handleClearFilter} className="hover:bg-blue-200 rounded-full p-0.5">
-                                <X className="w-3 h-3" />
-                            </button>
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* Main Content Area */}
             <div className="p-4">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">
-                    Available Workers 
+                    Available Workers
+                    {selectedCategory && <span className="text-sm font-normal text-gray-600"> - {selectedCategory}</span>}
                     {selectedCity && <span className="text-sm font-normal text-gray-600"> in {selectedCity}</span>}
                     <span className="text-sm font-normal text-gray-600"> ({filteredCards.length})</span>
                 </h2>
+
+                {/* Active Filters */}
+                {(selectedCategory || selectedCity) && (
+                    <div className="mb-4 flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-gray-600">Active filters:</span>
+                        {selectedCategory && (
+                            <div className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                                <span>{selectedCategory}</span>
+                                <button onClick={() => setSelectedCategory('')} className="hover:bg-blue-200 rounded-full p-0.5">
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </div>
+                        )}
+                        {selectedCity && (
+                            <div className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                                <span>{selectedCity}</span>
+                                <button onClick={handleClearFilter} className="hover:bg-blue-200 rounded-full p-0.5">
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
                 
                 {filteredCards.length === 0 ? (
                     <div className="bg-white rounded-lg shadow-sm p-6 text-center">
                         <p className="text-gray-600">
-                            {selectedCity || searchQuery 
+                            {selectedCity || searchQuery || selectedCategory
                                 ? 'No workers found matching your criteria' 
                                 : 'No workers available at the moment'}
                         </p>
-                        {(selectedCity || searchQuery) && (
+                        {(selectedCity || searchQuery || selectedCategory) && (
                             <button
                                 onClick={() => {
                                     setSelectedCity('');
                                     setSearchQuery('');
+                                    setSelectedCategory('');
                                 }}
                                 className="mt-3 text-blue-500 hover:text-blue-600 font-medium"
                             >
