@@ -1,86 +1,123 @@
 import React, { useState, useEffect } from 'react';
 import { Save, User, FileText, Mail, Phone, Lock, MapPin, Clock } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { adminAuthAPI, cmsAPI } from '../../../services/admin.api';
 import './AdminDashboard.css';
 
 const AdminSettings = () => {
     const [activeTab, setActiveTab] = useState('profile');
+    const [loading, setLoading] = useState(false);
     const [adminProfile, setAdminProfile] = useState({
-        name: 'Sagar Chauhan',
-        email: 'admin@rajghar.com',
-        phone: '+91 9876543210',
-        role: 'Super Admin',
+        username: '',
+        email: '',
+        role: '',
         currentPassword: '',
         newPassword: ''
     });
 
     const [cmsContent, setCmsContent] = useState({
-        aboutUs: {
-            title: 'Welcome to Our Platform',
-            description: 'This platform helps skilled labours find genuine work opportunities from verified users and contractors in their local area.',
-            vision: 'Provide regular work opportunities and financial stability to skilled labours.',
-            mission: 'Connect labours directly with users and contractors through a trusted digital platform.'
-        },
-        contactUs: {
-            email: 'support@yourapp.com',
-            phone: '+91 1800-123-4567',
-            address: 'Indore, Madhya Pradesh, India - 452001',
-            workingHours: 'Monday - Saturday: 9:00 AM - 6:00 PM'
-        }
+        aboutUs: '',
+        contactUs: '',
+        termsAndConditions: '',
+        privacyPolicy: ''
     });
 
     useEffect(() => {
-        const savedProfile = localStorage.getItem('adminProfile');
-        if (savedProfile) {
-            const parsed = JSON.parse(savedProfile);
-            // Merge saved profile with initial state to keep password fields
-            setAdminProfile(prev => ({ ...prev, ...parsed, currentPassword: '', newPassword: '' }));
-        }
-
-        const savedCms = localStorage.getItem('cmsContent');
-        if (savedCms) setCmsContent(JSON.parse(savedCms));
+        fetchAdminProfile();
+        fetchCMSContent();
     }, []);
 
-    const handleProfileSave = (e) => {
-        e.preventDefault();
-
-        const username = localStorage.getItem('adminUsername') || 'admin';
-        const storedPasswords = JSON.parse(localStorage.getItem('adminPasswords') || '{}');
-        const currentStoredPassword = storedPasswords[username] || 'admin123';
-
-        // Password Validation
-        if (adminProfile.newPassword) {
-            if (!adminProfile.currentPassword) {
-                alert('Please enter your current password to set a new one.');
-                return;
-            }
-            if (adminProfile.currentPassword !== currentStoredPassword) {
-                alert('Current password is incorrect!');
-                return;
-            }
-
-            // Save new password
-            storedPasswords[username] = adminProfile.newPassword;
-            localStorage.setItem('adminPasswords', JSON.stringify(storedPasswords));
+    const fetchAdminProfile = async () => {
+        try {
+            const response = await adminAuthAPI.getProfile();
+            const profile = response.data.admin;
+            setAdminProfile({
+                username: profile.username || '',
+                email: profile.email || '',
+                role: profile.role || '',
+                currentPassword: '',
+                newPassword: ''
+            });
+        } catch (error) {
+            console.error('Error fetching profile:', error);
+            toast.error('Failed to load profile');
         }
-
-        // Save Profile Info
-        const { currentPassword, newPassword, ...profileToSave } = adminProfile;
-        localStorage.setItem('adminProfile', JSON.stringify(profileToSave));
-
-        if (adminProfile.newPassword) {
-            alert('Profile and Password updated successfully!');
-        } else {
-            alert('Profile updated successfully!');
-        }
-
-        // Clear password fields for security
-        setAdminProfile(prev => ({ ...prev, currentPassword: '', newPassword: '' }));
     };
 
-    const handleCmsSave = (e) => {
+    const fetchCMSContent = async () => {
+        try {
+            const response = await cmsAPI.getAll();
+            const content = response.data.content || [];
+            
+            // Convert array to object for easier access
+            const contentObj = {};
+            content.forEach(item => {
+                contentObj[item.key] = item.value;
+            });
+            
+            setCmsContent({
+                aboutUs: contentObj.aboutUs || '',
+                contactUs: contentObj.contactUs || '',
+                termsAndConditions: contentObj.termsAndConditions || '',
+                privacyPolicy: contentObj.privacyPolicy || ''
+            });
+        } catch (error) {
+            console.error('Error fetching CMS content:', error);
+            toast.error('Failed to load CMS content');
+        }
+    };
+
+    const handleProfileSave = async (e) => {
         e.preventDefault();
-        localStorage.setItem('cmsContent', JSON.stringify(cmsContent));
-        alert('Content updated successfully!');
+
+        try {
+            setLoading(true);
+            const updateData = {
+                email: adminProfile.email
+            };
+
+            // Only include password if both fields are filled
+            if (adminProfile.currentPassword && adminProfile.newPassword) {
+                updateData.currentPassword = adminProfile.currentPassword;
+                updateData.newPassword = adminProfile.newPassword;
+            }
+
+            await adminAuthAPI.updateProfile(updateData);
+            toast.success('Profile updated successfully!');
+            
+            // Clear password fields
+            setAdminProfile(prev => ({ 
+                ...prev, 
+                currentPassword: '', 
+                newPassword: '' 
+            }));
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            toast.error(error.response?.data?.message || 'Failed to update profile');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCmsSave = async (e) => {
+        e.preventDefault();
+
+        try {
+            setLoading(true);
+            
+            // Update each CMS content item
+            const updates = Object.entries(cmsContent).map(([key, value]) => 
+                cmsAPI.update(key, { value })
+            );
+
+            await Promise.all(updates);
+            toast.success('Content updated successfully!');
+        } catch (error) {
+            console.error('Error updating CMS:', error);
+            toast.error(error.response?.data?.message || 'Failed to update content');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -113,14 +150,13 @@ const AdminSettings = () => {
                         <form className="settings-form" onSubmit={handleProfileSave}>
                             <div className="form-grid">
                                 <div className="form-group">
-                                    <label>Full Name</label>
-                                    <div className="input-with-icon">
+                                    <label>Username</label>
+                                    <div className="input-with-icon disabled">
                                         <User size={18} />
                                         <input
                                             type="text"
-                                            value={adminProfile.name}
-                                            onChange={(e) => setAdminProfile({ ...adminProfile, name: e.target.value })}
-                                            placeholder="Enter full name"
+                                            value={adminProfile.username}
+                                            disabled
                                         />
                                     </div>
                                 </div>
@@ -133,18 +169,6 @@ const AdminSettings = () => {
                                             value={adminProfile.email}
                                             onChange={(e) => setAdminProfile({ ...adminProfile, email: e.target.value })}
                                             placeholder="Enter email"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="form-group">
-                                    <label>Phone Number</label>
-                                    <div className="input-with-icon">
-                                        <Phone size={18} />
-                                        <input
-                                            type="text"
-                                            value={adminProfile.phone}
-                                            onChange={(e) => setAdminProfile({ ...adminProfile, phone: e.target.value })}
-                                            placeholder="Enter phone number"
                                         />
                                     </div>
                                 </div>
@@ -180,8 +204,8 @@ const AdminSettings = () => {
                                     </div>
                                 </div>
                             </div>
-                            <button type="submit" className="save-btn">
-                                <Save size={18} /> Save Profile Changes
+                            <button type="submit" className="save-btn" disabled={loading}>
+                                <Save size={18} /> {loading ? 'Saving...' : 'Save Profile Changes'}
                             </button>
                         </form>
                     </div>
@@ -195,112 +219,32 @@ const AdminSettings = () => {
                             <div className="cms-section">
                                 <h4 className="cms-subtitle"><FileText size={18} /> About Us Page</h4>
                                 <div className="form-group">
-                                    <label>Welcome Title</label>
-                                    <input
-                                        type="text"
-                                        value={cmsContent.aboutUs.title}
-                                        onChange={(e) => setCmsContent({
-                                            ...cmsContent,
-                                            aboutUs: { ...cmsContent.aboutUs, title: e.target.value }
-                                        })}
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Introduction Description</label>
+                                    <label>About Us Content</label>
                                     <textarea
-                                        rows="4"
-                                        value={cmsContent.aboutUs.description}
+                                        rows="8"
+                                        value={cmsContent.aboutUs}
                                         onChange={(e) => setCmsContent({
                                             ...cmsContent,
-                                            aboutUs: { ...cmsContent.aboutUs, description: e.target.value }
+                                            aboutUs: e.target.value
                                         })}
+                                        placeholder="Enter about us content..."
                                     />
-                                </div>
-                                <div className="form-grid">
-                                    <div className="form-group">
-                                        <label>Our Vision</label>
-                                        <textarea
-                                            rows="2"
-                                            value={cmsContent.aboutUs.vision}
-                                            onChange={(e) => setCmsContent({
-                                                ...cmsContent,
-                                                aboutUs: { ...cmsContent.aboutUs, vision: e.target.value }
-                                            })}
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Our Mission</label>
-                                        <textarea
-                                            rows="2"
-                                            value={cmsContent.aboutUs.mission}
-                                            onChange={(e) => setCmsContent({
-                                                ...cmsContent,
-                                                aboutUs: { ...cmsContent.aboutUs, mission: e.target.value }
-                                            })}
-                                        />
-                                    </div>
                                 </div>
                             </div>
 
                             <div className="cms-section" style={{ marginTop: '40px' }}>
                                 <h4 className="cms-subtitle"><Mail size={18} /> Contact Us Page</h4>
-                                <div className="form-grid">
-                                    <div className="form-group">
-                                        <label>Support Email</label>
-                                        <div className="input-with-icon">
-                                            <Mail size={16} />
-                                            <input
-                                                type="email"
-                                                value={cmsContent.contactUs.email}
-                                                onChange={(e) => setCmsContent({
-                                                    ...cmsContent,
-                                                    contactUs: { ...cmsContent.contactUs, email: e.target.value }
-                                                })}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Helpline Number</label>
-                                        <div className="input-with-icon">
-                                            <Phone size={16} />
-                                            <input
-                                                type="text"
-                                                value={cmsContent.contactUs.phone}
-                                                onChange={(e) => setCmsContent({
-                                                    ...cmsContent,
-                                                    contactUs: { ...cmsContent.contactUs, phone: e.target.value }
-                                                })}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Office Address</label>
-                                        <div className="input-with-icon">
-                                            <MapPin size={16} />
-                                            <input
-                                                type="text"
-                                                value={cmsContent.contactUs.address}
-                                                onChange={(e) => setCmsContent({
-                                                    ...cmsContent,
-                                                    contactUs: { ...cmsContent.contactUs, address: e.target.value }
-                                                })}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Working Hours</label>
-                                        <div className="input-with-icon">
-                                            <Clock size={16} />
-                                            <input
-                                                type="text"
-                                                value={cmsContent.contactUs.workingHours}
-                                                onChange={(e) => setCmsContent({
-                                                    ...cmsContent,
-                                                    contactUs: { ...cmsContent.contactUs, workingHours: e.target.value }
-                                                })}
-                                            />
-                                        </div>
-                                    </div>
+                                <div className="form-group">
+                                    <label>Contact Information</label>
+                                    <textarea
+                                        rows="6"
+                                        value={cmsContent.contactUs}
+                                        onChange={(e) => setCmsContent({
+                                            ...cmsContent,
+                                            contactUs: e.target.value
+                                        })}
+                                        placeholder="Enter contact information..."
+                                    />
                                 </div>
                             </div>
 
@@ -310,11 +254,12 @@ const AdminSettings = () => {
                                     <label>Terms & Conditions</label>
                                     <textarea
                                         rows="10"
-                                        value={cmsContent.terms}
+                                        value={cmsContent.termsAndConditions}
                                         onChange={(e) => setCmsContent({
                                             ...cmsContent,
-                                            terms: e.target.value
+                                            termsAndConditions: e.target.value
                                         })}
+                                        placeholder="Enter terms and conditions..."
                                         style={{ whiteSpace: 'pre-wrap' }}
                                     />
                                 </div>
@@ -322,17 +267,18 @@ const AdminSettings = () => {
                                     <label>Privacy Policy</label>
                                     <textarea
                                         rows="10"
-                                        value={cmsContent.privacy}
+                                        value={cmsContent.privacyPolicy}
                                         onChange={(e) => setCmsContent({
                                             ...cmsContent,
-                                            privacy: e.target.value
+                                            privacyPolicy: e.target.value
                                         })}
+                                        placeholder="Enter privacy policy..."
                                         style={{ whiteSpace: 'pre-wrap' }}
                                     />
                                 </div>
                             </div>
-                            <button type="submit" className="save-btn" style={{ marginTop: '20px' }}>
-                                <Save size={18} /> Update Content
+                            <button type="submit" className="save-btn" style={{ marginTop: '20px' }} disabled={loading}>
+                                <Save size={18} /> {loading ? 'Updating...' : 'Update Content'}
                             </button>
                         </form>
                     </div>

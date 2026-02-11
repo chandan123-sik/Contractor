@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HardHat, Lock, User, Eye, EyeOff } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { adminAuthAPI } from '../../../services/admin.api';
 import './AdminDashboard.css';
 
 const AdminLogin = () => {
@@ -9,43 +11,31 @@ const AdminLogin = () => {
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setIsLoading(true);
 
-        // Simulating API call
-        setTimeout(() => {
-            const adminCredentials = {
-                'admin': { password: 'admin123', role: 'SUPER_ADMIN' },
-                'user_admin': { password: 'admin123', role: 'ADMIN_USER' },
-                'labour_admin': { password: 'admin123', role: 'ADMIN_LABOUR' },
-                'contractor_admin': { password: 'admin123', role: 'ADMIN_CONTRACTOR' }
-            };
+        try {
+            const response = await adminAuthAPI.login(formData.username, formData.password);
 
-            // Check if there are any updated passwords in localStorage
-            const storedPasswords = JSON.parse(localStorage.getItem('adminPasswords') || '{}');
-
-            const user = adminCredentials[formData.username];
-            let isValid = false;
-
-            if (user) {
-                // If a new password is set for this user, use it. Otherwise use default.
-                const correctPassword = storedPasswords[formData.username] || user.password;
-                if (formData.password === correctPassword) {
-                    isValid = true;
-                }
-            }
-
-            if (isValid) {
+            if (response.success) {
+                // Store auth data
                 localStorage.setItem('adminAuth', 'true');
-                localStorage.setItem('adminRole', user.role);
-                localStorage.setItem('adminUsername', formData.username); // Store username for password update
-                navigate('/admin/dashboard');
-            } else {
-                alert('Invalid credentials. \nTry: \n- admin/admin123 (Super Admin)\n- user_admin/admin123 (User Admin)\n- labour_admin/admin123 (Labour Admin)\n- contractor_admin/admin123 (Contractor Admin)');
-                setIsLoading(false);
+                localStorage.setItem('adminToken', response.data.token);
+                localStorage.setItem('adminRole', response.data.admin.role);
+                localStorage.setItem('adminUsername', response.data.admin.username);
+                localStorage.setItem('adminProfile', JSON.stringify(response.data.admin));
+
+                toast.success('Login successful!');
+                navigate('/admin/dashboard/home');
             }
-        }, 1000);
+        } catch (error) {
+            console.error('Login error:', error);
+            const errorMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
+            toast.error(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (

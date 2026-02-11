@@ -76,6 +76,7 @@ import VerificationManagement from '../modules/admin/pages/VerificationManagemen
 import AdminSettings from '../modules/admin/pages/AdminSettings';
 import RoleProtectedRoute from '../modules/admin/components/RoleProtectedRoute';
 import LabourCategoryManagement from '../modules/admin/pages/LabourCategoryManagement';
+import BroadcastManagement from '../modules/admin/pages/BroadcastManagement';
 
 const AppRoutes = () => {
     const location = useLocation();
@@ -165,6 +166,7 @@ const AppRoutes = () => {
                 <Route path="categories" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN_LABOUR']}><LabourCategoryManagement /></RoleProtectedRoute>} />
                 <Route path="contractors" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN_CONTRACTOR']}><ContractorManagement /></RoleProtectedRoute>} />
                 <Route path="verification" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN']}><VerificationManagement /></RoleProtectedRoute>} />
+                <Route path="broadcasts" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN_USER']}><BroadcastManagement /></RoleProtectedRoute>} />
                 <Route path="settings" element={<AdminSettings />} />
             </Route>
         </Routes>

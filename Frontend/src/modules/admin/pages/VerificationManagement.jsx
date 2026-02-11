@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     CheckCircle,
     XCircle,
@@ -11,37 +11,48 @@ import {
     FileText,
     ShieldCheck
 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { verificationAPI } from '../../../services/admin.api';
 import './AdminDashboard.css';
 
 const VerificationManagement = () => {
-    const [activeCategory, setActiveCategory] = useState('labours');
+    const [activeCategory, setActiveCategory] = useState('labour');
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [verificationRequests, setVerificationRequests] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
-    // Mock data for verification queries
-    const [verificationRequests, setVerificationRequests] = useState({
-        users: [
-            { id: 'V-U-001', name: 'Rahul Sharma', phone: '9876543210', date: '2026-02-05', status: 'Pending', aadhaar: '4562 8901 2345' },
-            { id: 'V-U-002', name: 'Anita Devi', phone: '8765432109', date: '2026-02-04', status: 'Approved', aadhaar: '1234 5678 9012' }
-        ],
-        labours: [
-            { id: 'V-L-001', name: 'Vikram Singh', phone: '9988776655', date: '2026-02-06', status: 'Pending', trade: 'Mason', aadhaar: '9001 2233 4455' },
-            { id: 'V-L-002', name: 'Sunil Dutt', phone: '8877665544', date: '2026-02-05', status: 'Pending', trade: 'Electrician', aadhaar: '8877 6655 4433' }
-        ],
-        contractors: [
-            { id: 'V-C-001', name: 'Sagar Chauhan', phone: '9000000001', date: '2026-02-06', status: 'Pending', company: 'Appzeto Const.', aadhaar: '1122 3344 5566' }
-        ]
-    });
+    useEffect(() => {
+        fetchVerificationRequests();
+    }, [activeCategory]);
 
-    const handleAction = (category, id, newStatus) => {
-        setVerificationRequests(prev => ({
-            ...prev,
-            [category]: prev[category].map(req =>
-                req.id === id ? { ...req, status: newStatus } : req
-            )
-        }));
-        if (selectedRequest && selectedRequest.id === id) {
-            setSelectedRequest(prev => ({ ...prev, status: newStatus }));
+    const fetchVerificationRequests = async () => {
+        try {
+            setLoading(true);
+            const response = await verificationAPI.getAll(activeCategory);
+            setVerificationRequests(response.data.requests || []);
+        } catch (error) {
+            console.error('Error fetching verification requests:', error);
+            toast.error('Failed to load verification requests');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAction = async (id, newStatus) => {
+        try {
+            const action = newStatus === 'approved' ? 'approve' : 'reject';
+            await verificationAPI[action](id);
+            toast.success(`Request ${newStatus} successfully`);
+            fetchVerificationRequests();
+            if (selectedRequest && selectedRequest._id === id) {
+                setIsModalOpen(false);
+                setSelectedRequest(null);
+            }
+        } catch (error) {
+            console.error('Error updating verification:', error);
+            toast.error(error.response?.data?.message || 'Failed to update verification');
         }
     };
 
@@ -49,6 +60,15 @@ const VerificationManagement = () => {
         setSelectedRequest(req);
         setIsModalOpen(true);
     };
+
+    const filteredRequests = verificationRequests.filter(req => {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+            req.userId?.name?.toLowerCase().includes(searchLower) ||
+            req.userId?.phone?.toLowerCase().includes(searchLower) ||
+            req.aadhaarNumber?.toLowerCase().includes(searchLower)
+        );
+    });
 
     return (
         <div className="management-container">
@@ -59,7 +79,13 @@ const VerificationManagement = () => {
                 </h2>
                 <div className="admin-search-bar" style={{ width: '250px' }}>
                     <Search size={18} color="#6b7280" />
-                    <input type="text" placeholder="Search requests..." className="admin-search-input" />
+                    <input 
+                        type="text" 
+                        placeholder="Search requests..." 
+                        className="admin-search-input"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
             </div>
 
@@ -74,57 +100,57 @@ const VerificationManagement = () => {
                 width: 'fit-content'
             }}>
                 <button
-                    onClick={() => setActiveCategory('users')}
+                    onClick={() => setActiveCategory('user')}
                     style={{
                         padding: '10px 20px',
                         borderRadius: '8px',
                         border: 'none',
-                        background: activeCategory === 'users' ? 'white' : 'transparent',
-                        color: activeCategory === 'users' ? '#1a233a' : '#64748b',
+                        background: activeCategory === 'user' ? 'white' : 'transparent',
+                        color: activeCategory === 'user' ? '#1a233a' : '#64748b',
                         fontWeight: 600,
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px',
-                        boxShadow: activeCategory === 'users' ? '0 4px 10px rgba(0,0,0,0.05)' : 'none',
+                        boxShadow: activeCategory === 'user' ? '0 4px 10px rgba(0,0,0,0.05)' : 'none',
                         transition: 'all 0.2s'
                     }}
                 >
                     <User size={18} /> Users
                 </button>
                 <button
-                    onClick={() => setActiveCategory('labours')}
+                    onClick={() => setActiveCategory('labour')}
                     style={{
                         padding: '10px 20px',
                         borderRadius: '8px',
                         border: 'none',
-                        background: activeCategory === 'labours' ? 'white' : 'transparent',
-                        color: activeCategory === 'labours' ? '#1a233a' : '#64748b',
+                        background: activeCategory === 'labour' ? 'white' : 'transparent',
+                        color: activeCategory === 'labour' ? '#1a233a' : '#64748b',
                         fontWeight: 600,
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px',
-                        boxShadow: activeCategory === 'labours' ? '0 4px 10px rgba(0,0,0,0.05)' : 'none',
+                        boxShadow: activeCategory === 'labour' ? '0 4px 10px rgba(0,0,0,0.05)' : 'none',
                         transition: 'all 0.2s'
                     }}
                 >
                     <HardHat size={18} /> Labours
                 </button>
                 <button
-                    onClick={() => setActiveCategory('contractors')}
+                    onClick={() => setActiveCategory('contractor')}
                     style={{
                         padding: '10px 20px',
                         borderRadius: '8px',
                         border: 'none',
-                        background: activeCategory === 'contractors' ? 'white' : 'transparent',
-                        color: activeCategory === 'contractors' ? '#1a233a' : '#64748b',
+                        background: activeCategory === 'contractor' ? 'white' : 'transparent',
+                        color: activeCategory === 'contractor' ? '#1a233a' : '#64748b',
                         fontWeight: 600,
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px',
-                        boxShadow: activeCategory === 'contractors' ? '0 4px 10px rgba(0,0,0,0.05)' : 'none',
+                        boxShadow: activeCategory === 'contractor' ? '0 4px 10px rgba(0,0,0,0.05)' : 'none',
                         transition: 'all 0.2s'
                     }}
                 >
@@ -134,71 +160,81 @@ const VerificationManagement = () => {
 
             {/* Verification Table */}
             <div className="interaction-monitor">
-                <table className="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Request ID</th>
-                            <th>Name</th>
-                            <th>Phone</th>
-                            {activeCategory === 'labours' && <th>Trade</th>}
-                            {activeCategory === 'contractors' && <th>Company</th>}
-                            <th>Submission Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {verificationRequests[activeCategory].map(req => (
-                            <tr key={req.id}>
-                                <td style={{ fontWeight: 600, color: '#f97316' }}>{req.id}</td>
-                                <td>{req.name}</td>
-                                <td>{req.phone}</td>
-                                {activeCategory === 'labours' && <td>{req.trade}</td>}
-                                {activeCategory === 'contractors' && <td>{req.company}</td>}
-                                <td>{req.date}</td>
-                                <td>
-                                    <span className={`status-badge ${req.status === 'Approved' ? 'status-completed' :
-                                            req.status === 'Rejected' ? 'status-pending' : ''
-                                        }`} style={{
-                                            background: req.status === 'Rejected' ? '#fee2e2' : '',
-                                            color: req.status === 'Rejected' ? '#b91c1c' : ''
-                                        }}>
-                                        {req.status}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button
-                                            className="crud-btn btn-edit"
-                                            title="View Details"
-                                            onClick={() => openDetails(req)}
-                                        >
-                                            <Eye size={16} />
-                                        </button>
-                                        {req.status === 'Pending' && (
-                                            <>
-                                                <button
-                                                    className="crud-btn"
-                                                    style={{ background: '#d1fae5', color: '#065f46' }}
-                                                    onClick={() => handleAction(activeCategory, req.id, 'Approved')}
-                                                >
-                                                    <CheckCircle size={16} />
-                                                </button>
-                                                <button
-                                                    className="crud-btn"
-                                                    style={{ background: '#fee2e2', color: '#b91c1c' }}
-                                                    onClick={() => handleAction(activeCategory, req.id, 'Rejected')}
-                                                >
-                                                    <XCircle size={16} />
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                </td>
+                {loading ? (
+                    <div className="flex justify-center items-center py-20">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+                    </div>
+                ) : filteredRequests.length === 0 ? (
+                    <div className="text-center py-20">
+                        <ShieldCheck size={48} className="mx-auto text-gray-300 mb-4" />
+                        <p className="text-gray-500">No verification requests found</p>
+                    </div>
+                ) : (
+                    <table className="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Aadhaar</th>
+                                <th>Submission Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {filteredRequests.map(req => (
+                                <tr key={req._id}>
+                                    <td style={{ fontWeight: 600, color: '#f97316' }}>{req._id.slice(-8).toUpperCase()}</td>
+                                    <td>{req.userId?.name || 'N/A'}</td>
+                                    <td>{req.userId?.phone || 'N/A'}</td>
+                                    <td>{req.aadhaarNumber}</td>
+                                    <td>{new Date(req.createdAt).toLocaleDateString()}</td>
+                                    <td>
+                                        <span className={`status-badge ${
+                                            req.status === 'approved' ? 'status-completed' :
+                                            req.status === 'rejected' ? 'status-pending' : ''
+                                        }`} style={{
+                                            background: req.status === 'rejected' ? '#fee2e2' : '',
+                                            color: req.status === 'rejected' ? '#b91c1c' : ''
+                                        }}>
+                                            {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button
+                                                className="crud-btn btn-edit"
+                                                title="View Details"
+                                                onClick={() => openDetails(req)}
+                                            >
+                                                <Eye size={16} />
+                                            </button>
+                                            {req.status === 'pending' && (
+                                                <>
+                                                    <button
+                                                        className="crud-btn"
+                                                        style={{ background: '#d1fae5', color: '#065f46' }}
+                                                        onClick={() => handleAction(req._id, 'approved')}
+                                                    >
+                                                        <CheckCircle size={16} />
+                                                    </button>
+                                                    <button
+                                                        className="crud-btn"
+                                                        style={{ background: '#fee2e2', color: '#b91c1c' }}
+                                                        onClick={() => handleAction(req._id, 'rejected')}
+                                                    >
+                                                        <XCircle size={16} />
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
             </div>
 
             {/* Document Details Modal */}
@@ -231,17 +267,18 @@ const VerificationManagement = () => {
                                     <User color="#64748b" />
                                 </div>
                                 <div>
-                                    <h4 style={{ margin: 0, fontSize: '1rem' }}>{selectedRequest.name}</h4>
-                                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>{selectedRequest.id} | {selectedRequest.phone}</p>
+                                    <h4 style={{ margin: 0, fontSize: '1rem' }}>{selectedRequest.userId?.name || 'N/A'}</h4>
+                                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>{selectedRequest._id.slice(-8).toUpperCase()} | {selectedRequest.userId?.phone || 'N/A'}</p>
                                 </div>
                                 <div style={{ marginLeft: 'auto' }}>
-                                    <span className={`status-badge ${selectedRequest.status === 'Approved' ? 'status-completed' :
-                                            selectedRequest.status === 'Rejected' ? 'status-pending' : ''
-                                        }`} style={{
-                                            background: selectedRequest.status === 'Rejected' ? '#fee2e2' : '',
-                                            color: selectedRequest.status === 'Rejected' ? '#b91c1c' : ''
-                                        }}>
-                                        {selectedRequest.status}
+                                    <span className={`status-badge ${
+                                        selectedRequest.status === 'approved' ? 'status-completed' :
+                                        selectedRequest.status === 'rejected' ? 'status-pending' : ''
+                                    }`} style={{
+                                        background: selectedRequest.status === 'rejected' ? '#fee2e2' : '',
+                                        color: selectedRequest.status === 'rejected' ? '#b91c1c' : ''
+                                    }}>
+                                        {selectedRequest.status.charAt(0).toUpperCase() + selectedRequest.status.slice(1)}
                                     </span>
                                 </div>
                             </div>
@@ -253,7 +290,7 @@ const VerificationManagement = () => {
                                     padding: '12px', display: 'flex', alignItems: 'center', gap: '12px'
                                 }}>
                                     <ShieldCheck size={18} color="#64748b" />
-                                    <span style={{ fontWeight: 600, letterSpacing: '1px' }}>{selectedRequest.aadhaar}</span>
+                                    <span style={{ fontWeight: 600, letterSpacing: '1px' }}>{selectedRequest.aadhaarNumber}</span>
                                 </div>
                             </div>
 
@@ -265,27 +302,35 @@ const VerificationManagement = () => {
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         border: '1px dashed #cbd5e1', overflow: 'hidden'
                                     }}>
-                                        <img src={`https://placehold.co/400x250/1a233a/ffffff?text=Aadhaar+Front+${selectedRequest.id}`} alt="Front" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        {selectedRequest.aadhaarFrontImage ? (
+                                            <img src={selectedRequest.aadhaarFrontImage} alt="Front" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                            <FileText size={32} className="text-gray-400" />
+                                        )}
                                     </div>
                                     <div style={{
                                         aspectRatio: '16/10', background: '#f1f5f9', borderRadius: '10px',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         border: '1px dashed #cbd5e1', overflow: 'hidden'
                                     }}>
-                                        <img src={`https://placehold.co/400x250/1a233a/ffffff?text=Aadhaar+Back+${selectedRequest.id}`} alt="Back" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        {selectedRequest.aadhaarBackImage ? (
+                                            <img src={selectedRequest.aadhaarBackImage} alt="Back" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                            <FileText size={32} className="text-gray-400" />
+                                        )}
                                     </div>
                                 </div>
                             </div>
 
-                            {selectedRequest.status === 'Pending' && (
+                            {selectedRequest.status === 'pending' && (
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                                     <button
-                                        onClick={() => handleAction(activeCategory, selectedRequest.id, 'Approved')}
+                                        onClick={() => handleAction(selectedRequest._id, 'approved')}
                                         className="crud-btn btn-add" style={{ margin: 0, background: '#10b981' }}>
                                         Approve Verification
                                     </button>
                                     <button
-                                        onClick={() => handleAction(activeCategory, selectedRequest.id, 'Rejected')}
+                                        onClick={() => handleAction(selectedRequest._id, 'rejected')}
                                         className="crud-btn" style={{ margin: 0, background: '#ef4444', color: 'white' }}>
                                         Reject Request
                                     </button>

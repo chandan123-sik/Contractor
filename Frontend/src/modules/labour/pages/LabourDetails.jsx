@@ -96,21 +96,66 @@ const LabourDetails = () => {
         setFormData(prev => ({ ...prev, rating }));
     };
 
-    const handleContinue = () => {
+    const handleContinue = async () => {
         if (!formData.skillType) {
             toast.error('Please select a skill type');
             return;
         }
 
-        // Save to localStorage
-        const existingProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
-        localStorage.setItem('labour_profile', JSON.stringify({
-            ...existingProfile,
-            ...formData
-        }));
+        try {
+            // Get user profile from localStorage
+            const userProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
+            const mobileNumber = localStorage.getItem('mobile_number');
+            
+            if (!mobileNumber) {
+                toast.error('Mobile number not found. Please login again.');
+                navigate('/auth/mobile');
+                return;
+            }
 
-        toast.success('Profile completed successfully!');
-        navigate('/labour/find-user');
+            // Prepare labour data for backend
+            const labourData = {
+                mobileNumber,
+                firstName: userProfile.firstName || '',
+                lastName: userProfile.lastName || '',
+                gender: userProfile.gender || '',
+                city: userProfile.city || '',
+                state: userProfile.state || '',
+                skillType: formData.skillType,
+                experience: formData.experience || '',
+                workPhotos: formData.workPhotos || [],
+                previousWorkLocation: formData.previousWorkLocation || ''
+            };
+
+            // Save to backend
+            const response = await fetch('http://localhost:5000/api/labour/create-profile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                },
+                body: JSON.stringify(labourData)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Save to localStorage for offline access
+                const existingProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
+                localStorage.setItem('labour_profile', JSON.stringify({
+                    ...existingProfile,
+                    ...formData
+                }));
+
+                toast.success('Profile completed successfully!');
+                navigate('/labour/find-user');
+            } else {
+                toast.error(data.message || 'Failed to save profile');
+            }
+        } catch (error) {
+            console.error('Error saving labour profile:', error);
+            toast.error('Failed to save profile. Please try again.');
+        }
     };
 
     return (

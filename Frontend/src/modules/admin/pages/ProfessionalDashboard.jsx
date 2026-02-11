@@ -85,13 +85,67 @@ export function ChatOverlay({ onClose }) {
 }
 
 export function DashboardHome() {
+    const [analytics, setAnalytics] = React.useState(null);
+    const [interactions, setInteractions] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        fetchDashboardData();
+    }, []);
+
+    const fetchDashboardData = async () => {
+        try {
+            const { dashboardAPI } = await import('../../../services/admin.api');
+            
+            // Fetch analytics
+            const analyticsResponse = await dashboardAPI.getAnalytics();
+            if (analyticsResponse.success) {
+                setAnalytics(analyticsResponse.data.analytics);
+            }
+
+            // Fetch interactions
+            const interactionsResponse = await dashboardAPI.getInteractions({ limit: 10 });
+            if (interactionsResponse.success) {
+                setInteractions(interactionsResponse.data.interactions);
+            }
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return <div style={{ textAlign: 'center', padding: '40px' }}>Loading dashboard...</div>;
+    }
+
     return (
         <>
             <div className="analytics-grid">
-                <AnalyticsCard icon={<Users color="#3b82f6" />} title="Total Users" value="12,450" bg="#eff6ff" />
-                <AnalyticsCard icon={<HardHat color="#f97316" />} title="Total Labours" value="8,900" bg="#fff7ed" />
-                <AnalyticsCard icon={<Briefcase color="#10b981" />} title="Total Contractors" value="2,100" bg="#ecfdf5" />
-                <AnalyticsCard icon={<Bell color="#f43f5e" />} title="Active Requests" value="24" bg="#fff1f2" />
+                <AnalyticsCard 
+                    icon={<Users color="#3b82f6" />} 
+                    title="Total Users" 
+                    value={analytics?.totalUsers || 0} 
+                    bg="#eff6ff" 
+                />
+                <AnalyticsCard 
+                    icon={<HardHat color="#f97316" />} 
+                    title="Total Labours" 
+                    value={analytics?.totalLabours || 0} 
+                    bg="#fff7ed" 
+                />
+                <AnalyticsCard 
+                    icon={<Briefcase color="#10b981" />} 
+                    title="Total Contractors" 
+                    value={analytics?.totalContractors || 0} 
+                    bg="#ecfdf5" 
+                />
+                <AnalyticsCard 
+                    icon={<Bell color="#f43f5e" />} 
+                    title="Active Requests" 
+                    value={analytics?.activeRequests || 0} 
+                    bg="#fff1f2" 
+                />
             </div>
 
             <div className="dashboard-content-grid">
@@ -106,39 +160,36 @@ export function DashboardHome() {
                                 <th>Sender</th>
                                 <th>Receiver</th>
                                 <th>Request Type</th>
-                                <th>Content</th>
+                                <th>Context</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>User (ID: 123)</td>
-                                <td>Labour (ID: 456)</td>
-                                <td>HIRE</td>
-                                <td>HIRE</td>
-                                <td><span className="status-badge status-pending">PENDING</span></td>
-                            </tr>
-                            <tr>
-                                <td>Labour (ID: 456)</td>
-                                <td>Contractor (ID: 789)</td>
-                                <td>HIRE + Audio</td>
-                                <td>Text + Audio</td>
-                                <td><span className="status-badge status-pending">PENDING</span></td>
-                            </tr>
-                            <tr>
-                                <td>Contractor (ID: 101)</td>
-                                <td>Labour (ID: 101)</td>
-                                <td>JOIN_TEAM</td>
-                                <td>Audio</td>
-                                <td><span className="status-badge status-pending">PENDING</span></td>
-                            </tr>
-                            <tr>
-                                <td>Labour (ID: 101)</td>
-                                <td>Contractor (ID: 789)</td>
-                                <td>Audio</td>
-                                <td>PENDING</td>
-                                <td><span className="status-badge status-pending">PENDING</span></td>
-                            </tr>
+                            {interactions.length > 0 ? (
+                                interactions.map((interaction) => (
+                                    <tr key={interaction._id}>
+                                        <td>{interaction.senderType} ({interaction.senderId?.firstName || 'N/A'})</td>
+                                        <td>{interaction.receiverType} ({interaction.receiverId?.firstName || 'N/A'})</td>
+                                        <td>{interaction.requestType}</td>
+                                        <td>{interaction.requestContext}</td>
+                                        <td>
+                                            <span className={`status-badge ${
+                                                interaction.status === 'ACCEPTED' ? 'status-completed' :
+                                                interaction.status === 'REJECTED' ? 'status-pending' :
+                                                'status-pending'
+                                            }`}>
+                                                {interaction.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
+                                        No interactions found
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -202,6 +253,7 @@ export function DashboardHome() {
 
 const ProfessionalDashboard = () => {
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
     const adminRole = localStorage.getItem('adminRole');
@@ -209,6 +261,7 @@ const ProfessionalDashboard = () => {
     const handleLogout = () => {
         localStorage.removeItem('adminAuth');
         localStorage.removeItem('adminRole');
+        localStorage.removeItem('adminToken');
         navigate('/admin/login');
     };
 
@@ -226,10 +279,29 @@ const ProfessionalDashboard = () => {
         }
     };
 
+    const toggleMobileMenu = () => {
+        setIsMobileMenuOpen(!isMobileMenuOpen);
+    };
+
+    const closeMobileMenu = () => {
+        setIsMobileMenuOpen(false);
+    };
+
     return (
         <div className="admin-dashboard-container">
+            {/* Mobile Menu Toggle Button */}
+            <button className="mobile-menu-toggle" onClick={toggleMobileMenu}>
+                {isMobileMenuOpen ? <X size={24} /> : <BarChart3 size={24} />}
+            </button>
+
+            {/* Mobile Overlay */}
+            <div 
+                className={`mobile-sidebar-overlay ${isMobileMenuOpen ? 'active' : ''}`}
+                onClick={closeMobileMenu}
+            ></div>
+
             {/* Sidebar */}
-            <aside className="admin-sidebar">
+            <aside className={`admin-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
                 <div className="admin-sidebar-logo">
                     <HardHat size={32} color="#f97316" />
                     <span>Rajghar</span>
@@ -237,6 +309,7 @@ const ProfessionalDashboard = () => {
                 <nav className="admin-sidebar-nav">
                     <NavLink
                         to="/admin/dashboard/home"
+                        onClick={closeMobileMenu}
                         className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
                     >
                         <LayoutDashboard size={20} />
@@ -246,6 +319,7 @@ const ProfessionalDashboard = () => {
                     {hasAccess(['SUPER_ADMIN', 'ADMIN_USER']) && (
                         <NavLink
                             to="/admin/dashboard/users"
+                            onClick={closeMobileMenu}
                             className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
                         >
                             <Users size={20} />
@@ -256,6 +330,7 @@ const ProfessionalDashboard = () => {
                     {hasAccess(['SUPER_ADMIN', 'ADMIN_LABOUR']) && (
                         <NavLink
                             to="/admin/dashboard/labours"
+                            onClick={closeMobileMenu}
                             className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
                         >
                             <HardHat size={20} />
@@ -266,6 +341,7 @@ const ProfessionalDashboard = () => {
                     {hasAccess(['SUPER_ADMIN', 'ADMIN_LABOUR']) && (
                         <NavLink
                             to="/admin/dashboard/categories"
+                            onClick={closeMobileMenu}
                             className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
                         >
                             <SlidersHorizontal size={20} />
@@ -276,6 +352,7 @@ const ProfessionalDashboard = () => {
                     {hasAccess(['SUPER_ADMIN', 'ADMIN_CONTRACTOR']) && (
                         <NavLink
                             to="/admin/dashboard/contractors"
+                            onClick={closeMobileMenu}
                             className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
                         >
                             <Briefcase size={20} />
@@ -286,18 +363,28 @@ const ProfessionalDashboard = () => {
                     {hasAccess(['SUPER_ADMIN']) && (
                         <NavLink
                             to="/admin/dashboard/verification"
+                            onClick={closeMobileMenu}
                             className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
                         >
                             <CheckCircle size={20} />
                             <span>Verification</span>
                         </NavLink>
                     )}
-                    <div className="admin-nav-item">
-                        <Bell size={20} />
-                        <span>Broadcast</span>
-                    </div>
+                    
+                    {hasAccess(['SUPER_ADMIN', 'ADMIN_USER']) && (
+                        <NavLink
+                            to="/admin/dashboard/broadcasts"
+                            onClick={closeMobileMenu}
+                            className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
+                        >
+                            <Bell size={20} />
+                            <span>Broadcast</span>
+                        </NavLink>
+                    )}
+                    
                     <NavLink
                         to="/admin/dashboard/settings"
+                        onClick={closeMobileMenu}
                         className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
                     >
                         <Settings size={20} />
@@ -323,7 +410,6 @@ const ProfessionalDashboard = () => {
                         <input type="text" placeholder="User rajsisgn" className="admin-search-input" />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                        <Bell size={24} color="#6b7280" style={{ cursor: 'pointer' }} />
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#ccc', overflow: 'hidden' }}>
                                 <img src="https://ui-avatars.com/api/?name=Admin+User&background=f97316&color=fff" alt="Admin" style={{ width: '100%' }} />

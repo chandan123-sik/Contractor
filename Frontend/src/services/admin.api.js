@@ -1,0 +1,392 @@
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+// Create axios instance with default config
+const adminApi = axios.create({
+    baseURL: `${API_URL}/admin`,
+    headers: {
+        'Content-Type': 'application/json'
+    }
+});
+
+// Add token to requests
+adminApi.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('adminToken');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Handle response errors
+adminApi.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // Token expired or invalid
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminAuth');
+            localStorage.removeItem('adminRole');
+            window.location.href = '/admin/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
+// ==================== AUTH APIs ====================
+export const adminAuthAPI = {
+    login: async (username, password) => {
+        const response = await adminApi.post('/auth/login', { username, password });
+        return response.data;
+    },
+
+    logout: async () => {
+        const response = await adminApi.post('/auth/logout');
+        return response.data;
+    },
+
+    changePassword: async (currentPassword, newPassword) => {
+        const response = await adminApi.put('/auth/change-password', {
+            currentPassword,
+            newPassword
+        });
+        return response.data;
+    },
+
+    verifyToken: async () => {
+        const response = await adminApi.get('/auth/verify-token');
+        return response.data;
+    },
+
+    getProfile: async () => {
+        const response = await adminApi.get('/auth/profile');
+        return response.data;
+    },
+
+    updateProfile: async (profileData) => {
+        const response = await adminApi.put('/auth/profile', profileData);
+        return response.data;
+    }
+};
+
+// ==================== USER MANAGEMENT APIs ====================
+export const userManagementAPI = {
+    getAllUsers: async (params = {}) => {
+        const response = await adminApi.get('/users', { params });
+        return response.data;
+    },
+
+    getUserById: async (id) => {
+        const response = await adminApi.get(`/users/${id}`);
+        return response.data;
+    },
+
+    createUser: async (userData) => {
+        const response = await adminApi.post('/users', userData);
+        return response.data;
+    },
+
+    updateUser: async (id, userData) => {
+        const response = await adminApi.put(`/users/${id}`, userData);
+        return response.data;
+    },
+
+    deleteUser: async (id) => {
+        const response = await adminApi.delete(`/users/${id}`);
+        return response.data;
+    },
+
+    getUserContractorRequests: async (id) => {
+        const response = await adminApi.get(`/users/${id}/contractor-requests`);
+        return response.data;
+    },
+
+    getUserLabourRequests: async (id) => {
+        const response = await adminApi.get(`/users/${id}/labour-requests`);
+        return response.data;
+    },
+
+    getUserFeedbacks: async (id) => {
+        const response = await adminApi.get(`/users/${id}/feedbacks`);
+        return response.data;
+    }
+};
+
+// ==================== LABOUR MANAGEMENT APIs ====================
+export const labourManagementAPI = {
+    getAllLabours: async (params = {}) => {
+        const response = await adminApi.get('/labours', { params });
+        return response.data;
+    },
+
+    getLabourById: async (id) => {
+        const response = await adminApi.get(`/labours/${id}`);
+        return response.data;
+    },
+
+    createLabour: async (labourData) => {
+        const response = await adminApi.post('/labours', labourData);
+        return response.data;
+    },
+
+    updateLabour: async (id, labourData) => {
+        const response = await adminApi.put(`/labours/${id}`, labourData);
+        return response.data;
+    },
+
+    deleteLabour: async (id) => {
+        const response = await adminApi.delete(`/labours/${id}`);
+        return response.data;
+    },
+
+    getLabourContractorRequests: async (id) => {
+        const response = await adminApi.get(`/labours/${id}/contractor-requests`);
+        return response.data;
+    },
+
+    getLabourUserRequests: async (id) => {
+        const response = await adminApi.get(`/labours/${id}/user-requests`);
+        return response.data;
+    },
+
+    getLabourFeedbacks: async (id) => {
+        const response = await adminApi.get(`/labours/${id}/feedbacks`);
+        return response.data;
+    }
+};
+
+// ==================== CONTRACTOR MANAGEMENT APIs ====================
+export const contractorManagementAPI = {
+    getAllContractors: async (params = {}) => {
+        const response = await adminApi.get('/contractors', { params });
+        return response.data;
+    },
+
+    getContractorById: async (id) => {
+        const response = await adminApi.get(`/contractors/${id}`);
+        return response.data;
+    },
+
+    createContractor: async (contractorData) => {
+        const response = await adminApi.post('/contractors', contractorData);
+        return response.data;
+    },
+
+    updateContractor: async (id, contractorData) => {
+        const response = await adminApi.put(`/contractors/${id}`, contractorData);
+        return response.data;
+    },
+
+    deleteContractor: async (id) => {
+        const response = await adminApi.delete(`/contractors/${id}`);
+        return response.data;
+    },
+
+    getContractorUserRequests: async (id) => {
+        const response = await adminApi.get(`/contractors/${id}/user-requests`);
+        return response.data;
+    },
+
+    getContractorLabourRequests: async (id) => {
+        const response = await adminApi.get(`/contractors/${id}/labour-requests`);
+        return response.data;
+    },
+
+    getContractorFeedbacks: async (id) => {
+        const response = await adminApi.get(`/contractors/${id}/feedbacks`);
+        return response.data;
+    }
+};
+
+// ==================== LABOUR CATEGORY APIs ====================
+export const labourCategoryAPI = {
+    getAll: async () => {
+        const response = await adminApi.get('/labour-categories');
+        return response.data;
+    },
+
+    getAllCategories: async () => {
+        const response = await adminApi.get('/labour-categories');
+        return response.data;
+    },
+
+    getCategoryById: async (id) => {
+        const response = await adminApi.get(`/labour-categories/${id}`);
+        return response.data;
+    },
+
+    create: async (categoryData) => {
+        const response = await adminApi.post('/labour-categories', categoryData);
+        return response.data;
+    },
+
+    createCategory: async (categoryData) => {
+        const response = await adminApi.post('/labour-categories', categoryData);
+        return response.data;
+    },
+
+    updateCategory: async (id, categoryData) => {
+        const response = await adminApi.put(`/labour-categories/${id}`, categoryData);
+        return response.data;
+    },
+
+    delete: async (id) => {
+        const response = await adminApi.delete(`/labour-categories/${id}`);
+        return response.data;
+    },
+
+    deleteCategory: async (id) => {
+        const response = await adminApi.delete(`/labour-categories/${id}`);
+        return response.data;
+    }
+};
+
+// ==================== VERIFICATION APIs ====================
+export const verificationAPI = {
+    getAllRequests: async (params = {}) => {
+        const response = await adminApi.get('/verification/requests', { params });
+        return response.data;
+    },
+
+    getRequestById: async (id) => {
+        const response = await adminApi.get(`/verification/requests/${id}`);
+        return response.data;
+    },
+
+    createRequest: async (requestData) => {
+        const response = await adminApi.post('/verification/requests', requestData);
+        return response.data;
+    },
+
+    approveRequest: async (id) => {
+        const response = await adminApi.put(`/verification/requests/${id}/approve`);
+        return response.data;
+    },
+
+    rejectRequest: async (id, reason) => {
+        const response = await adminApi.put(`/verification/requests/${id}/reject`, { reason });
+        return response.data;
+    },
+
+    uploadDocument: async (formData) => {
+        const response = await adminApi.post('/verification/upload-document', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return response.data;
+    }
+};
+
+// ==================== CMS APIs ====================
+export const cmsAPI = {
+    getAll: async () => {
+        const response = await adminApi.get('/cms');
+        return response.data;
+    },
+
+    getAllContent: async () => {
+        const response = await adminApi.get('/cms');
+        return response.data;
+    },
+
+    getContentBySection: async (section) => {
+        const response = await axios.get(`${API_URL}/admin/cms/${section}`);
+        return response.data;
+    },
+
+    updateAllContent: async (contentData) => {
+        const response = await adminApi.put('/cms', contentData);
+        return response.data;
+    },
+
+    update: async (section, data) => {
+        const response = await adminApi.put(`/cms/${section}`, data);
+        return response.data;
+    },
+
+    updateSection: async (section, content) => {
+        const response = await adminApi.put(`/cms/${section}`, { content });
+        return response.data;
+    }
+};
+
+// ==================== DASHBOARD APIs ====================
+export const dashboardAPI = {
+    getAnalytics: async () => {
+        const response = await adminApi.get('/dashboard/analytics');
+        return response.data;
+    },
+
+    getInteractions: async (params = {}) => {
+        const response = await adminApi.get('/dashboard/interactions', { params });
+        return response.data;
+    },
+
+    getVerificationQueue: async () => {
+        const response = await adminApi.get('/dashboard/verification-queue');
+        return response.data;
+    },
+
+    getDisputes: async () => {
+        const response = await adminApi.get('/dashboard/disputes');
+        return response.data;
+    },
+
+    getRevenue: async (params = {}) => {
+        const response = await adminApi.get('/dashboard/revenue', { params });
+        return response.data;
+    },
+
+    getAudioLogs: async () => {
+        const response = await adminApi.get('/dashboard/audio-logs');
+        return response.data;
+    }
+};
+
+export default adminApi;
+
+
+// ==================== BROADCAST APIs ====================
+export const broadcastAPI = {
+    getAll: async (params = {}) => {
+        const response = await adminApi.get('/broadcasts', { params });
+        return response.data;
+    },
+
+    getById: async (id) => {
+        const response = await adminApi.get(`/broadcasts/${id}`);
+        return response.data;
+    },
+
+    create: async (broadcastData) => {
+        const response = await adminApi.post('/broadcasts', broadcastData);
+        return response.data;
+    },
+
+    update: async (id, broadcastData) => {
+        const response = await adminApi.put(`/broadcasts/${id}`, broadcastData);
+        return response.data;
+    },
+
+    delete: async (id) => {
+        const response = await adminApi.delete(`/broadcasts/${id}`);
+        return response.data;
+    },
+
+    send: async (id) => {
+        const response = await adminApi.post(`/broadcasts/${id}/send`);
+        return response.data;
+    },
+
+    getStats: async () => {
+        const response = await adminApi.get('/broadcasts/stats');
+        return response.data;
+    }
+};

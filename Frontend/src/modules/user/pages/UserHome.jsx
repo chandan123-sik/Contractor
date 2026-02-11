@@ -1,28 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import UserBottomNav from '../components/UserBottomNav';
 import UserHeader from '../components/UserHeader';
+import { categoryAPI } from '../../../services/api';
 
 const UserHome = () => {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
+<<<<<<< Updated upstream
     const [showAllCategories, setShowAllCategories] = useState(false);
+=======
+    const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(true);
+>>>>>>> Stashed changes
 
-    const categories = [
-        { id: 1, name: 'Electrician', icon: '👷', color: 'bg-gray-100' },
-        { id: 2, name: 'Plumber', icon: '🔧', color: 'bg-pink-100' },
-        { id: 3, name: 'Carpenter', icon: '🪚', color: 'bg-yellow-100' },
-        { id: 4, name: 'Painter', icon: '🎨', color: 'bg-blue-100' },
-        { id: 5, name: 'Mechanic', icon: '🔩', color: 'bg-purple-100' },
-        { id: 6, name: 'Electronics Repair', icon: '📱', color: 'bg-green-100' },
-        { id: 7, name: 'Room Shifting', icon: '📦', color: 'bg-orange-100' },
-        { id: 8, name: 'Welder', icon: '👨‍🏭', color: 'bg-indigo-100' },
-        { id: 9, name: 'News Paper Ads', icon: '📰', color: 'bg-gray-100' },
-        { id: 10, name: 'Cleaner', icon: '🧹', color: 'bg-blue-100' },
-        { id: 11, name: "Women's Parlour", icon: '💇‍♀️', color: 'bg-pink-100' },
-        { id: 12, name: 'Mistri', icon: '🔨', color: 'bg-green-100' }
-    ];
+    // Fetch categories from backend
+    useEffect(() => {
+        fetchCategories();
+    }, []);
+
+    const fetchCategories = async () => {
+        try {
+            setLoading(true);
+            const response = await categoryAPI.getAll();
+            if (response.data.success) {
+                setCategories(response.data.data.categories);
+            }
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+            // Fallback to default categories if API fails
+            setCategories([
+                { _id: 'fallback-1', name: 'Electrician', icon: '👷' },
+                { _id: 'fallback-2', name: 'Plumber', icon: '🔧' },
+                { _id: 'fallback-3', name: 'Carpenter', icon: '🪚' },
+                { _id: 'fallback-4', name: 'Painter', icon: '🎨' }
+            ]);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Filter categories based on search query
     const filteredCategories = categories.filter(category =>
@@ -71,7 +88,11 @@ const UserHome = () => {
                     </button>
                 </div>
 
-                {filteredCategories.length === 0 ? (
+                {loading ? (
+                    <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+                        <p className="text-gray-600">Loading categories...</p>
+                    </div>
+                ) : filteredCategories.length === 0 ? (
                     <div className="bg-white rounded-lg shadow-sm p-6 text-center">
                         <p className="text-gray-600">No categories found</p>
                     </div>
@@ -79,12 +100,20 @@ const UserHome = () => {
                     <div className="grid grid-cols-4 gap-4">
                         {displayedCategories.map((category) => (
                             <button
-                                key={category.id}
+                                key={category._id}
                                 onClick={() => handleCategoryClick(category.name)}
                                 className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white shadow-sm hover:shadow-md transition-all active:scale-95"
                             >
-                                <div className={`w-14 h-14 ${category.color} rounded-full flex items-center justify-center text-2xl`}>
-                                    {category.icon}
+                                <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center text-2xl overflow-hidden">
+                                    {category.icon ? (
+                                        category.icon.startsWith('http') ? (
+                                            <img src={category.icon} alt={category.name} className="w-8 h-8 object-contain" />
+                                        ) : (
+                                            <span>{category.icon}</span>
+                                        )
+                                    ) : (
+                                        <span>🔧</span>
+                                    )}
                                 </div>
                                 <span className="text-xs text-gray-700 text-center font-medium leading-tight">
                                     {category.name}
