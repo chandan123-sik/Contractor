@@ -74,6 +74,8 @@ import LabourManagement from '../modules/admin/pages/LabourManagement';
 import ContractorManagement from '../modules/admin/pages/ContractorManagement';
 import VerificationManagement from '../modules/admin/pages/VerificationManagement';
 import AdminSettings from '../modules/admin/pages/AdminSettings';
+import RoleProtectedRoute from '../modules/admin/components/RoleProtectedRoute';
+import LabourCategoryManagement from '../modules/admin/pages/LabourCategoryManagement';
 
 const AppRoutes = () => {
     const location = useLocation();
@@ -155,13 +157,14 @@ const AppRoutes = () => {
 
             {/* Admin Module Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin/dashboard" element={<ProfessionalDashboard />}>
+            <Route path="/admin/dashboard" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN_USER', 'ADMIN_LABOUR', 'ADMIN_CONTRACTOR']}><ProfessionalDashboard /></RoleProtectedRoute>}>
                 <Route index element={<DashboardHome />} />
                 <Route path="home" element={<DashboardHome />} />
-                <Route path="users" element={<UserManagement />} />
-                <Route path="labours" element={<LabourManagement />} />
-                <Route path="contractors" element={<ContractorManagement />} />
-                <Route path="verification" element={<VerificationManagement />} />
+                <Route path="users" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN_USER']}><UserManagement /></RoleProtectedRoute>} />
+                <Route path="labours" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN_LABOUR']}><LabourManagement /></RoleProtectedRoute>} />
+                <Route path="categories" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN_LABOUR']}><LabourCategoryManagement /></RoleProtectedRoute>} />
+                <Route path="contractors" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN_CONTRACTOR']}><ContractorManagement /></RoleProtectedRoute>} />
+                <Route path="verification" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN']}><VerificationManagement /></RoleProtectedRoute>} />
                 <Route path="settings" element={<AdminSettings />} />
             </Route>
         </Routes>

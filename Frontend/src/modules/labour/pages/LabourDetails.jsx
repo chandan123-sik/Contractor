@@ -127,9 +127,8 @@ const LabourDetails = () => {
                         <button
                             type="button"
                             onClick={() => setIsSkillDropdownOpen(!isSkillDropdownOpen)}
-                            className={`w-full bg-white border-2 rounded-xl p-3 text-sm focus:ring-2 focus:ring-yellow-400 outline-none transition-all flex items-center justify-between ${
-                                formData.skillType ? 'text-gray-700 border-yellow-400' : 'text-gray-400 border-gray-200'
-                            }`}
+                            className={`w-full bg-white border-2 rounded-xl p-3 text-sm focus:ring-2 focus:ring-yellow-400 outline-none transition-all flex items-center justify-between ${formData.skillType ? 'text-gray-700 border-yellow-400' : 'text-gray-400 border-gray-200'
+                                }`}
                         >
                             <span>{formData.skillType || 'Select Skill Type'}</span>
                             <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform duration-300 ${isSkillDropdownOpen ? 'rotate-180' : ''}`} />
@@ -142,9 +141,8 @@ const LabourDetails = () => {
                                         key={skill}
                                         type="button"
                                         onClick={() => handleSkillSelect(skill)}
-                                        className={`w-full text-left px-4 py-3 hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0 ${
-                                            formData.skillType === skill ? 'bg-yellow-50 text-yellow-700 font-medium' : 'text-gray-900'
-                                        }`}
+                                        className={`w-full text-left px-4 py-3 hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0 ${formData.skillType === skill ? 'bg-yellow-50 text-yellow-700 font-medium' : 'text-gray-900'
+                                            }`}
                                     >
                                         {skill}
                                     </button>
@@ -223,11 +221,10 @@ const LabourDetails = () => {
                             <Star
                                 key={star}
                                 onClick={() => handleRating(star)}
-                                className={`w-10 h-10 cursor-pointer transition-all ${
-                                    star <= formData.rating
-                                        ? 'fill-yellow-400 text-yellow-400'
-                                        : 'fill-gray-200 text-gray-200'
-                                }`}
+                                className={`w-10 h-10 cursor-pointer transition-all ${star <= formData.rating
+                                    ? 'fill-yellow-400 text-yellow-400'
+                                    : 'fill-gray-200 text-gray-200'
+                                    }`}
                             />
                         ))}
                     </div>
@@ -242,21 +239,19 @@ const LabourDetails = () => {
                     <div className="grid grid-cols-2 gap-3">
                         <button
                             onClick={() => setFormData(prev => ({ ...prev, availability: 'Full Time' }))}
-                            className={`py-3 rounded-xl font-semibold text-sm transition-all ${
-                                formData.availability === 'Full Time'
-                                    ? 'bg-yellow-400 text-gray-900 border-2 border-yellow-400'
-                                    : 'bg-white text-gray-600 border-2 border-gray-200'
-                            }`}
+                            className={`py-3 rounded-xl font-semibold text-sm transition-all ${formData.availability === 'Full Time'
+                                ? 'bg-yellow-400 text-gray-900 border-2 border-yellow-400'
+                                : 'bg-white text-gray-600 border-2 border-gray-200'
+                                }`}
                         >
                             Full Time
                         </button>
                         <button
                             onClick={() => setFormData(prev => ({ ...prev, availability: 'Part Time' }))}
-                            className={`py-3 rounded-xl font-semibold text-sm transition-all ${
-                                formData.availability === 'Part Time'
-                                    ? 'bg-yellow-400 text-gray-900 border-2 border-yellow-400'
-                                    : 'bg-white text-gray-600 border-2 border-gray-200'
-                            }`}
+                            className={`py-3 rounded-xl font-semibold text-sm transition-all ${formData.availability === 'Part Time'
+                                ? 'bg-yellow-400 text-gray-900 border-2 border-yellow-400'
+                                : 'bg-white text-gray-600 border-2 border-gray-200'
+                                }`}
                         >
                             Part Time
                         </button>
