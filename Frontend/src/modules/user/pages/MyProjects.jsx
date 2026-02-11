@@ -1,33 +1,138 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
+import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import JobCard from '../components/JobCard';
 import EmptyState from '../components/EmptyState';
+import { jobAPI } from '../../../services/api';
 
 const MyProjects = () => {
     const navigate = useNavigate();
     const [jobs, setJobs] = useState([]);
     const [selectedJob, setSelectedJob] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    // Load jobs from localStorage
+    // Load jobs from database
     useEffect(() => {
-        const savedJobs = JSON.parse(localStorage.getItem('user_jobs') || '[]');
-        setJobs(savedJobs);
+        fetchJobs();
     }, []);
+
+    const fetchJobs = async () => {
+        try {
+            setLoading(true);
+            
+            // Check if user has access token
+            const token = localStorage.getItem('access_token');
+            
+            if (!token) {
+                // No token - load from localStorage (fallback for mock auth)
+                console.log('No access token found, loading from localStorage');
+                const savedJobs = JSON.parse(localStorage.getItem('user_jobs') || '[]');
+                setJobs(savedJobs);
+                setLoading(false);
+                return;
+            }
+            
+            // Has token - fetch from API
+            const response = await jobAPI.getUserJobs();
+            
+            if (response.success && response.data.jobs) {
+                // Transform API data to match component expectations
+                const transformedJobs = response.data.jobs.map(job => ({
+                    id: job._id,
+                    userName: job.userName,
+                    city: job.city,
+                    address: job.address,
+                    mobileNumber: job.mobileNumber,
+                    jobTitle: job.jobTitle,
+                    jobDescription: job.jobDescription,
+                    category: job.category,
+                    workDuration: job.workDuration,
+                    budgetType: job.budgetType,
+                    budgetAmount: job.budgetAmount,
+                    status: job.status,
+                    createdAt: job.createdAt
+                }));
+                
+                setJobs(transformedJobs);
+            }
+        } catch (error) {
+            console.error('Failed to fetch jobs:', error);
+            
+            // Check if it's an authentication error
+            if (error.response?.status === 401) {
+                console.log('Authentication error - loading from localStorage as fallback');
+                // Load from localStorage as fallback
+                const savedJobs = JSON.parse(localStorage.getItem('user_jobs') || '[]');
+                setJobs(savedJobs);
+                return;
+            }
+            
+            toast.error('Failed to load jobs', {
+                duration: 3000,
+                position: 'top-center',
+            });
+            
+            // Set empty jobs array so page doesn't break
+            setJobs([]);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleViewDetails = (job) => {
         setSelectedJob(job);
     };
 
-    const handleToggleJobStatus = (jobId) => {
-        const updatedJobs = jobs.map(job => 
-            job.id === jobId 
-                ? { ...job, status: job.status === 'Open' ? 'Closed' : 'Open' } 
-                : job
-        );
-        setJobs(updatedJobs);
-        localStorage.setItem('user_jobs', JSON.stringify(updatedJobs));
+    const handleToggleJobStatus = async (jobId) => {
+        const job = jobs.find(j => j.id === jobId);
+        if (!job) return;
+
+        const newStatus = job.status === 'Open' ? 'Closed' : 'Open';
+
+        // Check if user has access token
+        const token = localStorage.getItem('access_token');
+        
+        if (!token) {
+            // No token - update localStorage
+            console.log('No access token found, updating localStorage');
+            const updatedJobs = jobs.map(j => 
+                j.id === jobId ? { ...j, status: newStatus } : j
+            );
+            setJobs(updatedJobs);
+            localStorage.setItem('user_jobs', JSON.stringify(updatedJobs));
+            
+            toast.success(`Job ${newStatus === 'Open' ? 'opened' : 'closed'} successfully`, {
+                duration: 2000,
+                position: 'top-center',
+            });
+            return;
+        }
+
+        // Has token - update via API
+        try {
+            const response = await jobAPI.updateJob(jobId, { status: newStatus });
+            
+            if (response.success) {
+                // Update local state
+                const updatedJobs = jobs.map(j => 
+                    j.id === jobId ? { ...j, status: newStatus } : j
+                );
+                setJobs(updatedJobs);
+                
+                toast.success(`Job ${newStatus === 'Open' ? 'opened' : 'closed'} successfully`, {
+                    duration: 2000,
+                    position: 'top-center',
+                });
+            }
+        } catch (error) {
+            console.error('Failed to update job status:', error);
+            toast.error('Failed to update job status', {
+                duration: 3000,
+                position: 'top-center',
+            });
+        }
     };
 
     const handleCloseModal = () => {
@@ -54,7 +159,11 @@ const MyProjects = () => {
             />
             
             <div className="p-4 pb-20">
-                {jobs.length === 0 ? (
+                {loading ? (
+                    <div className="flex items-center justify-center min-h-[60vh]">
+                        <p className="text-gray-600">Loading jobs...</p>
+                    </div>
+                ) : jobs.length === 0 ? (
                     <div className="flex flex-col items-center justify-center min-h-[60vh]">
                         <button
                             onClick={handlePostJob}

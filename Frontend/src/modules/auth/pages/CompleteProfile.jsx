@@ -41,7 +41,7 @@ const CompleteProfile = () => {
         }
     };
 
-    const handleContinue = () => {
+    const handleContinue = async () => {
         // Photo validation removed as per request
 
         if (!formData.firstName.trim()) {
@@ -65,53 +65,82 @@ const CompleteProfile = () => {
             return;
         }
 
-        if (formData.userType === 'User') {
-            // Get mobile number from localStorage
+        try {
+            // Get mobile number and token
             const mobileNumber = localStorage.getItem('mobile_number') || '';
-            
-            // Save to localStorage for persistence with phone number
-            const userProfile = { ...formData, phoneNumber: mobileNumber };
-            localStorage.setItem('user_profile', JSON.stringify(userProfile));
-            console.log('User profile saved:', userProfile);
-            navigate('/user/home', { state: { profile: userProfile } });
-        } else if (formData.userType === 'Contractor') {
-            // Get mobile number from localStorage
-            const mobileNumber = localStorage.getItem('mobile_number') || '';
-            
-            // Save to localStorage for persistence
-            const existingProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
-            const contractorProfile = { 
-                ...existingProfile, 
-                ...formData,
-                mobileNumber: mobileNumber 
-            };
-            localStorage.setItem('contractor_profile', JSON.stringify(contractorProfile));
-            console.log('Contractor profile saved:', contractorProfile);
-            navigate('/contractor/business-details');
-        } else if (formData.userType === 'Labour') {
-            // Get mobile number from localStorage
-            const mobileNumber = localStorage.getItem('mobile_number') || '';
-            
-            // Save to localStorage for persistence
-            const existingProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
-            const labourProfile = {
-                ...existingProfile,
-                name: `${formData.firstName} ${formData.lastName}`.trim(),
-                photo: formData.profileImage,
-                gender: formData.gender,
-                dob: formData.dob,
-                firstName: formData.firstName,
-                middleName: formData.middleName,
-                lastName: formData.lastName,
-                city: formData.city,
-                state: formData.state,
-                address: formData.address,
-                aadharNumber: formData.aadharNumber,
-                mobileNumber: mobileNumber
-            };
-            localStorage.setItem('labour_profile', JSON.stringify(labourProfile));
-            console.log('Labour profile saved:', labourProfile);
-            navigate('/labour/details');
+            const token = localStorage.getItem('access_token');
+
+            if (token) {
+                // Update profile via API
+                const response = await fetch('http://localhost:5000/api/users/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        firstName: formData.firstName,
+                        middleName: formData.middleName,
+                        lastName: formData.lastName,
+                        gender: formData.gender,
+                        dob: formData.dob,
+                        aadharNumber: formData.aadharNumber,
+                        city: formData.city,
+                        state: formData.state,
+                        address: formData.address,
+                        userType: formData.userType,
+                        profileImage: formData.profileImage
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    console.log('Profile updated successfully:', data.data.user);
+                    toast.success('Profile updated successfully!');
+                }
+            }
+
+            // Also save to localStorage for offline access
+            if (formData.userType === 'User') {
+                const userProfile = { ...formData, phoneNumber: mobileNumber };
+                localStorage.setItem('user_profile', JSON.stringify(userProfile));
+                console.log('User profile saved:', userProfile);
+                navigate('/user/home', { state: { profile: userProfile } });
+            } else if (formData.userType === 'Contractor') {
+                const existingProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
+                const contractorProfile = { 
+                    ...existingProfile, 
+                    ...formData,
+                    mobileNumber: mobileNumber 
+                };
+                localStorage.setItem('contractor_profile', JSON.stringify(contractorProfile));
+                console.log('Contractor profile saved:', contractorProfile);
+                navigate('/contractor/business-details');
+            } else if (formData.userType === 'Labour') {
+                const existingProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
+                const labourProfile = {
+                    ...existingProfile,
+                    name: `${formData.firstName} ${formData.lastName}`.trim(),
+                    photo: formData.profileImage,
+                    gender: formData.gender,
+                    dob: formData.dob,
+                    firstName: formData.firstName,
+                    middleName: formData.middleName,
+                    lastName: formData.lastName,
+                    city: formData.city,
+                    state: formData.state,
+                    address: formData.address,
+                    aadharNumber: formData.aadharNumber,
+                    mobileNumber: mobileNumber
+                };
+                localStorage.setItem('labour_profile', JSON.stringify(labourProfile));
+                console.log('Labour profile saved:', labourProfile);
+                navigate('/labour/details');
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            toast.error('Failed to update profile');
         }
     };
 

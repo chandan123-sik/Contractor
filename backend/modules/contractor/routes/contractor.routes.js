@@ -7,7 +7,8 @@ import {
     getContractorJobs,
     browseContractorJobs,
     updateContractorJob,
-    deleteContractorJob
+    deleteContractorJob,
+    getContractorVerificationStatus
 } from '../controllers/contractor.controller.js';
 import { protect } from '../../../middleware/auth.middleware.js';
 
@@ -25,5 +26,8 @@ router.post('/jobs', createContractorJob);
 router.get('/jobs', getContractorJobs);
 router.put('/jobs/:id', updateContractorJob);
 router.delete('/jobs/:id', deleteContractorJob);
+
+// Verification route
+router.get('/verification-status', getContractorVerificationStatus);
 
 export default router;

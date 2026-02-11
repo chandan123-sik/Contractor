@@ -62,10 +62,25 @@ const jobSchema = new mongoose.Schema({
         default: 'Open'
     },
     applications: [{
-        labour: {
+        applicant: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Labour'
+            refPath: 'applications.applicantType'
         },
+        applicantType: {
+            type: String,
+            enum: ['Labour', 'Contractor', 'User'],
+            required: true
+        },
+        applicantName: {
+            type: String,
+            required: true
+        },
+        phoneNumber: {
+            type: String,
+            required: true
+        },
+        location: String,
+        message: String,
         appliedAt: {
             type: Date,
             default: Date.now
@@ -74,8 +89,7 @@ const jobSchema = new mongoose.Schema({
             type: String,
             enum: ['Pending', 'Accepted', 'Rejected'],
             default: 'Pending'
-        },
-        message: String
+        }
     }],
     selectedLabour: {
         type: mongoose.Schema.Types.ObjectId,

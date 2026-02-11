@@ -135,6 +135,24 @@ export const jobAPI = {
     browseJobs: async (params = {}) => {
         const response = await api.get('/jobs/browse', { params });
         return response.data;
+    },
+
+    // Apply to a job (for labour/contractor)
+    applyToJob: async (jobId, applicationData) => {
+        const response = await api.post(`/jobs/${jobId}/apply`, applicationData);
+        return response.data;
+    },
+
+    // Get job applications (for user who posted the job)
+    getJobApplications: async (jobId) => {
+        const response = await api.get(`/users/jobs/${jobId}/applications`);
+        return response.data;
+    },
+
+    // Update application status (accept/reject)
+    updateApplicationStatus: async (jobId, applicationId, status) => {
+        const response = await api.put(`/users/jobs/${jobId}/applications/${applicationId}`, { status });
+        return response.data;
     }
 };
 

@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import LabourBottomNav from '../components/LabourBottomNav';
 import toast from 'react-hot-toast';
+import { labourAPI } from '../../../services/api';
 
 const CreateLabourCard = () => {
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         fullName: '',
         primarySkill: '',
@@ -49,7 +51,7 @@ const CreateLabourCard = () => {
         setFormData(prev => ({ ...prev, rating }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         // Validation
@@ -58,20 +60,66 @@ const CreateLabourCard = () => {
             return;
         }
 
-        // Create labour card
-        const newCard = {
-            id: Date.now(),
-            ...formData,
-            createdAt: new Date().toISOString()
-        };
+        try {
+            setLoading(true);
 
-        // Save to localStorage
-        const existingCards = JSON.parse(localStorage.getItem('labour_cards') || '[]');
-        existingCards.push(newCard);
-        localStorage.setItem('labour_cards', JSON.stringify(existingCards));
+            // Prepare card data
+            const cardData = {
+                labourCardDetails: {
+                    fullName: formData.fullName,
+                    gender: formData.gender,
+                    mobileNumber: formData.mobileNumber,
+                    city: formData.city,
+                    address: formData.address,
+                    skills: formData.skills || formData.primarySkill
+                },
+                skillType: formData.primarySkill,
+                experience: formData.experience,
+                previousWorkLocation: formData.previousWorkLocation,
+                availability: formData.availability,
+                availabilityStatus: formData.availabilityStatus,
+                rating: formData.rating,
+                hasLabourCard: true
+            };
 
-        toast.success('Labour card created successfully!');
-        navigate('/labour/my-card');
+            console.log('Creating labour card:', cardData);
+
+            // Check if user has access token
+            const token = localStorage.getItem('access_token');
+            
+            if (!token) {
+                // No token - save to localStorage (fallback)
+                console.log('No access token found, saving to localStorage');
+                const newCard = {
+                    id: Date.now(),
+                    ...formData,
+                    createdAt: new Date().toISOString()
+                };
+                
+                const existingCards = JSON.parse(localStorage.getItem('labour_cards') || '[]');
+                existingCards.push(newCard);
+                localStorage.setItem('labour_cards', JSON.stringify(existingCards));
+                
+                toast.success('Labour card created successfully!');
+                navigate('/labour/my-card');
+                return;
+            }
+
+            // Has token - save to backend
+            const response = await labourAPI.createLabourCard(cardData);
+            
+            console.log('Labour card created:', response);
+
+            toast.success('Labour card created successfully!');
+            
+            // Navigate to my card
+            navigate('/labour/my-card');
+        } catch (error) {
+            console.error('Error creating labour card:', error);
+            toast.error(error.response?.data?.message || 'Failed to create labour card');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -218,9 +266,10 @@ const CreateLabourCard = () => {
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 rounded-lg shadow-md transition-all active:scale-95"
+                        disabled={loading}
+                        className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 rounded-lg shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Create Card
+                        {loading ? 'Creating...' : 'Create Card'}
                     </button>
                 </form>
             </div>

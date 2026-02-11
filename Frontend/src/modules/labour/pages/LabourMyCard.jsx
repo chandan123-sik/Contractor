@@ -2,25 +2,99 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus } from 'lucide-react';
 import LabourBottomNav from '../components/LabourBottomNav';
+import { labourAPI } from '../../../services/api';
 
 const LabourMyCard = () => {
     const navigate = useNavigate();
     const [cards, setCards] = useState([]);
     const [selectedCard, setSelectedCard] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const savedCards = JSON.parse(localStorage.getItem('labour_cards') || '[]');
-        setCards(savedCards);
+        fetchLabourCard();
     }, []);
 
-    const handleToggleAvailability = (cardId) => {
-        const updatedCards = cards.map(card => 
-            card.id === cardId 
-                ? { ...card, availabilityStatus: card.availabilityStatus === 'Available' ? 'Unavailable' : 'Available' } 
-                : card
-        );
-        setCards(updatedCards);
-        localStorage.setItem('labour_cards', JSON.stringify(updatedCards));
+    const fetchLabourCard = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('access_token');
+            
+            if (token) {
+                // Fetch from database
+                const response = await labourAPI.getLabourProfile();
+                if (response.success && response.data.labour && response.data.labour.hasLabourCard) {
+                    const labour = response.data.labour;
+                    
+                    // Transform database structure to match UI expectations
+                    const transformedCard = {
+                        id: labour._id,
+                        fullName: labour.labourCardDetails?.fullName || 'N/A',
+                        primarySkill: labour.skillType || 'N/A',
+                        rating: labour.rating || 0,
+                        gender: labour.labourCardDetails?.gender || 'N/A',
+                        mobileNumber: labour.labourCardDetails?.mobileNumber || 'N/A',
+                        city: labour.labourCardDetails?.city || 'N/A',
+                        address: labour.labourCardDetails?.address || 'N/A',
+                        skills: labour.labourCardDetails?.skills || 'N/A',
+                        experience: labour.experience || '0',
+                        previousWorkLocation: labour.previousWorkLocation || 'N/A',
+                        availability: labour.availability || 'Available',
+                        availabilityStatus: labour.availabilityStatus || 'Available'
+                    };
+                    
+                    setCards([transformedCard]);
+                } else {
+                    setCards([]);
+                }
+            } else {
+                // Fallback to localStorage
+                const savedCards = JSON.parse(localStorage.getItem('labour_cards') || '[]');
+                setCards(savedCards);
+            }
+        } catch (error) {
+            console.error('Error fetching labour card:', error);
+            // Fallback to localStorage on error
+            const savedCards = JSON.parse(localStorage.getItem('labour_cards') || '[]');
+            setCards(savedCards);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleToggleAvailability = async (cardId) => {
+        try {
+            const token = localStorage.getItem('access_token');
+            
+            if (token) {
+                // Update in database
+                const currentCard = cards.find(c => c.id === cardId);
+                const newStatus = currentCard.availabilityStatus === 'Available' ? 'Busy' : 'Available';
+                
+                await labourAPI.updateWorkDetails({
+                    availabilityStatus: newStatus
+                });
+                
+                // Update local state
+                const updatedCards = cards.map(card => 
+                    card.id === cardId 
+                        ? { ...card, availabilityStatus: newStatus } 
+                        : card
+                );
+                setCards(updatedCards);
+            } else {
+                // Update in localStorage
+                const updatedCards = cards.map(card => 
+                    card.id === cardId 
+                        ? { ...card, availabilityStatus: card.availabilityStatus === 'Available' ? 'Unavailable' : 'Available' } 
+                        : card
+                );
+                setCards(updatedCards);
+                localStorage.setItem('labour_cards', JSON.stringify(updatedCards));
+            }
+        } catch (error) {
+            console.error('Error toggling availability:', error);
+            alert('Failed to update availability status');
+        }
     };
 
     const handleViewDetails = (card) => {
@@ -51,7 +125,14 @@ const LabourMyCard = () => {
             </div>
             
             <div className="flex-1 overflow-y-auto p-4 pb-20">
-                {cards.length === 0 ? (
+                {loading ? (
+                    <div className="flex items-center justify-center min-h-[60vh]">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+                            <p className="text-gray-500">Loading your card...</p>
+                        </div>
+                    </div>
+                ) : cards.length === 0 ? (
                     <div className="flex flex-col items-center justify-center min-h-[60vh]">
                         <button
                             onClick={() => navigate('/labour/create-card')}
@@ -80,15 +161,15 @@ const LabourMyCard = () => {
                             <div className="flex items-start gap-3 mb-3">
                                 <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-md">
                                     <span className="text-2xl font-bold text-gray-900">
-                                        {card.fullName.charAt(0).toUpperCase()}
+                                        {card.fullName && card.fullName.charAt ? card.fullName.charAt(0).toUpperCase() : '?'}
                                     </span>
                                 </div>
                                 <div className="flex-1 pr-20">
-                                    <h3 className="font-bold text-lg text-gray-900">{card.fullName}</h3>
-                                    <p className="text-sm text-gray-600">🔧 {card.primarySkill}</p>
+                                    <h3 className="font-bold text-lg text-gray-900">{card.fullName || 'N/A'}</h3>
+                                    <p className="text-sm text-gray-600">🔧 {card.primarySkill || 'N/A'}</p>
                                     <div className="flex gap-1 mt-1">
                                         {[1, 2, 3, 4, 5].map((star) => (
-                                            <span key={star} className={`text-lg ${star <= card.rating ? 'text-yellow-400' : 'text-gray-300'}`}>
+                                            <span key={star} className={`text-lg ${star <= (card.rating || 0) ? 'text-yellow-400' : 'text-gray-300'}`}>
                                                 ★
                                             </span>
                                         ))}
@@ -100,19 +181,19 @@ const LabourMyCard = () => {
                             <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
                                 <div>
                                     <p className="text-gray-500">Gender</p>
-                                    <p className="font-medium">{card.gender}</p>
+                                    <p className="font-medium">{card.gender || 'N/A'}</p>
                                 </div>
                                 <div>
                                     <p className="text-gray-500">City</p>
-                                    <p className="font-medium">{card.city}</p>
+                                    <p className="font-medium">{card.city || 'N/A'}</p>
                                 </div>
                                 <div>
                                     <p className="text-gray-500">Mobile</p>
-                                    <p className="font-medium">{card.mobileNumber}</p>
+                                    <p className="font-medium">{card.mobileNumber || 'N/A'}</p>
                                 </div>
                                 <div>
                                     <p className="text-gray-500">Experience</p>
-                                    <p className="font-medium">{card.experience} years</p>
+                                    <p className="font-medium">{card.experience || '0'} years</p>
                                 </div>
                             </div>
 
@@ -123,7 +204,7 @@ const LabourMyCard = () => {
                                         ? 'bg-green-100 text-green-700' 
                                         : 'bg-blue-100 text-blue-700'
                                 }`}>
-                                    {card.availability}
+                                    {card.availability || 'Available'}
                                 </span>
                             </div>
 
@@ -161,17 +242,17 @@ const LabourMyCard = () => {
                         </div>
                         
                         <div className="p-4 space-y-3">
-                            <div><label className="text-sm text-gray-500">Full Name</label><p className="font-medium">{selectedCard.fullName}</p></div>
-                            <div><label className="text-sm text-gray-500">Primary Skill</label><p className="font-medium">{selectedCard.primarySkill}</p></div>
-                            <div><label className="text-sm text-gray-500">Rating</label><p className="font-medium">{selectedCard.rating} ⭐</p></div>
-                            <div><label className="text-sm text-gray-500">Gender</label><p className="font-medium">{selectedCard.gender}</p></div>
-                            <div><label className="text-sm text-gray-500">Mobile</label><p className="font-medium">{selectedCard.mobileNumber}</p></div>
-                            <div><label className="text-sm text-gray-500">City</label><p className="font-medium">{selectedCard.city}</p></div>
-                            <div><label className="text-sm text-gray-500">Address</label><p className="font-medium">{selectedCard.address}</p></div>
-                            <div><label className="text-sm text-gray-500">Skills</label><p className="font-medium">{selectedCard.skills}</p></div>
-                            <div><label className="text-sm text-gray-500">Experience</label><p className="font-medium">{selectedCard.experience} years</p></div>
+                            <div><label className="text-sm text-gray-500">Full Name</label><p className="font-medium">{selectedCard.fullName || 'N/A'}</p></div>
+                            <div><label className="text-sm text-gray-500">Primary Skill</label><p className="font-medium">{selectedCard.primarySkill || 'N/A'}</p></div>
+                            <div><label className="text-sm text-gray-500">Rating</label><p className="font-medium">{selectedCard.rating || 0} ⭐</p></div>
+                            <div><label className="text-sm text-gray-500">Gender</label><p className="font-medium">{selectedCard.gender || 'N/A'}</p></div>
+                            <div><label className="text-sm text-gray-500">Mobile</label><p className="font-medium">{selectedCard.mobileNumber || 'N/A'}</p></div>
+                            <div><label className="text-sm text-gray-500">City</label><p className="font-medium">{selectedCard.city || 'N/A'}</p></div>
+                            <div><label className="text-sm text-gray-500">Address</label><p className="font-medium">{selectedCard.address || 'N/A'}</p></div>
+                            <div><label className="text-sm text-gray-500">Skills</label><p className="font-medium">{selectedCard.skills || 'N/A'}</p></div>
+                            <div><label className="text-sm text-gray-500">Experience</label><p className="font-medium">{selectedCard.experience || '0'} years</p></div>
                             <div><label className="text-sm text-gray-500">Previous Work Location</label><p className="font-medium">{selectedCard.previousWorkLocation || 'N/A'}</p></div>
-                            <div><label className="text-sm text-gray-500">Availability</label><p className="font-medium">{selectedCard.availability}</p></div>
+                            <div><label className="text-sm text-gray-500">Availability</label><p className="font-medium">{selectedCard.availability || 'Available'}</p></div>
                         </div>
 
                         <div className="sticky bottom-0 bg-white border-t p-4">

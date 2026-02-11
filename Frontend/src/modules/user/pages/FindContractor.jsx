@@ -3,6 +3,7 @@ import { Search, SlidersHorizontal, X } from 'lucide-react';
 import UserBottomNav from '../components/UserBottomNav';
 import UserHeader from '../components/UserHeader';
 import UserContractorCard from '../components/UserContractorCard';
+import { contractorAPI } from '../../../services/api';
 
 const FindContractor = () => {
     const [cards, setCards] = useState([]);
@@ -12,42 +13,36 @@ const FindContractor = () => {
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [selectedCity, setSelectedCity] = useState('');
     const [hiredContractors, setHiredContractors] = useState({});
+    const [loading, setLoading] = useState(true);
 
     const cities = ['Indore', 'Bhopal', 'Dewas', 'Ujjain', 'Jabalpur', 'Gwalior', 'Ratlam'];
 
-    // Load contractor cards from localStorage
+    // Load contractor cards from database and localStorage
     useEffect(() => {
-        const loadCards = () => {
-            const savedCards = JSON.parse(localStorage.getItem('contractor_cards_for_user') || '[]');
-            console.log('🔄 Reloaded contractor cards:', savedCards); // Debug
-            setCards(savedCards);
-            setFilteredCards(savedCards);
-        };
-
-        loadCards();
+        fetchContractorJobs();
 
         // Load hired contractors state
         const hired = JSON.parse(localStorage.getItem('hired_contractors_state') || '{}');
         setHiredContractors(hired);
 
-        // Poll for updates every 2 seconds (faster for testing)
+        // Poll for updates every 5 seconds
         const interval = setInterval(() => {
-            console.log('⏰ Polling for card updates...'); // Debug
-            loadCards();
-        }, 2000);
+            console.log('⏰ Polling for card updates...');
+            fetchContractorJobs();
+        }, 5000);
 
         // Update when page becomes visible
         const handleVisibilityChange = () => {
             if (!document.hidden) {
-                console.log('👁️ Page visible, reloading cards...'); // Debug
-                loadCards();
+                console.log('👁️ Page visible, reloading cards...');
+                fetchContractorJobs();
             }
         };
 
-        // Listen for focus event (when user comes back to page)
+        // Listen for focus event
         const handleFocus = () => {
-            console.log('🎯 Page focused, reloading cards...'); // Debug
-            loadCards();
+            console.log('🎯 Page focused, reloading cards...');
+            fetchContractorJobs();
         };
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -60,6 +55,64 @@ const FindContractor = () => {
             window.removeEventListener('focus', handleFocus);
         };
     }, []);
+
+    const fetchContractorJobs = async () => {
+        try {
+            setLoading(true);
+            
+            // Fetch from database
+            const response = await contractorAPI.browseContractorJobs();
+            
+            if (response.success && response.data.jobs) {
+                const dbJobs = response.data.jobs.map(job => ({
+                    id: job._id,
+                    contractorName: job.contractorName,
+                    phoneNumber: job.phoneNumber,
+                    contactNo: job.phoneNumber,
+                    city: job.city,
+                    address: job.address,
+                    businessType: job.businessType,
+                    businessName: job.businessName || '',
+                    labourSkill: job.labourSkill,
+                    primaryWorkCategory: job.labourSkill,
+                    experience: job.experience,
+                    workDuration: job.workDuration,
+                    budgetType: job.budgetType,
+                    budgetAmount: job.budgetAmount,
+                    rating: job.rating || 0,
+                    profileStatus: job.profileStatus,
+                    availabilityStatus: job.profileStatus === 'Active' ? 'Available' : 'Closed',
+                    createdAt: job.createdAt
+                }));
+                
+                // Merge with localStorage
+                const localCards = JSON.parse(localStorage.getItem('contractor_cards_for_user') || '[]');
+                
+                // Combine and remove duplicates
+                const allCards = [...dbJobs, ...localCards];
+                const uniqueCards = allCards.filter((card, index, self) =>
+                    index === self.findIndex(c => c.id === card.id)
+                );
+                
+                console.log('🔄 Loaded contractor jobs:', uniqueCards.length);
+                setCards(uniqueCards);
+                setFilteredCards(uniqueCards);
+            } else {
+                // Fallback to localStorage only
+                const localCards = JSON.parse(localStorage.getItem('contractor_cards_for_user') || '[]');
+                setCards(localCards);
+                setFilteredCards(localCards);
+            }
+        } catch (error) {
+            console.error('Error fetching contractor jobs:', error);
+            // Fallback to localStorage
+            const localCards = JSON.parse(localStorage.getItem('contractor_cards_for_user') || '[]');
+            setCards(localCards);
+            setFilteredCards(localCards);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Filter cards based on selected city and search query
     useEffect(() => {

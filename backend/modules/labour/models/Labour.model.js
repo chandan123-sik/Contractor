@@ -30,8 +30,39 @@ const labourSchema = new mongoose.Schema({
     },
     availability: {
         type: String,
+        enum: ['Full Time', 'Part Time', 'Available', 'Busy', 'Not Available'],
+        default: 'Available'
+    },
+    availabilityStatus: {
+        type: String,
         enum: ['Available', 'Busy', 'Not Available'],
         default: 'Available'
+    },
+    labourCardDetails: {
+        fullName: {
+            type: String,
+            trim: true
+        },
+        gender: {
+            type: String,
+            enum: ['Male', 'Female', 'Other']
+        },
+        mobileNumber: {
+            type: String,
+            trim: true
+        },
+        city: {
+            type: String,
+            trim: true
+        },
+        address: {
+            type: String,
+            trim: true
+        },
+        skills: {
+            type: String,
+            trim: true
+        }
     },
     hasLabourCard: {
         type: Boolean,

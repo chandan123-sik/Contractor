@@ -240,11 +240,13 @@ export const browseLabourCards = async (req, res, next) => {
             query.availability = availability;
         }
 
+        console.log('Query:', query);
+
         const labours = await Labour.find(query)
             .sort({ createdAt: -1 })
             .limit(limit * 1)
-            .skip((page - 1) * limit)
-            .populate('user', 'firstName lastName mobileNumber city profilePhoto');
+            .skip((page - 1) * limit);
+            // Removed populate to avoid errors if user ref is missing
 
         const total = await Labour.countDocuments(query);
 
@@ -262,6 +264,7 @@ export const browseLabourCards = async (req, res, next) => {
         });
     } catch (error) {
         console.error('❌ BROWSE LABOUR CARDS ERROR:', error.message);
+        console.error('Stack:', error.stack);
         console.log('===========================\n');
         next(error);
     }
@@ -284,6 +287,45 @@ export const getLabourById = async (req, res, next) => {
             data: { labour }
         });
     } catch (error) {
+        next(error);
+    }
+};
+
+export const getLabourVerificationStatus = async (req, res, next) => {
+    try {
+        console.log('\n🔵 ===== GET LABOUR VERIFICATION STATUS =====');
+        console.log('👤 User ID:', req.user._id);
+
+        const labour = await Labour.findOne({ user: req.user._id });
+
+        if (!labour) {
+            return res.status(404).json({
+                success: false,
+                message: 'Labour profile not found'
+            });
+        }
+
+        // Import VerificationRequest model
+        const VerificationRequest = (await import('../../admin/models/VerificationRequest.model.js')).default;
+        
+        const verificationRequest = await VerificationRequest.findOne({
+            entityId: labour._id,
+            entityType: 'labour'
+        }).sort({ createdAt: -1 });
+
+        console.log('✅ Verification status:', verificationRequest?.status || 'Not submitted');
+        console.log('===========================\n');
+
+        res.status(200).json({
+            success: true,
+            data: {
+                isVerified: labour.isVerified || false,
+                verificationRequest: verificationRequest || null
+            }
+        });
+    } catch (error) {
+        console.error('❌ GET VERIFICATION STATUS ERROR:', error.message);
+        console.log('===========================\n');
         next(error);
     }
 };

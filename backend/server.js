@@ -9,6 +9,7 @@ import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import jobRoutes from './routes/job.routes.js';
 import categoryRoutes from './routes/category.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
 import userJobRoutes from './modules/user/routes/user.routes.js';
 import labourRoutes from './modules/labour/routes/labour.routes.js';
 import contractorRoutes from './modules/contractor/routes/contractor.routes.js';
@@ -47,6 +48,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/users', userJobRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/categories', categoryRoutes); // Public categories route
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/labour', labourRoutes);
 app.use('/api/contractor', contractorRoutes);
 app.use('/api/admin', adminRoutes);

@@ -10,21 +10,62 @@ const Legal = () => {
     const fileInputRef = useRef(null);
     const [aadharNumber, setAadharNumber] = useState('');
     const [uploadedPhotos, setUploadedPhotos] = useState([]);
-    const [verificationStatus, setVerificationStatus] = useState('pending'); // pending, submitted, verified, rejected
+    const [verificationStatus, setVerificationStatus] = useState('pending');
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const userProfile = JSON.parse(localStorage.getItem('user_profile') || '{}');
         setAadharNumber(userProfile.aadharNumber || '');
-        
-        // Load verification data from localStorage
-        const verificationData = JSON.parse(localStorage.getItem('user_verification') || '{}');
-        if (verificationData.photos) {
-            setUploadedPhotos(verificationData.photos);
-        }
-        if (verificationData.status) {
-            setVerificationStatus(verificationData.status);
-        }
+        fetchVerificationStatus();
     }, []);
+
+    const fetchVerificationStatus = async () => {
+        try {
+            const token = localStorage.getItem('access_token');
+            
+            if (token) {
+                const response = await fetch('http://localhost:5000/api/users/verification-status', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.data.verificationRequest) {
+                    const request = data.data.verificationRequest;
+                    
+                    if (request.status === 'Approved') setVerificationStatus('verified');
+                    else if (request.status === 'Rejected') setVerificationStatus('rejected');
+                    else if (request.status === 'Pending') setVerificationStatus('submitted');
+
+                    if (request.aadhaarFrontUrl && request.aadhaarBackUrl) {
+                        setUploadedPhotos([request.aadhaarFrontUrl, request.aadhaarBackUrl]);
+                    }
+
+                    const verificationData = {
+                        aadharNumber: request.aadhaarNumber,
+                        photos: [request.aadhaarFrontUrl, request.aadhaarBackUrl],
+                        status: request.status === 'Approved' ? 'verified' : 
+                               request.status === 'Rejected' ? 'rejected' : 'submitted',
+                        requestId: request.requestId
+                    };
+                    localStorage.setItem('user_verification', JSON.stringify(verificationData));
+                } else {
+                    const verificationData = JSON.parse(localStorage.getItem('user_verification') || '{}');
+                    if (verificationData.photos) setUploadedPhotos(verificationData.photos);
+                    if (verificationData.status) setVerificationStatus(verificationData.status);
+                }
+            } else {
+                const verificationData = JSON.parse(localStorage.getItem('user_verification') || '{}');
+                if (verificationData.photos) setUploadedPhotos(verificationData.photos);
+                if (verificationData.status) setVerificationStatus(verificationData.status);
+            }
+        } catch (error) {
+            console.error('Error fetching verification status:', error);
+            const verificationData = JSON.parse(localStorage.getItem('user_verification') || '{}');
+            if (verificationData.photos) setUploadedPhotos(verificationData.photos);
+            if (verificationData.status) setVerificationStatus(verificationData.status);
+        }
+    };
 
     const handleUploadClick = () => {
         if (verificationStatus === 'verified') {
@@ -86,14 +127,14 @@ const Legal = () => {
         toast.success('Document removed');
     };
 
-    const handleSubmitVerification = () => {
+    const handleSubmitVerification = async () => {
         if (!aadharNumber) {
             toast.error('Aadhaar number is required');
             return;
         }
 
-        if (uploadedPhotos.length === 0) {
-            toast.error('Please upload at least one document');
+        if (uploadedPhotos.length < 2) {
+            toast.error('Please upload at least 2 documents (front and back of Aadhaar)');
             return;
         }
 
@@ -107,19 +148,68 @@ const Legal = () => {
             return;
         }
 
-        // Save verification request
-        const verificationData = {
-            aadharNumber,
-            photos: uploadedPhotos,
-            status: 'submitted',
-            submittedAt: new Date().toISOString(),
-            userId: JSON.parse(localStorage.getItem('user_profile') || '{}').firstName || 'User'
-        };
-        
-        localStorage.setItem('user_verification', JSON.stringify(verificationData));
-        setVerificationStatus('submitted');
-        
-        toast.success('Submitted for verification! Admin will review your documents.');
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('access_token');
+            const userProfile = JSON.parse(localStorage.getItem('user_profile') || '{}');
+            const mobileNumber = localStorage.getItem('mobile_number');
+            
+            if (!token) {
+                toast.error('Please login first');
+                return;
+            }
+
+            const response = await fetch('http://localhost:5000/api/admin/verification/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    entityType: 'user',
+                    name: `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || 'User',
+                    phone: mobileNumber || userProfile.phoneNumber || '',
+                    aadhaarNumber: aadharNumber,
+                    aadhaarFrontUrl: uploadedPhotos[0],
+                    aadhaarBackUrl: uploadedPhotos[1]
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const verificationData = {
+                    aadharNumber,
+                    photos: uploadedPhotos,
+                    status: 'submitted',
+                    submittedAt: new Date().toISOString(),
+                    requestId: data.data.verificationRequest.requestId
+                };
+                
+                localStorage.setItem('user_verification', JSON.stringify(verificationData));
+                setVerificationStatus('submitted');
+                
+                toast.success('Submitted for verification! Admin will review your documents.');
+            } else {
+                toast.error(data.message || 'Failed to submit verification');
+            }
+        } catch (error) {
+            console.error('Error submitting verification:', error);
+            
+            const verificationData = {
+                aadharNumber,
+                photos: uploadedPhotos,
+                status: 'submitted',
+                submittedAt: new Date().toISOString()
+            };
+            
+            localStorage.setItem('user_verification', JSON.stringify(verificationData));
+            setVerificationStatus('submitted');
+            
+            toast.success('Submitted for verification! Admin will review your documents.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const getButtonStyle = () => {
@@ -266,12 +356,12 @@ const Legal = () => {
 
                 <button
                     onClick={handleSubmitVerification}
-                    disabled={verificationStatus === 'submitted' || verificationStatus === 'verified'}
+                    disabled={verificationStatus === 'submitted' || verificationStatus === 'verified' || loading}
                     className={`w-full py-4 rounded-full text-white font-bold text-lg transition-all shadow-md active:scale-[0.98] ${getButtonStyle()} ${
-                        (verificationStatus === 'submitted' || verificationStatus === 'verified') ? 'opacity-90 cursor-not-allowed' : ''
+                        (verificationStatus === 'submitted' || verificationStatus === 'verified' || loading) ? 'opacity-90 cursor-not-allowed' : ''
                     }`}
                 >
-                    {getButtonText()}
+                    {loading ? 'Submitting...' : getButtonText()}
                 </button>
             </div>
         </div>

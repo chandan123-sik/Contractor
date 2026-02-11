@@ -158,15 +158,19 @@ export const createContractorJob = async (req, res, next) => {
             rating
         } = req.body;
 
-        const contractor = await Contractor.findOne({ user: req.user._id });
+        let contractor = await Contractor.findOne({ user: req.user._id });
         
         if (!contractor) {
-            console.log('❌ Contractor profile not found');
-            console.log('===========================\n');
-            return res.status(404).json({
-                success: false,
-                message: 'Contractor profile not found. Please complete your profile first.'
+            console.log('✨ Creating contractor profile automatically...');
+            // Create a basic contractor profile with default businessType
+            contractor = await Contractor.create({
+                user: req.user._id,
+                businessType: 'Proprietorship', // Use valid enum value from Contractor model
+                businessName: businessName || contractorName,
+                city: city,
+                isActive: true
             });
+            console.log('✅ Contractor profile created:', contractor._id);
         }
 
         const contractorJob = await ContractorJob.create({
@@ -370,6 +374,36 @@ export const deleteContractorJob = async (req, res, next) => {
     } catch (error) {
         console.error('❌ DELETE CONTRACTOR JOB ERROR:', error.message);
         console.log('===========================\n');
+        next(error);
+    }
+};
+
+export const getContractorVerificationStatus = async (req, res, next) => {
+    try {
+        const contractor = await Contractor.findOne({ user: req.user._id });
+        
+        if (!contractor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Contractor profile not found'
+            });
+        }
+
+        const VerificationRequest = (await import('../../admin/models/VerificationRequest.model.js')).default;
+        
+        const verificationRequest = await VerificationRequest.findOne({
+            entityId: contractor._id,
+            entityType: 'contractor'
+        }).sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                isVerified: contractor.isVerified || false,
+                verificationRequest: verificationRequest || null
+            }
+        });
+    } catch (error) {
         next(error);
     }
 };

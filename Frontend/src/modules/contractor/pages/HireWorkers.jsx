@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import ContractorBottomNav from '../components/ContractorBottomNav';
 import ContractorHeader from '../components/ContractorHeader';
+import { labourAPI } from '../../../services/api';
 
 const HireWorkers = () => {
     const location = useLocation();
@@ -51,11 +52,7 @@ const HireWorkers = () => {
     ];
 
     useEffect(() => {
-        const savedCards = JSON.parse(localStorage.getItem('labour_cards') || '[]');
-        // Combine saved cards with dummy cards
-        const allCards = [...savedCards, ...dummyCards];
-        setLabourCards(allCards);
-        setFilteredCards(allCards);
+        fetchLabourCards();
 
         // Check if category was passed from home page
         if (location.state?.selectedCategory) {
@@ -90,6 +87,66 @@ const HireWorkers = () => {
             clearInterval(interval);
         };
     }, [location.state]);
+
+    const fetchLabourCards = async () => {
+        try {
+            // Try to fetch from database first
+            try {
+                const response = await labourAPI.browseLabourCards();
+                
+                if (response.success && response.data.labours) {
+                    // Transform API data
+                    const dbCards = response.data.labours.map(labour => ({
+                        id: labour._id,
+                        fullName: labour.labourCardDetails?.fullName || '',
+                        primarySkill: labour.skillType,
+                        rating: labour.rating || 0,
+                        gender: labour.labourCardDetails?.gender || '',
+                        mobileNumber: labour.labourCardDetails?.mobileNumber || '',
+                        city: labour.labourCardDetails?.city || '',
+                        address: labour.labourCardDetails?.address || '',
+                        skills: labour.labourCardDetails?.skills || labour.skillType,
+                        experience: labour.experience || '',
+                        previousWorkLocation: labour.previousWorkLocation || '',
+                        availability: labour.availability || 'Full Time',
+                        availabilityStatus: labour.availabilityStatus || 'Available',
+                        createdAt: labour.createdAt
+                    }));
+                    
+                    // Also load from localStorage
+                    const localCards = JSON.parse(localStorage.getItem('labour_cards') || '[]');
+                    
+                    // Merge with dummy cards
+                    const allCards = [...dbCards, ...localCards, ...dummyCards];
+                    
+                    // Remove duplicates based on id
+                    const uniqueCards = allCards.filter((card, index, self) =>
+                        index === self.findIndex((c) => c.id === card.id)
+                    );
+                    
+                    setLabourCards(uniqueCards);
+                    setFilteredCards(uniqueCards);
+                    console.log('Loaded labour cards - DB:', dbCards.length, 'Local:', localCards.length, 'Dummy:', dummyCards.length, 'Total:', uniqueCards.length);
+                    return;
+                }
+            } catch (apiError) {
+                console.log('API fetch failed, loading from localStorage:', apiError.message);
+            }
+            
+            // Fallback to localStorage + dummy cards
+            const localCards = JSON.parse(localStorage.getItem('labour_cards') || '[]');
+            const allCards = [...localCards, ...dummyCards];
+            setLabourCards(allCards);
+            setFilteredCards(allCards);
+            console.log('Loaded labour cards from localStorage + dummy:', allCards.length);
+            
+        } catch (error) {
+            console.error('Failed to fetch labour cards:', error);
+            // Use dummy cards as last resort
+            setLabourCards(dummyCards);
+            setFilteredCards(dummyCards);
+        }
+    };
 
     // Filter cards based on selected city, category, and search query
     useEffect(() => {

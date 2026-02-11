@@ -18,8 +18,17 @@ const notificationSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['info', 'success', 'warning', 'error'],
+        enum: ['info', 'success', 'warning', 'error', 'BROADCAST', 'JOB', 'APPLICATION', 'VERIFICATION'],
         default: 'info'
+    },
+    priority: {
+        type: String,
+        enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'],
+        default: 'MEDIUM'
+    },
+    metadata: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
     },
     isRead: {
         type: Boolean,

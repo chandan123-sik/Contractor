@@ -26,10 +26,45 @@ const OTPVerification = () => {
         setOtp(prev => prev.slice(0, -1));
     };
 
-    const handleEnter = () => {
+    const handleEnter = async () => {
         if (otp.length === 4) {
-            localStorage.setItem('mobile_number', phoneNumber);
-            navigate('/complete-profile');
+            try {
+                // Call login API
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        mobileNumber: phoneNumber
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Store tokens
+                    localStorage.setItem('access_token', data.data.accessToken);
+                    localStorage.setItem('refresh_token', data.data.refreshToken);
+                    localStorage.setItem('mobile_number', phoneNumber);
+                    localStorage.setItem('user_id', data.data.user._id);
+                    localStorage.setItem('user_type', data.data.user.userType);
+
+                    console.log('Login successful:', data.data.user);
+
+                    // Always go to complete profile page after OTP verification
+                    // User will fill their details and choose user type there
+                    navigate('/complete-profile');
+                } else {
+                    console.error('Login failed:', data.message);
+                    navigate('/complete-profile');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                // Fallback to old flow
+                localStorage.setItem('mobile_number', phoneNumber);
+                navigate('/complete-profile');
+            }
         }
     };
 

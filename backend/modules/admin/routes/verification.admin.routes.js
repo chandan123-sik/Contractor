@@ -6,16 +6,21 @@ import {
     createVerificationRequest,
     approveVerificationRequest,
     rejectVerificationRequest,
-    uploadVerificationDocument
+    uploadVerificationDocument,
+    submitVerificationRequest
 } from '../controllers/verification.admin.controller.js';
 import { protectAdmin, isSuperAdmin } from '../middleware/admin.auth.middleware.js';
+import { protect } from '../../../middleware/auth.middleware.js';
 
 const router = express.Router();
 
 // Multer configuration for file upload
 const upload = multer({ dest: 'uploads/' });
 
-// All routes are protected and require SUPER_ADMIN role
+// Public route for users to submit verification (requires user authentication)
+router.post('/submit', protect, submitVerificationRequest);
+
+// All routes below are protected and require SUPER_ADMIN role
 router.use(protectAdmin, isSuperAdmin);
 
 router.route('/requests')

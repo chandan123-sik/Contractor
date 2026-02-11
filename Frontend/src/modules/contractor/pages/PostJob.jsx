@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ContractorPageHeader from '../components/ContractorPageHeader';
+import { contractorAPI } from '../../../services/api';
 
 const PostJob = () => {
     const navigate = useNavigate();
@@ -41,7 +42,7 @@ const PostJob = () => {
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         // Validation
@@ -65,35 +66,55 @@ const PostJob = () => {
             return;
         }
 
-        // Create contractor card with mapped field names for ContractorProfileCard
-        const newCard = {
-            id: Date.now(),
-            contractorName: formData.contractorName,
-            phoneNumber: formData.phoneNumber,
-            contactNo: formData.phoneNumber, // Map phoneNumber to contactNo
-            city: formData.city,
-            address: formData.address,
-            businessType: formData.businessType,
-            businessName: formData.businessName,
-            labourSkill: formData.labourSkill,
-            primaryWorkCategory: formData.labourSkill, // Map labourSkill to primaryWorkCategory
-            experience: formData.experience,
-            workDuration: formData.workDuration,
-            budgetType: formData.budgetType,
-            budgetAmount: formData.budgetAmount,
-            rating: formData.rating,
-            profileStatus: formData.profileStatus,
-            availabilityStatus: 'Available', // Default availability
-            createdAt: new Date().toISOString()
-        };
+        try {
+            const token = localStorage.getItem('access_token');
+            
+            if (token) {
+                // Save to database
+                console.log('Creating contractor job:', formData);
+                const response = await contractorAPI.createContractorJob(formData);
+                
+                if (response.success) {
+                    console.log('Contractor job created:', response);
+                    alert('Job posted successfully!');
+                    navigate('/contractor/my-projects');
+                } else {
+                    throw new Error(response.message || 'Failed to create job');
+                }
+            } else {
+                // Fallback to localStorage
+                const newCard = {
+                    id: Date.now(),
+                    contractorName: formData.contractorName,
+                    phoneNumber: formData.phoneNumber,
+                    contactNo: formData.phoneNumber,
+                    city: formData.city,
+                    address: formData.address,
+                    businessType: formData.businessType,
+                    businessName: formData.businessName,
+                    labourSkill: formData.labourSkill,
+                    primaryWorkCategory: formData.labourSkill,
+                    experience: formData.experience,
+                    workDuration: formData.workDuration,
+                    budgetType: formData.budgetType,
+                    budgetAmount: formData.budgetAmount,
+                    rating: formData.rating,
+                    profileStatus: formData.profileStatus,
+                    availabilityStatus: 'Available',
+                    createdAt: new Date().toISOString()
+                };
 
-        // Save to localStorage (for labour panel)
-        const existingCards = JSON.parse(localStorage.getItem('contractor_cards_for_labour') || '[]');
-        existingCards.push(newCard);
-        localStorage.setItem('contractor_cards_for_labour', JSON.stringify(existingCards));
-
-        // Navigate to My Projects
-        navigate('/contractor/my-projects');
+                const existingCards = JSON.parse(localStorage.getItem('contractor_cards_for_labour') || '[]');
+                existingCards.push(newCard);
+                localStorage.setItem('contractor_cards_for_labour', JSON.stringify(existingCards));
+                
+                alert('Job posted successfully!');
+                navigate('/contractor/my-projects');
+            }
+        } catch (error) {
+            console.error('Error creating contractor job:', error);
+            alert(error.message || 'Failed to post job. Please try again.');
+        }
     };
 
     return (

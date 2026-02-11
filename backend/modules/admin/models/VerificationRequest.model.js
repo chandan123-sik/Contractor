@@ -3,7 +3,6 @@ import mongoose from 'mongoose';
 const verificationRequestSchema = new mongoose.Schema({
     requestId: {
         type: String,
-        required: true,
         unique: true
     },
     entityType: {

@@ -192,3 +192,159 @@ export const browseJobs = async (req, res, next) => {
         next(error);
     }
 };
+
+export const applyToJob = async (req, res, next) => {
+    try {
+        console.log('\n🟢 ===== APPLY TO JOB =====');
+        console.log('Job ID:', req.params.id);
+        console.log('Applicant ID:', req.user._id);
+        console.log('Application Data:', req.body);
+
+        const job = await Job.findById(req.params.id);
+
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: 'Job not found'
+            });
+        }
+
+        if (job.status !== 'Open') {
+            return res.status(400).json({
+                success: false,
+                message: 'This job is no longer accepting applications'
+            });
+        }
+
+        // Check if already applied
+        const alreadyApplied = job.applications.some(
+            app => app.applicant.toString() === req.user._id.toString()
+        );
+
+        if (alreadyApplied) {
+            return res.status(400).json({
+                success: false,
+                message: 'You have already applied to this job'
+            });
+        }
+
+        // Add application
+        job.applications.push({
+            applicant: req.user._id,
+            applicantType: req.body.applicantType || req.user.userType, // 'Labour' or 'Contractor'
+            applicantName: req.body.applicantName,
+            phoneNumber: req.body.phoneNumber,
+            location: req.body.location,
+            message: req.body.message,
+            status: 'Pending'
+        });
+
+        await job.save();
+
+        console.log('✅ Application submitted successfully');
+        console.log('===========================\n');
+
+        res.status(200).json({
+            success: true,
+            message: 'Application submitted successfully',
+            data: { job }
+        });
+    } catch (error) {
+        console.error('❌ APPLY TO JOB ERROR:', error.message);
+        console.log('===========================\n');
+        next(error);
+    }
+};
+
+export const getJobApplications = async (req, res, next) => {
+    try {
+        console.log('\n🔵 ===== GET JOB APPLICATIONS =====');
+        console.log('Job ID:', req.params.id);
+        console.log('User ID:', req.user._id);
+
+        const job = await Job.findById(req.params.id);
+
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: 'Job not found'
+            });
+        }
+
+        // Check if user owns this job
+        if (job.user.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to view applications for this job'
+            });
+        }
+
+        console.log('✅ Found', job.applications.length, 'applications');
+        console.log('===========================\n');
+
+        res.status(200).json({
+            success: true,
+            data: {
+                applications: job.applications,
+                jobTitle: job.jobTitle,
+                jobStatus: job.status
+            }
+        });
+    } catch (error) {
+        console.error('❌ GET JOB APPLICATIONS ERROR:', error.message);
+        console.log('===========================\n');
+        next(error);
+    }
+};
+
+export const updateApplicationStatus = async (req, res, next) => {
+    try {
+        console.log('\n🟡 ===== UPDATE APPLICATION STATUS =====');
+        console.log('Job ID:', req.params.id);
+        console.log('Application ID:', req.params.applicationId);
+        console.log('New Status:', req.body.status);
+
+        const job = await Job.findById(req.params.id);
+
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: 'Job not found'
+            });
+        }
+
+        // Check if user owns this job
+        if (job.user.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to update applications for this job'
+            });
+        }
+
+        // Find and update application
+        const application = job.applications.id(req.params.applicationId);
+
+        if (!application) {
+            return res.status(404).json({
+                success: false,
+                message: 'Application not found'
+            });
+        }
+
+        application.status = req.body.status;
+        await job.save();
+
+        console.log('✅ Application status updated');
+        console.log('===========================\n');
+
+        res.status(200).json({
+            success: true,
+            message: 'Application status updated successfully',
+            data: { application }
+        });
+    } catch (error) {
+        console.error('❌ UPDATE APPLICATION STATUS ERROR:', error.message);
+        console.log('===========================\n');
+        next(error);
+    }
+};

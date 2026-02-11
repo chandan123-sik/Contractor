@@ -39,3 +39,24 @@ export const updateProfile = async (req, res, next) => {
         next(error);
     }
 };
+
+export const getUserVerificationStatus = async (req, res, next) => {
+    try {
+        const VerificationRequest = (await import('../../admin/models/VerificationRequest.model.js')).default;
+        
+        const verificationRequest = await VerificationRequest.findOne({
+            entityId: req.user._id,
+            entityType: 'user'
+        }).sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                isVerified: req.user.isVerified || false,
+                verificationRequest: verificationRequest || null
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};

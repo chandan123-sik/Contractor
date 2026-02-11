@@ -17,15 +17,81 @@ const LabourLegalDetails = () => {
             setAadharNumber(profile.aadharNumber);
         }
         
-        // Load verification data from localStorage
-        const verificationData = JSON.parse(localStorage.getItem('labour_verification') || '{}');
-        if (verificationData.photos) {
-            setUploadedPhotos(verificationData.photos);
-        }
-        if (verificationData.status) {
-            setVerificationStatus(verificationData.status);
-        }
+        // Fetch verification status from database
+        fetchVerificationStatus();
     }, []);
+
+    const fetchVerificationStatus = async () => {
+        try {
+            const token = localStorage.getItem('access_token');
+            
+            if (token) {
+                const response = await fetch('http://localhost:5000/api/labour/verification-status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.data.verificationRequest) {
+                    const request = data.data.verificationRequest;
+                    
+                    // Update state based on database status
+                    if (request.status === 'Approved') {
+                        setVerificationStatus('verified');
+                    } else if (request.status === 'Rejected') {
+                        setVerificationStatus('rejected');
+                    } else if (request.status === 'Pending') {
+                        setVerificationStatus('submitted');
+                    }
+
+                    // Load photos from request
+                    if (request.aadhaarFrontUrl && request.aadhaarBackUrl) {
+                        setUploadedPhotos([request.aadhaarFrontUrl, request.aadhaarBackUrl]);
+                    }
+
+                    // Update localStorage
+                    const verificationData = {
+                        aadharNumber: request.aadhaarNumber,
+                        photos: [request.aadhaarFrontUrl, request.aadhaarBackUrl],
+                        status: request.status === 'Approved' ? 'verified' : 
+                               request.status === 'Rejected' ? 'rejected' : 'submitted',
+                        requestId: request.requestId
+                    };
+                    localStorage.setItem('labour_verification', JSON.stringify(verificationData));
+                } else {
+                    // Load from localStorage as fallback
+                    const verificationData = JSON.parse(localStorage.getItem('labour_verification') || '{}');
+                    if (verificationData.photos) {
+                        setUploadedPhotos(verificationData.photos);
+                    }
+                    if (verificationData.status) {
+                        setVerificationStatus(verificationData.status);
+                    }
+                }
+            } else {
+                // Load from localStorage
+                const verificationData = JSON.parse(localStorage.getItem('labour_verification') || '{}');
+                if (verificationData.photos) {
+                    setUploadedPhotos(verificationData.photos);
+                }
+                if (verificationData.status) {
+                    setVerificationStatus(verificationData.status);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching verification status:', error);
+            // Fallback to localStorage
+            const verificationData = JSON.parse(localStorage.getItem('labour_verification') || '{}');
+            if (verificationData.photos) {
+                setUploadedPhotos(verificationData.photos);
+            }
+            if (verificationData.status) {
+                setVerificationStatus(verificationData.status);
+            }
+        }
+    };
 
     const handleUploadClick = () => {
         if (verificationStatus === 'verified') {
@@ -91,14 +157,14 @@ const LabourLegalDetails = () => {
         toast.success('Document removed');
     };
 
-    const handleSubmitVerification = () => {
+    const handleSubmitVerification = async () => {
         if (!aadharNumber) {
             toast.error('Aadhaar number is required');
             return;
         }
 
-        if (uploadedPhotos.length === 0) {
-            toast.error('Please upload at least one document');
+        if (uploadedPhotos.length < 2) {
+            toast.error('Please upload at least 2 documents (front and back of Aadhaar)');
             return;
         }
 
@@ -112,19 +178,70 @@ const LabourLegalDetails = () => {
             return;
         }
 
-        // Save verification request
-        const verificationData = {
-            aadharNumber,
-            photos: uploadedPhotos,
-            status: 'submitted',
-            submittedAt: new Date().toISOString(),
-            labourId: JSON.parse(localStorage.getItem('labour_profile') || '{}').firstName || 'Labour'
-        };
-        
-        localStorage.setItem('labour_verification', JSON.stringify(verificationData));
-        setVerificationStatus('submitted');
-        
-        toast.success('Submitted for verification! Admin will review your documents.');
+        try {
+            const token = localStorage.getItem('access_token');
+            const labourProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
+            const mobileNumber = localStorage.getItem('mobile_number');
+            
+            if (!token) {
+                toast.error('Please login first');
+                return;
+            }
+
+            // Submit verification request to database
+            const response = await fetch('http://localhost:5000/api/admin/verification/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    entityType: 'labour',
+                    name: `${labourProfile.firstName || ''} ${labourProfile.lastName || ''}`.trim() || 'Labour',
+                    phone: mobileNumber || labourProfile.mobileNumber || '',
+                    aadhaarNumber: aadharNumber,
+                    aadhaarFrontUrl: uploadedPhotos[0],
+                    aadhaarBackUrl: uploadedPhotos[1],
+                    trade: labourProfile.skillType || ''
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Save verification request locally
+                const verificationData = {
+                    aadharNumber,
+                    photos: uploadedPhotos,
+                    status: 'submitted',
+                    submittedAt: new Date().toISOString(),
+                    requestId: data.data.verificationRequest.requestId
+                };
+                
+                localStorage.setItem('labour_verification', JSON.stringify(verificationData));
+                setVerificationStatus('submitted');
+                
+                toast.success('Submitted for verification! Admin will review your documents.');
+            } else {
+                toast.error(data.message || 'Failed to submit verification');
+            }
+        } catch (error) {
+            console.error('Error submitting verification:', error);
+            
+            // Fallback to localStorage
+            const verificationData = {
+                aadharNumber,
+                photos: uploadedPhotos,
+                status: 'submitted',
+                submittedAt: new Date().toISOString(),
+                labourId: JSON.parse(localStorage.getItem('labour_profile') || '{}').firstName || 'Labour'
+            };
+            
+            localStorage.setItem('labour_verification', JSON.stringify(verificationData));
+            setVerificationStatus('submitted');
+            
+            toast.success('Submitted for verification! Admin will review your documents.');
+        }
     };
 
     const getButtonStyle = () => {

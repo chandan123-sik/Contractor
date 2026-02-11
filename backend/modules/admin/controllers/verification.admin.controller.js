@@ -260,3 +260,97 @@ export const uploadVerificationDocument = async (req, res) => {
         });
     }
 };
+
+// @desc    Submit verification request (for labour/user/contractor)
+// @route   POST /api/admin/verification/submit
+// @access  Private (authenticated user)
+export const submitVerificationRequest = async (req, res) => {
+    try {
+        const { 
+            entityType, 
+            name, 
+            phone, 
+            aadhaarNumber,
+            aadhaarFrontUrl,
+            aadhaarBackUrl,
+            trade,
+            company
+        } = req.body;
+
+        console.log('\n🟢 ===== SUBMIT VERIFICATION REQUEST =====');
+        console.log('Entity Type:', entityType);
+        console.log('User ID:', req.user._id);
+
+        // Determine entity model and get entity ID
+        let entityModel, entityId;
+        
+        if (entityType === 'labour') {
+            entityModel = 'Labour';
+            const labour = await Labour.findOne({ user: req.user._id });
+            if (!labour) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Labour profile not found'
+                });
+            }
+            entityId = labour._id;
+        } else if (entityType === 'contractor') {
+            entityModel = 'Contractor';
+            const contractor = await Contractor.findOne({ user: req.user._id });
+            if (!contractor) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Contractor profile not found'
+                });
+            }
+            entityId = contractor._id;
+        } else {
+            entityModel = 'User';
+            entityId = req.user._id;
+        }
+
+        // Check if verification request already exists
+        const existingRequest = await VerificationRequest.findOne({
+            entityId,
+            status: 'Pending'
+        });
+
+        if (existingRequest) {
+            return res.status(400).json({
+                success: false,
+                message: 'Verification request already submitted. Please wait for admin approval.'
+            });
+        }
+
+        const verificationRequest = await VerificationRequest.create({
+            entityType,
+            entityId,
+            entityModel,
+            name,
+            phone,
+            aadhaarNumber,
+            aadhaarFrontUrl,
+            aadhaarBackUrl,
+            trade,
+            company
+        });
+
+        console.log('✅ Verification request created:', verificationRequest.requestId);
+        console.log('===========================\n');
+
+        res.status(201).json({
+            success: true,
+            message: 'Verification request submitted successfully',
+            data: { verificationRequest }
+        });
+
+    } catch (error) {
+        console.error('❌ SUBMIT VERIFICATION ERROR:', error.message);
+        console.log('===========================\n');
+        res.status(500).json({
+            success: false,
+            message: 'Server error submitting verification request',
+            error: error.message
+        });
+    }
+};

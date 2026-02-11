@@ -10,6 +10,7 @@ const ContractorHome = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showAllCategories, setShowAllCategories] = useState(false);
 
     // Fetch categories from backend
     useEffect(() => {
@@ -36,22 +37,6 @@ const ContractorHome = () => {
             setLoading(false);
         }
     };
-    const [showAllCategories, setShowAllCategories] = useState(false);
-
-    const categories = [
-        { id: 1, name: 'Electrician', icon: '👷', color: 'bg-gray-100' },
-        { id: 2, name: 'Plumber', icon: '🔧', color: 'bg-pink-100' },
-        { id: 3, name: 'Carpenter', icon: '🪚', color: 'bg-yellow-100' },
-        { id: 4, name: 'Painter', icon: '🎨', color: 'bg-blue-100' },
-        { id: 5, name: 'Mechanic', icon: '🔩', color: 'bg-purple-100' },
-        { id: 6, name: 'Electronics Repair', icon: '📱', color: 'bg-green-100' },
-        { id: 7, name: 'Room Shifting', icon: '📦', color: 'bg-orange-100' },
-        { id: 8, name: 'Welder', icon: '👨‍🏭', color: 'bg-indigo-100' },
-        { id: 9, name: 'News Paper Ads', icon: '📰', color: 'bg-gray-100' },
-        { id: 10, name: 'Cleaner', icon: '🧹', color: 'bg-blue-100' },
-        { id: 11, name: "Women's Parlour", icon: '💇‍♀️', color: 'bg-pink-100' },
-        { id: 12, name: 'Mistri', icon: '🔨', color: 'bg-green-100' }
-    ];
 
     // Filter categories based on search query
     const filteredCategories = categories.filter(category =>

@@ -136,6 +136,7 @@ const AppRoutes = () => {
             <Route path="/contractor/history" element={<ContractorHistory />} />
 
             {/* Labour Module Routes */}
+            <Route path="/labour/home" element={<LabourDashboard />} />
             <Route path="/labour/details" element={<LabourDetails />} />
             <Route path="/labour/hire-workers" element={<LabourDashboard />} />
             <Route path="/labour/find-user" element={<LabourFindUser />} />

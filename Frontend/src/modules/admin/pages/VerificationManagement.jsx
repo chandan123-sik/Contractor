@@ -30,8 +30,27 @@ const VerificationManagement = () => {
     const fetchVerificationRequests = async () => {
         try {
             setLoading(true);
-            const response = await verificationAPI.getAll(activeCategory);
-            setVerificationRequests(response.data.requests || []);
+            const token = localStorage.getItem('adminToken');
+            
+            if (!token) {
+                toast.error('Please login as admin');
+                setLoading(false);
+                return;
+            }
+
+            const response = await fetch(`http://localhost:5000/api/admin/verification/requests?category=${activeCategory}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setVerificationRequests(data.data.requests || []);
+            } else {
+                toast.error(data.message || 'Failed to load requests');
+            }
         } catch (error) {
             console.error('Error fetching verification requests:', error);
             toast.error('Failed to load verification requests');
@@ -40,19 +59,36 @@ const VerificationManagement = () => {
         }
     };
 
-    const handleAction = async (id, newStatus) => {
+    const handleAction = async (id, action) => {
         try {
-            const action = newStatus === 'approved' ? 'approve' : 'reject';
-            await verificationAPI[action](id);
-            toast.success(`Request ${newStatus} successfully`);
-            fetchVerificationRequests();
-            if (selectedRequest && selectedRequest._id === id) {
-                setIsModalOpen(false);
-                setSelectedRequest(null);
+            const token = localStorage.getItem('adminToken');
+            
+            const response = await fetch(`http://localhost:5000/api/admin/verification/requests/${id}/${action}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    reason: action === 'reject' ? 'Documents not valid' : undefined
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                toast.success(`Request ${action}d successfully`);
+                fetchVerificationRequests();
+                if (selectedRequest && selectedRequest._id === id) {
+                    setIsModalOpen(false);
+                    setSelectedRequest(null);
+                }
+            } else {
+                toast.error(data.message || `Failed to ${action} request`);
             }
         } catch (error) {
             console.error('Error updating verification:', error);
-            toast.error(error.response?.data?.message || 'Failed to update verification');
+            toast.error(`Failed to ${action} request`);
         }
     };
 
@@ -64,9 +100,10 @@ const VerificationManagement = () => {
     const filteredRequests = verificationRequests.filter(req => {
         const searchLower = searchTerm.toLowerCase();
         return (
-            req.userId?.name?.toLowerCase().includes(searchLower) ||
-            req.userId?.phone?.toLowerCase().includes(searchLower) ||
-            req.aadhaarNumber?.toLowerCase().includes(searchLower)
+            req.name?.toLowerCase().includes(searchLower) ||
+            req.phone?.toLowerCase().includes(searchLower) ||
+            req.aadhaarNumber?.toLowerCase().includes(searchLower) ||
+            req.requestId?.toLowerCase().includes(searchLower)
         );
     });
 
@@ -176,7 +213,7 @@ const VerificationManagement = () => {
                                 <th>Request ID</th>
                                 <th>Name</th>
                                 <th>Phone</th>
-                                <th>Aadhaar</th>
+                                <th>Trade</th>
                                 <th>Submission Date</th>
                                 <th>Status</th>
                                 <th>Actions</th>
@@ -185,20 +222,22 @@ const VerificationManagement = () => {
                         <tbody>
                             {filteredRequests.map(req => (
                                 <tr key={req._id}>
-                                    <td style={{ fontWeight: 600, color: '#f97316' }}>{req._id.slice(-8).toUpperCase()}</td>
-                                    <td>{req.userId?.name || 'N/A'}</td>
-                                    <td>{req.userId?.phone || 'N/A'}</td>
-                                    <td>{req.aadhaarNumber}</td>
+                                    <td style={{ fontWeight: 600, color: '#f97316' }}>{req.requestId || req._id.slice(-8).toUpperCase()}</td>
+                                    <td>{req.name || 'N/A'}</td>
+                                    <td>{req.phone || 'N/A'}</td>
+                                    <td>{req.trade || activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)}</td>
                                     <td>{new Date(req.createdAt).toLocaleDateString()}</td>
                                     <td>
                                         <span className={`status-badge ${
-                                            req.status === 'approved' ? 'status-completed' :
-                                            req.status === 'rejected' ? 'status-pending' : ''
+                                            req.status === 'Approved' ? 'status-completed' :
+                                            req.status === 'Rejected' ? 'status-pending' : ''
                                         }`} style={{
-                                            background: req.status === 'rejected' ? '#fee2e2' : '',
-                                            color: req.status === 'rejected' ? '#b91c1c' : ''
+                                            background: req.status === 'Rejected' ? '#fee2e2' : 
+                                                       req.status === 'Pending' ? '#fef3c7' : '',
+                                            color: req.status === 'Rejected' ? '#b91c1c' : 
+                                                  req.status === 'Pending' ? '#92400e' : ''
                                         }}>
-                                            {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                                            {req.status}
                                         </span>
                                     </td>
                                     <td>
@@ -210,19 +249,19 @@ const VerificationManagement = () => {
                                             >
                                                 <Eye size={16} />
                                             </button>
-                                            {req.status === 'pending' && (
+                                            {req.status === 'Pending' && (
                                                 <>
                                                     <button
                                                         className="crud-btn"
                                                         style={{ background: '#d1fae5', color: '#065f46' }}
-                                                        onClick={() => handleAction(req._id, 'approved')}
+                                                        onClick={() => handleAction(req._id, 'approve')}
                                                     >
                                                         <CheckCircle size={16} />
                                                     </button>
                                                     <button
                                                         className="crud-btn"
                                                         style={{ background: '#fee2e2', color: '#b91c1c' }}
-                                                        onClick={() => handleAction(req._id, 'rejected')}
+                                                        onClick={() => handleAction(req._id, 'reject')}
                                                     >
                                                         <XCircle size={16} />
                                                     </button>
@@ -267,18 +306,20 @@ const VerificationManagement = () => {
                                     <User color="#64748b" />
                                 </div>
                                 <div>
-                                    <h4 style={{ margin: 0, fontSize: '1rem' }}>{selectedRequest.userId?.name || 'N/A'}</h4>
-                                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>{selectedRequest._id.slice(-8).toUpperCase()} | {selectedRequest.userId?.phone || 'N/A'}</p>
+                                    <h4 style={{ margin: 0, fontSize: '1rem' }}>{selectedRequest.name || 'N/A'}</h4>
+                                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>{selectedRequest.requestId || selectedRequest._id.slice(-8).toUpperCase()} | {selectedRequest.phone || 'N/A'}</p>
                                 </div>
                                 <div style={{ marginLeft: 'auto' }}>
                                     <span className={`status-badge ${
-                                        selectedRequest.status === 'approved' ? 'status-completed' :
-                                        selectedRequest.status === 'rejected' ? 'status-pending' : ''
+                                        selectedRequest.status === 'Approved' ? 'status-completed' :
+                                        selectedRequest.status === 'Rejected' ? 'status-pending' : ''
                                     }`} style={{
-                                        background: selectedRequest.status === 'rejected' ? '#fee2e2' : '',
-                                        color: selectedRequest.status === 'rejected' ? '#b91c1c' : ''
+                                        background: selectedRequest.status === 'Rejected' ? '#fee2e2' : 
+                                                   selectedRequest.status === 'Pending' ? '#fef3c7' : '',
+                                        color: selectedRequest.status === 'Rejected' ? '#b91c1c' : 
+                                              selectedRequest.status === 'Pending' ? '#92400e' : ''
                                     }}>
-                                        {selectedRequest.status.charAt(0).toUpperCase() + selectedRequest.status.slice(1)}
+                                        {selectedRequest.status}
                                     </span>
                                 </div>
                             </div>
@@ -298,39 +339,45 @@ const VerificationManagement = () => {
                                 <label style={{ fontSize: '0.85rem', color: '#64748b', display: 'block', marginBottom: '8px' }}>Uploaded Document Photos</label>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                                     <div style={{
-                                        aspectRatio: '16/10', background: '#f1f5f9', borderRadius: '10px',
+                                        aspectRatio: '16/10', background: '#1e293b', borderRadius: '10px',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        border: '1px dashed #cbd5e1', overflow: 'hidden'
+                                        border: '1px solid #334155', overflow: 'hidden', position: 'relative'
                                     }}>
-                                        {selectedRequest.aadhaarFrontImage ? (
-                                            <img src={selectedRequest.aadhaarFrontImage} alt="Front" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        {selectedRequest.aadhaarFrontUrl ? (
+                                            <img src={selectedRequest.aadhaarFrontUrl} alt="Aadhaar Front" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         ) : (
-                                            <FileText size={32} className="text-gray-400" />
+                                            <div style={{ textAlign: 'center', color: 'white' }}>
+                                                <FileText size={32} />
+                                                <p style={{ fontSize: '0.75rem', marginTop: '8px' }}>Aadhaar Front {selectedRequest.requestId}</p>
+                                            </div>
                                         )}
                                     </div>
                                     <div style={{
-                                        aspectRatio: '16/10', background: '#f1f5f9', borderRadius: '10px',
+                                        aspectRatio: '16/10', background: '#1e293b', borderRadius: '10px',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        border: '1px dashed #cbd5e1', overflow: 'hidden'
+                                        border: '1px solid #334155', overflow: 'hidden', position: 'relative'
                                     }}>
-                                        {selectedRequest.aadhaarBackImage ? (
-                                            <img src={selectedRequest.aadhaarBackImage} alt="Back" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        {selectedRequest.aadhaarBackUrl ? (
+                                            <img src={selectedRequest.aadhaarBackUrl} alt="Aadhaar Back" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         ) : (
-                                            <FileText size={32} className="text-gray-400" />
+                                            <div style={{ textAlign: 'center', color: 'white' }}>
+                                                <FileText size={32} />
+                                                <p style={{ fontSize: '0.75rem', marginTop: '8px' }}>Aadhaar Back {selectedRequest.requestId}</p>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
                             </div>
 
-                            {selectedRequest.status === 'pending' && (
+                            {selectedRequest.status === 'Pending' && (
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                                     <button
-                                        onClick={() => handleAction(selectedRequest._id, 'approved')}
+                                        onClick={() => handleAction(selectedRequest._id, 'approve')}
                                         className="crud-btn btn-add" style={{ margin: 0, background: '#10b981' }}>
                                         Approve Verification
                                     </button>
                                     <button
-                                        onClick={() => handleAction(selectedRequest._id, 'rejected')}
+                                        onClick={() => handleAction(selectedRequest._id, 'reject')}
                                         className="crud-btn" style={{ margin: 0, background: '#ef4444', color: 'white' }}>
                                         Reject Request
                                     </button>

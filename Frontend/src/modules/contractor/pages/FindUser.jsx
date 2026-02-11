@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import ContractorBottomNav from '../components/ContractorBottomNav';
 import ContractorHeader from '../components/ContractorHeader';
 import ContractorJobCard from '../components/ContractorJobCard';
+import { jobAPI } from '../../../services/api';
 
 const FindUser = () => {
     const [jobs, setJobs] = useState([]);
@@ -13,21 +14,79 @@ const FindUser = () => {
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [selectedCity, setSelectedCity] = useState('');
     const [appliedJobs, setAppliedJobs] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     const cities = ['Indore', 'Bhopal', 'Dewas', 'Ujjain', 'Jabalpur', 'Gwalior', 'Ratlam'];
 
-    // Load jobs from localStorage (user created jobs)
+    // Load jobs from database
     useEffect(() => {
-        const savedJobs = JSON.parse(localStorage.getItem('user_jobs') || '[]');
-        console.log('All saved jobs:', savedJobs);
-        // Show all jobs to contractors (both Open and Closed for now)
-        setJobs(savedJobs);
-        setFilteredJobs(savedJobs);
+        fetchJobs();
         
         // Load applied jobs for this contractor
         const contractorAppliedJobs = JSON.parse(localStorage.getItem('contractor_applied_jobs') || '[]');
         setAppliedJobs(contractorAppliedJobs);
     }, []);
+
+    const fetchJobs = async () => {
+        try {
+            setLoading(true);
+            
+            // Try to fetch from database first
+            try {
+                const response = await jobAPI.browseJobs({ status: 'Open' });
+                
+                if (response.success && response.data.jobs) {
+                    // Transform API data to match component expectations
+                    const transformedJobs = response.data.jobs.map(job => ({
+                        id: job._id,
+                        userName: job.userName,
+                        city: job.city,
+                        address: job.address,
+                        mobileNumber: job.mobileNumber,
+                        jobTitle: job.jobTitle,
+                        jobDescription: job.jobDescription,
+                        category: job.category,
+                        workDuration: job.workDuration,
+                        budgetType: job.budgetType,
+                        budgetAmount: job.budgetAmount,
+                        status: job.status,
+                        createdAt: job.createdAt
+                    }));
+                    
+                    // Also load from localStorage and merge
+                    const localJobs = JSON.parse(localStorage.getItem('user_jobs') || '[]');
+                    const allJobs = [...transformedJobs, ...localJobs];
+                    
+                    // Remove duplicates based on id
+                    const uniqueJobs = allJobs.filter((job, index, self) =>
+                        index === self.findIndex((j) => j.id === job.id)
+                    );
+                    
+                    setJobs(uniqueJobs);
+                    setFilteredJobs(uniqueJobs);
+                    console.log('Fetched jobs - DB:', transformedJobs.length, 'Local:', localJobs.length, 'Total:', uniqueJobs.length);
+                    return;
+                }
+            } catch (apiError) {
+                console.log('API fetch failed, loading from localStorage:', apiError.message);
+            }
+            
+            // Fallback to localStorage if API fails
+            const localJobs = JSON.parse(localStorage.getItem('user_jobs') || '[]');
+            setJobs(localJobs);
+            setFilteredJobs(localJobs);
+            console.log('Loaded jobs from localStorage:', localJobs.length);
+            
+        } catch (error) {
+            console.error('Failed to fetch jobs:', error);
+            toast.error('Failed to load jobs', {
+                duration: 3000,
+                position: 'top-center',
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Filter jobs based on selected city and search query
     useEffect(() => {
@@ -57,7 +116,7 @@ const FindUser = () => {
         setSelectedJob(job);
     };
 
-    const handleApplyNow = (jobId) => {
+    const handleApplyNow = async (jobId) => {
         // Get contractor profile data
         const contractorProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
         
@@ -73,46 +132,38 @@ const FindUser = () => {
         const job = jobs.find(j => j.id === jobId);
         if (!job) return;
         
-        // Get mobile number - try from profile first, then from localStorage
+        // Get mobile number
         const mobileNumber = contractorProfile.mobileNumber || localStorage.getItem('mobile_number') || 'Not specified';
         
-        // Create unique request ID
-        const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
-        // Create request object
-        const request = {
-            id: requestId,
-            jobId: jobId,
-            jobTitle: job.jobTitle,
-            contractorName: `${contractorProfile.firstName} ${contractorProfile.lastName}`,
-            location: contractorProfile.city || 'Not specified',
-            phoneNumber: mobileNumber,
-            date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-            time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-            type: 'contractor'
-        };
-        
-        // Save to contractor_requests for user to see
-        const existingRequests = JSON.parse(localStorage.getItem('contractor_requests') || '[]');
-        existingRequests.push(request);
-        localStorage.setItem('contractor_requests', JSON.stringify(existingRequests));
-        
-        // Track applied jobs for this contractor with request ID mapping
-        const updatedAppliedJobs = [...appliedJobs, jobId];
-        setAppliedJobs(updatedAppliedJobs);
-        localStorage.setItem('contractor_applied_jobs', JSON.stringify(updatedAppliedJobs));
-        
-        // Store request ID mapping for this contractor
-        const requestMapping = JSON.parse(localStorage.getItem('contractor_request_mapping') || '{}');
-        requestMapping[jobId] = requestId;
-        localStorage.setItem('contractor_request_mapping', JSON.stringify(requestMapping));
-        
-        toast.success('Request sent successfully!', {
-            duration: 3000,
-            position: 'top-center',
-        });
-        
-        console.log('Apply Now clicked for job:', jobId);
+        try {
+            // Submit application to database
+            const response = await jobAPI.applyToJob(jobId, {
+                applicantType: 'Contractor',
+                applicantName: `${contractorProfile.firstName} ${contractorProfile.lastName}`,
+                phoneNumber: mobileNumber,
+                location: contractorProfile.city || 'Not specified',
+                message: `I am interested in this ${job.category} job.`
+            });
+
+            if (response.success) {
+                // Track applied jobs locally
+                const updatedAppliedJobs = [...appliedJobs, jobId];
+                setAppliedJobs(updatedAppliedJobs);
+                localStorage.setItem('contractor_applied_jobs', JSON.stringify(updatedAppliedJobs));
+                
+                toast.success('Application sent successfully!', {
+                    duration: 3000,
+                    position: 'top-center',
+                });
+            }
+        } catch (error) {
+            console.error('Failed to apply:', error);
+            const errorMessage = error.response?.data?.message || 'Failed to send application';
+            toast.error(errorMessage, {
+                duration: 3000,
+                position: 'top-center',
+            });
+        }
     };
 
     const handleCloseModal = () => {
@@ -185,7 +236,11 @@ const FindUser = () => {
                     <span className="text-sm font-normal text-gray-600"> ({filteredJobs.length})</span>
                 </h2>
                 
-                {filteredJobs.length === 0 ? (
+                {loading ? (
+                    <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+                        <p className="text-gray-600">Loading jobs...</p>
+                    </div>
+                ) : filteredJobs.length === 0 ? (
                     <div className="bg-white rounded-lg shadow-sm p-6 text-center">
                         <p className="text-gray-600">
                             {selectedCity || searchQuery 

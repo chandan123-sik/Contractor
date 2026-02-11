@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import FormInput from '../components/FormInput';
 import FormSelect from '../components/FormSelect';
 import FormTextarea from '../components/FormTextarea';
+import { jobAPI } from '../../../services/api';
 
 const PostJob = () => {
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         userName: '',
         city: '',
@@ -41,38 +44,68 @@ const PostJob = () => {
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         // Validation
         if (!formData.jobTitle || !formData.jobDescription || !formData.category || !formData.workDuration) {
-            alert('Please fill all required fields');
+            toast.error('Please fill all required fields');
             return;
         }
 
         if (formData.budgetType === 'Fixed Amount' && !formData.budgetAmount) {
-            alert('Please enter budget amount');
+            toast.error('Please enter budget amount');
             return;
         }
 
-        // Create job object with unique ID and timestamp
-        const newJob = {
-            id: Date.now(),
-            ...formData,
-            createdAt: new Date().toISOString()
-        };
+        try {
+            setLoading(true);
 
-        // Get existing jobs from localStorage
-        const existingJobs = JSON.parse(localStorage.getItem('user_jobs') || '[]');
-        
-        // Add new job
-        existingJobs.push(newJob);
-        
-        // Save to localStorage
-        localStorage.setItem('user_jobs', JSON.stringify(existingJobs));
+            // Prepare job data
+            const jobData = {
+                ...formData,
+                budgetAmount: formData.budgetType === 'Fixed Amount' ? Number(formData.budgetAmount) : 0
+            };
 
-        // Navigate to My Projects
-        navigate('/user/my-projects');
+            console.log('Creating job:', jobData);
+
+            // Check if user has access token
+            const token = localStorage.getItem('access_token');
+            
+            if (!token) {
+                // No token - save to localStorage (fallback for mock auth)
+                console.log('No access token found, saving to localStorage');
+                const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                const newJob = {
+                    id: jobId,
+                    ...jobData,
+                    createdAt: new Date().toISOString()
+                };
+                
+                const existingJobs = JSON.parse(localStorage.getItem('user_jobs') || '[]');
+                existingJobs.push(newJob);
+                localStorage.setItem('user_jobs', JSON.stringify(existingJobs));
+                
+                toast.success('Job posted successfully!');
+                navigate('/user/home');
+                return;
+            }
+
+            // Has token - save to backend
+            const response = await jobAPI.createJob(jobData);
+            
+            console.log('Job created:', response);
+
+            toast.success('Job posted successfully!');
+            
+            // Navigate to User Home
+            navigate('/user/home');
+        } catch (error) {
+            console.error('Error creating job:', error);
+            toast.error(error.response?.data?.message || 'Failed to post job');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const categories = [
@@ -242,9 +275,10 @@ const PostJob = () => {
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 rounded-lg shadow-md transition-all active:scale-95"
+                        disabled={loading}
+                        className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 rounded-lg shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Post Job
+                        {loading ? 'Posting Job...' : 'Post Job'}
                     </button>
                 </form>
             </div>

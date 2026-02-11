@@ -5,7 +5,8 @@ import {
     createLabourCard,
     getLabourProfile,
     browseLabourCards,
-    getLabourById
+    getLabourById,
+    getLabourVerificationStatus
 } from '../controllers/labour.controller.js';
 import { protect } from '../../../middleware/auth.middleware.js';
 
@@ -14,13 +15,16 @@ const router = express.Router();
 // Public routes
 router.post('/create-profile', createLabourProfile); // For registration flow
 router.get('/browse', browseLabourCards);
-router.get('/:id', getLabourById);
 
 // Protected routes
 router.use(protect);
 
+router.get('/profile', getLabourProfile); // Must come before /:id
+router.get('/verification-status', getLabourVerificationStatus);
 router.put('/work-details', updateWorkDetails);
 router.post('/card', createLabourCard);
-router.get('/profile', getLabourProfile);
+
+// Dynamic routes (must be last)
+router.get('/:id', getLabourById);
 
 export default router;

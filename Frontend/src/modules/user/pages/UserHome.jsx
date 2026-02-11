@@ -8,12 +8,9 @@ import { categoryAPI } from '../../../services/api';
 const UserHome = () => {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
-<<<<<<< Updated upstream
-    const [showAllCategories, setShowAllCategories] = useState(false);
-=======
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
->>>>>>> Stashed changes
+    const [showAllCategories, setShowAllCategories] = useState(false);
 
     // Fetch categories from backend
     useEffect(() => {
