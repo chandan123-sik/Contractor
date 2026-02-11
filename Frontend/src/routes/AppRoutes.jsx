@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 
 // Auth Pages
 import GetStarted from '../modules/auth/pages/GetStarted';
@@ -22,6 +23,7 @@ import ContactUs from '../modules/user/pages/ContactUs';
 import AboutUs from '../modules/user/pages/AboutUs';
 import Subscription from '../modules/user/pages/Subscription';
 import Notifications from '../modules/user/pages/Notifications';
+import UserHistory from '../modules/user/pages/History';
 
 // Contractor Pages
 import ContractorHome from '../modules/contractor/pages/ContractorHome';
@@ -34,12 +36,14 @@ import ContractorWorkersRequest from '../modules/contractor/pages/WorkersRequest
 import ContractorSettings from '../modules/contractor/pages/Settings';
 import ContractorPersonalDetails from '../modules/contractor/pages/PersonalDetails';
 import ContractorMyProjects from '../modules/contractor/pages/MyProjects';
+import ContractorMyProjectForUser from '../modules/contractor/pages/MyProjectForUser';
 import ContractorPostJob from '../modules/contractor/pages/PostJob';
 import ContractorLegal from '../modules/contractor/pages/Legal';
 import ContractorAboutUs from '../modules/contractor/pages/AboutUs';
 import ContractorContactUs from '../modules/contractor/pages/ContactUs';
 import ContractorNotifications from '../modules/contractor/pages/Notifications';
 import ContractorSubscription from '../modules/contractor/pages/Subscription';
+import ContractorHistory from '../modules/contractor/pages/History';
 
 // Labour Pages
 import LabourDetails from '../modules/labour/pages/LabourDetails';
@@ -60,6 +64,7 @@ import LabourNotifications from '../modules/labour/pages/Notifications';
 import LabourSubscription from '../modules/labour/pages/Subscription';
 import CreateLabourCard from '../modules/labour/pages/CreateLabourCard';
 import LabourMyCard from '../modules/labour/pages/LabourMyCard';
+import History from '../modules/labour/pages/History';
 
 // Admin Pages
 import AdminLogin from '../modules/admin/pages/AdminLogin';
@@ -71,6 +76,15 @@ import VerificationManagement from '../modules/admin/pages/VerificationManagemen
 import AdminSettings from '../modules/admin/pages/AdminSettings';
 
 const AppRoutes = () => {
+    const location = useLocation();
+
+    // Scroll to top and prevent layout shift on route change
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        // Force reflow to prevent header shift
+        document.body.offsetHeight;
+    }, [location.pathname]);
+
     return (
         <Routes>
             {/* Auth Routes */}
@@ -96,6 +110,7 @@ const AppRoutes = () => {
             <Route path="/user/about-us" element={<AboutUs />} />
             <Route path="/user/subscription" element={<Subscription />} />
             <Route path="/user/notifications" element={<Notifications />} />
+            <Route path="/user/history" element={<UserHistory />} />
 
             {/* Contractor Module Routes */}
             <Route path="/contractor/home" element={<ContractorHome />} />
@@ -108,12 +123,14 @@ const AppRoutes = () => {
             <Route path="/contractor/settings" element={<ContractorSettings />} />
             <Route path="/contractor/personal-details" element={<ContractorPersonalDetails />} />
             <Route path="/contractor/my-projects" element={<ContractorMyProjects />} />
+            <Route path="/contractor/my-project-for-user" element={<ContractorMyProjectForUser />} />
             <Route path="/contractor/post-job" element={<ContractorPostJob />} />
             <Route path="/contractor/legal" element={<ContractorLegal />} />
             <Route path="/contractor/about-us" element={<ContractorAboutUs />} />
             <Route path="/contractor/contact-us" element={<ContractorContactUs />} />
             <Route path="/contractor/notifications" element={<ContractorNotifications />} />
             <Route path="/contractor/subscription" element={<ContractorSubscription />} />
+            <Route path="/contractor/history" element={<ContractorHistory />} />
 
             {/* Labour Module Routes */}
             <Route path="/labour/details" element={<LabourDetails />} />
@@ -134,6 +151,7 @@ const AppRoutes = () => {
             <Route path="/labour/subscription" element={<LabourSubscription />} />
             <Route path="/labour/create-card" element={<CreateLabourCard />} />
             <Route path="/labour/my-card" element={<LabourMyCard />} />
+            <Route path="/labour/history" element={<History />} />
 
             {/* Admin Module Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />

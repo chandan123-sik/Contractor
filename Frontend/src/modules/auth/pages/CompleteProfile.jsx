@@ -66,18 +66,32 @@ const CompleteProfile = () => {
         }
 
         if (formData.userType === 'User') {
-            // Save to localStorage for persistence
-            localStorage.setItem('user_profile', JSON.stringify(formData));
-            console.log('User profile saved:', formData);
-            navigate('/user/hire-workers', { state: { profile: formData } });
+            // Get mobile number from localStorage
+            const mobileNumber = localStorage.getItem('mobile_number') || '';
+            
+            // Save to localStorage for persistence with phone number
+            const userProfile = { ...formData, phoneNumber: mobileNumber };
+            localStorage.setItem('user_profile', JSON.stringify(userProfile));
+            console.log('User profile saved:', userProfile);
+            navigate('/user/home', { state: { profile: userProfile } });
         } else if (formData.userType === 'Contractor') {
+            // Get mobile number from localStorage
+            const mobileNumber = localStorage.getItem('mobile_number') || '';
+            
             // Save to localStorage for persistence
             const existingProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
-            const contractorProfile = { ...existingProfile, ...formData };
+            const contractorProfile = { 
+                ...existingProfile, 
+                ...formData,
+                mobileNumber: mobileNumber 
+            };
             localStorage.setItem('contractor_profile', JSON.stringify(contractorProfile));
             console.log('Contractor profile saved:', contractorProfile);
             navigate('/contractor/business-details');
         } else if (formData.userType === 'Labour') {
+            // Get mobile number from localStorage
+            const mobileNumber = localStorage.getItem('mobile_number') || '';
+            
             // Save to localStorage for persistence
             const existingProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
             const labourProfile = {
@@ -92,7 +106,8 @@ const CompleteProfile = () => {
                 city: formData.city,
                 state: formData.state,
                 address: formData.address,
-                aadharNumber: formData.aadharNumber
+                aadharNumber: formData.aadharNumber,
+                mobileNumber: mobileNumber
             };
             localStorage.setItem('labour_profile', JSON.stringify(labourProfile));
             console.log('Labour profile saved:', labourProfile);

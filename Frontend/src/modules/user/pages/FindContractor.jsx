@@ -11,16 +11,54 @@ const FindContractor = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [selectedCity, setSelectedCity] = useState('');
+    const [hiredContractors, setHiredContractors] = useState({});
 
     const cities = ['Indore', 'Bhopal', 'Dewas', 'Ujjain', 'Jabalpur', 'Gwalior', 'Ratlam'];
 
     // Load contractor cards from localStorage
     useEffect(() => {
-        const savedCards = JSON.parse(localStorage.getItem('contractor_cards') || '[]');
-        console.log('Loaded contractor cards:', savedCards); // Debug
-        // Show all contractors (both Active and Closed)
-        setCards(savedCards);
-        setFilteredCards(savedCards);
+        const loadCards = () => {
+            const savedCards = JSON.parse(localStorage.getItem('contractor_cards_for_user') || '[]');
+            console.log('🔄 Reloaded contractor cards:', savedCards); // Debug
+            setCards(savedCards);
+            setFilteredCards(savedCards);
+        };
+
+        loadCards();
+
+        // Load hired contractors state
+        const hired = JSON.parse(localStorage.getItem('hired_contractors_state') || '{}');
+        setHiredContractors(hired);
+
+        // Poll for updates every 2 seconds (faster for testing)
+        const interval = setInterval(() => {
+            console.log('⏰ Polling for card updates...'); // Debug
+            loadCards();
+        }, 2000);
+
+        // Update when page becomes visible
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                console.log('👁️ Page visible, reloading cards...'); // Debug
+                loadCards();
+            }
+        };
+
+        // Listen for focus event (when user comes back to page)
+        const handleFocus = () => {
+            console.log('🎯 Page focused, reloading cards...'); // Debug
+            loadCards();
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', handleFocus);
+
+        // Cleanup
+        return () => {
+            clearInterval(interval);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('focus', handleFocus);
+        };
     }, []);
 
     // Filter cards based on selected city and search query
@@ -52,8 +90,41 @@ const FindContractor = () => {
     };
 
     const handleApplyNow = (cardId) => {
-        // This will be implemented later
-        console.log('Apply Now clicked for contractor:', cardId);
+        const card = cards.find(c => c.id === cardId);
+        if (!card) return;
+
+        // Get user profile
+        const userProfile = JSON.parse(localStorage.getItem('user_profile') || '{}');
+        const mobileNumber = localStorage.getItem('mobile_number') || '';
+        const userPhone = userProfile.phoneNumber || mobileNumber || '';
+
+        // Create request object
+        const request = {
+            id: Date.now(),
+            contractorId: card.id,
+            contractorName: card.contractorName,
+            contractorSkill: card.primaryWorkCategory || card.labourSkill,
+            contractorPhone: card.contactNo || card.phoneNumber,
+            contractorCity: card.city,
+            userName: userProfile.firstName || 'User',
+            userPhone: userPhone,
+            userLocation: userProfile.city || 'N/A',
+            requestDate: new Date().toLocaleDateString('en-IN'),
+            requestTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+            status: 'pending'
+        };
+
+        console.log('Contractor Request:', request); // Debug
+
+        // Save request to contractor panel requests
+        const existingRequests = JSON.parse(localStorage.getItem('contractor_user_requests') || '[]');
+        existingRequests.push(request);
+        localStorage.setItem('contractor_user_requests', JSON.stringify(existingRequests));
+
+        // Update hired contractors state
+        const updatedHired = { ...hiredContractors, [cardId]: 'pending' };
+        setHiredContractors(updatedHired);
+        localStorage.setItem('hired_contractors_state', JSON.stringify(updatedHired));
     };
 
     const handleCloseModal = () => {
@@ -155,6 +226,7 @@ const FindContractor = () => {
                             index={index}
                             onViewDetails={handleViewDetails}
                             onApplyNow={handleApplyNow}
+                            hiredStatus={hiredContractors[card.id]}
                         />
                     ))
                 )}
@@ -181,35 +253,18 @@ const FindContractor = () => {
                             </div>
 
                             <div>
-                                <label className="text-sm font-medium text-gray-500">Phone Number</label>
-                                <p className="text-gray-900 font-medium">{selectedCard.phoneNumber}</p>
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">City</label>
-                                <p className="text-gray-900 font-medium">{selectedCard.city}</p>
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Address</label>
-                                <p className="text-gray-900">{selectedCard.address}</p>
-                            </div>
-
-                            <div>
                                 <label className="text-sm font-medium text-gray-500">Business Type</label>
                                 <p className="text-gray-900 font-medium">{selectedCard.businessType}</p>
                             </div>
 
-                            {selectedCard.businessName && (
-                                <div>
-                                    <label className="text-sm font-medium text-gray-500">Business Name</label>
-                                    <p className="text-gray-900 font-medium">{selectedCard.businessName}</p>
-                                </div>
-                            )}
+                            <div>
+                                <label className="text-sm font-medium text-gray-500">City / Location</label>
+                                <p className="text-gray-900 font-medium">{selectedCard.city}</p>
+                            </div>
 
                             <div>
-                                <label className="text-sm font-medium text-gray-500">Labour Skill</label>
-                                <p className="text-gray-900 font-medium">{selectedCard.labourSkill}</p>
+                                <label className="text-sm font-medium text-gray-500">Primary Work Category</label>
+                                <p className="text-gray-900 font-medium">{selectedCard.primaryWorkCategory}</p>
                             </div>
 
                             <div>
@@ -218,24 +273,32 @@ const FindContractor = () => {
                             </div>
 
                             <div>
-                                <label className="text-sm font-medium text-gray-500">Work Duration</label>
-                                <p className="text-gray-900 font-medium">{selectedCard.workDuration}</p>
+                                <label className="text-sm font-medium text-gray-500">Rating</label>
+                                <div className="flex items-center gap-1">
+                                    <span className="text-yellow-400">★</span>
+                                    <span className="text-gray-900 font-medium">{selectedCard.rating || 0}.0 / 5</span>
+                                </div>
                             </div>
 
                             <div>
-                                <label className="text-sm font-medium text-gray-500">Budget</label>
-                                <p className="text-gray-900 font-medium">
-                                    {selectedCard.budgetType === 'Negotiable' 
-                                        ? 'Negotiable' 
-                                        : `₹${selectedCard.budgetAmount}`}
-                                </p>
+                                <label className="text-sm font-medium text-gray-500">Contact Number</label>
+                                <p className="text-gray-900 font-medium">{selectedCard.contactNo}</p>
                             </div>
 
                             <div>
-                                <label className="text-sm font-medium text-gray-500">Profile Status</label>
-                                <p className="text-green-600 font-medium">
-                                    {selectedCard.profileStatus === 'Active' ? 'Open' : 'Closed'}
-                                </p>
+                                <label className="text-sm font-medium text-gray-500">Budget Amount</label>
+                                <p className="text-gray-900 font-medium">₹{selectedCard.budgetAmount}</p>
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium text-gray-500">Availability Status</label>
+                                <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold ${
+                                    selectedCard.availabilityStatus === 'Available'
+                                        ? 'bg-green-100 text-green-700'
+                                        : 'bg-red-100 text-red-700'
+                                }`}>
+                                    {selectedCard.availabilityStatus === 'Available' ? 'Open' : 'Closed'}
+                                </span>
                             </div>
                         </div>
 

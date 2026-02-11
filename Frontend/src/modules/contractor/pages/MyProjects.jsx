@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
-import ContractorPageHeader from '../components/ContractorPageHeader';
 import ContractorProfileCard from '../components/ContractorProfileCard';
 
 const MyProjects = () => {
@@ -9,9 +8,9 @@ const MyProjects = () => {
     const [cards, setCards] = useState([]);
     const [selectedCard, setSelectedCard] = useState(null);
 
-    // Load contractor cards from localStorage
+    // Load contractor cards from localStorage (for labour panel)
     useEffect(() => {
-        const savedCards = JSON.parse(localStorage.getItem('contractor_cards') || '[]');
+        const savedCards = JSON.parse(localStorage.getItem('contractor_cards_for_labour') || '[]');
         setCards(savedCards);
     }, []);
 
@@ -19,14 +18,19 @@ const MyProjects = () => {
         setSelectedCard(card);
     };
 
-    const handleToggleStatus = (cardId) => {
-        const updatedCards = cards.map(card => 
-            card.id === cardId 
-                ? { ...card, profileStatus: card.profileStatus === 'Active' ? 'Closed' : 'Active' } 
-                : card
-        );
+    const handleToggleAvailability = (cardId) => {
+        const updatedCards = cards.map(card => {
+            if (card.id === cardId) {
+                return {
+                    ...card,
+                    availabilityStatus: card.availabilityStatus === 'Available' ? 'Busy' : 'Available'
+                };
+            }
+            return card;
+        });
+        
         setCards(updatedCards);
-        localStorage.setItem('contractor_cards', JSON.stringify(updatedCards));
+        localStorage.setItem('contractor_cards_for_labour', JSON.stringify(updatedCards));
     };
 
     const handleCloseModal = () => {
@@ -38,40 +42,51 @@ const MyProjects = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <ContractorPageHeader 
-                title="My Projects" 
-                backPath="/contractor/settings"
-                rightButton={cards.length > 0 && (
-                    <button
-                        onClick={handlePostJob}
-                        className="bg-yellow-400 hover:bg-yellow-500 p-2 rounded-full shadow-md transition-all active:scale-95"
-                    >
-                        <Plus className="w-5 h-5 text-gray-900" />
-                    </button>
-                )}
-            />
+        <div className="min-h-screen bg-gray-50 pb-20">
+            {/* Custom Header with + icon in title row */}
+            <div className="bg-white shadow-sm p-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={() => navigate('/contractor/settings')} 
+                            className="text-gray-700"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                        <h1 className="text-xl font-bold text-gray-900">My Projects</h1>
+                    </div>
+                    {cards.length > 0 && (
+                        <button
+                            onClick={handlePostJob}
+                            className="bg-yellow-400 hover:bg-yellow-500 p-2 rounded-full shadow-md transition-all active:scale-95"
+                        >
+                            <Plus className="w-5 h-5 text-gray-900" />
+                        </button>
+                    )}
+                </div>
+            </div>
             
-            <div className="p-4 pb-20">
+            <div className="p-4">
                 {cards.length === 0 ? (
                     <div className="flex flex-col items-center justify-center min-h-[60vh]">
                         <button
                             onClick={handlePostJob}
-                            className="w-32 h-32 bg-yellow-100 rounded-full flex items-center justify-center mb-6 hover:bg-yellow-200 transition-all active:scale-95"
+                            className="w-24 h-24 bg-yellow-400 hover:bg-yellow-500 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95"
                         >
-                            <Plus className="w-16 h-16 text-yellow-600" />
+                            <Plus className="w-12 h-12 text-gray-900" />
                         </button>
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">No contractor cards created yet</h3>
-                        <p className="text-gray-500 text-center">Create your first card to see it here</p>
+                        <h3 className="text-lg font-bold text-gray-900 mt-4">No Projects Yet</h3>
+                        <p className="text-gray-500 text-center mt-2">Create your first project card</p>
                     </div>
                 ) : (
-                    cards.map((card, index) => (
+                    cards.map((card) => (
                         <ContractorProfileCard
                             key={card.id}
-                            card={card}
-                            index={index}
-                            onViewDetails={handleViewDetails}
-                            onToggleStatus={handleToggleStatus}
+                            data={card}
+                            onViewDetails={() => handleViewDetails(card)}
+                            onToggleAvailability={handleToggleAvailability}
                         />
                     ))
                 )}

@@ -2,48 +2,48 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Crown, Bell } from 'lucide-react';
 
-const UserHeader = () => {
+const LabourHeader = () => {
     const navigate = useNavigate();
-    const [userName, setUserName] = useState('');
+    const [labourName, setLabourName] = useState('');
 
     useEffect(() => {
-        // Function to update user name from localStorage
-        const updateUserName = () => {
+        // Function to update labour name from localStorage
+        const updateLabourName = () => {
             try {
-                const profile = JSON.parse(localStorage.getItem('user_profile') || '{}');
+                const profile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
                 if (profile.firstName) {
-                    setUserName(profile.firstName);
+                    setLabourName(profile.firstName);
                 } else {
-                    setUserName('');
+                    setLabourName('');
                 }
             } catch (error) {
-                console.error('Error reading user profile:', error);
-                setUserName('');
+                console.error('Error reading labour profile:', error);
+                setLabourName('');
             }
         };
 
         // Initial load
-        updateUserName();
+        updateLabourName();
 
         // Listen for storage changes
-        window.addEventListener('storage', updateUserName);
+        window.addEventListener('storage', updateLabourName);
         
         // Listen for custom profile update event
-        window.addEventListener('profileUpdated', updateUserName);
+        window.addEventListener('profileUpdated', updateLabourName);
 
         // Cleanup
         return () => {
-            window.removeEventListener('storage', updateUserName);
-            window.removeEventListener('profileUpdated', updateUserName);
+            window.removeEventListener('storage', updateLabourName);
+            window.removeEventListener('profileUpdated', updateLabourName);
         };
     }, []);
 
-    const handleSubscription = () => {
-        navigate('/user/subscription');
+    const handleNotifications = () => {
+        navigate('/labour/notifications');
     };
 
-    const handleNotifications = () => {
-        navigate('/user/notifications');
+    const handleSubscription = () => {
+        navigate('/labour/subscription');
     };
 
     return (
@@ -59,7 +59,7 @@ const UserHeader = () => {
                     <div className="min-w-[100px]">
                         <p className="text-sm text-gray-500 leading-tight">Hey, Welcome 👋</p>
                         <h1 className="text-xl font-bold text-gray-900 leading-tight truncate max-w-[150px] min-h-[28px]">
-                            {userName || '\u00A0'}
+                            {labourName || '\u00A0'}
                         </h1>
                     </div>
                 </div>
@@ -89,4 +89,4 @@ const UserHeader = () => {
     );
 };
 
-export default UserHeader;
+export default LabourHeader;

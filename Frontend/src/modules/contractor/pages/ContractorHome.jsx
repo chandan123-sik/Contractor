@@ -7,6 +7,7 @@ import ContractorHeader from '../components/ContractorHeader';
 const ContractorHome = () => {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
+    const [showAllCategories, setShowAllCategories] = useState(false);
 
     const categories = [
         { id: 1, name: 'Electrician', icon: '👷', color: 'bg-gray-100' },
@@ -28,8 +29,15 @@ const ContractorHome = () => {
         category.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // Show limited or all categories
+    const displayedCategories = showAllCategories ? filteredCategories : filteredCategories.slice(0, 8);
+
     const handleCategoryClick = (categoryName) => {
         navigate('/contractor/hire-workers', { state: { selectedCategory: categoryName } });
+    };
+
+    const handleSeeAllClick = () => {
+        setShowAllCategories(!showAllCategories);
     };
 
     return (
@@ -55,8 +63,11 @@ const ContractorHome = () => {
             <div className="px-4 mt-6 mb-6">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-gray-900">Categories</h3>
-                    <button className="text-sm text-blue-500 font-medium hover:text-blue-600">
-                        See All
+                    <button 
+                        onClick={handleSeeAllClick}
+                        className="text-sm text-blue-500 font-medium hover:text-blue-600"
+                    >
+                        {showAllCategories ? 'Show Less' : 'See All'}
                     </button>
                 </div>
 
@@ -66,7 +77,7 @@ const ContractorHome = () => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-4 gap-4">
-                        {filteredCategories.map((category) => (
+                        {displayedCategories.map((category) => (
                             <button
                                 key={category.id}
                                 onClick={() => handleCategoryClick(category.name)}

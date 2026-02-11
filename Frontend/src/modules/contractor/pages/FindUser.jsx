@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 import ContractorBottomNav from '../components/ContractorBottomNav';
 import ContractorHeader from '../components/ContractorHeader';
 import ContractorJobCard from '../components/ContractorJobCard';
@@ -11,6 +12,7 @@ const FindUser = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [selectedCity, setSelectedCity] = useState('');
+    const [appliedJobs, setAppliedJobs] = useState([]);
 
     const cities = ['Indore', 'Bhopal', 'Dewas', 'Ujjain', 'Jabalpur', 'Gwalior', 'Ratlam'];
 
@@ -21,6 +23,10 @@ const FindUser = () => {
         // Show all jobs to contractors (both Open and Closed for now)
         setJobs(savedJobs);
         setFilteredJobs(savedJobs);
+        
+        // Load applied jobs for this contractor
+        const contractorAppliedJobs = JSON.parse(localStorage.getItem('contractor_applied_jobs') || '[]');
+        setAppliedJobs(contractorAppliedJobs);
     }, []);
 
     // Filter jobs based on selected city and search query
@@ -52,7 +58,60 @@ const FindUser = () => {
     };
 
     const handleApplyNow = (jobId) => {
-        // This will be implemented later
+        // Get contractor profile data
+        const contractorProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
+        
+        if (!contractorProfile.firstName || !contractorProfile.lastName) {
+            toast.error('Please complete your profile first', {
+                duration: 3000,
+                position: 'top-center',
+            });
+            return;
+        }
+        
+        // Find the job
+        const job = jobs.find(j => j.id === jobId);
+        if (!job) return;
+        
+        // Get mobile number - try from profile first, then from localStorage
+        const mobileNumber = contractorProfile.mobileNumber || localStorage.getItem('mobile_number') || 'Not specified';
+        
+        // Create unique request ID
+        const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Create request object
+        const request = {
+            id: requestId,
+            jobId: jobId,
+            jobTitle: job.jobTitle,
+            contractorName: `${contractorProfile.firstName} ${contractorProfile.lastName}`,
+            location: contractorProfile.city || 'Not specified',
+            phoneNumber: mobileNumber,
+            date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+            time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+            type: 'contractor'
+        };
+        
+        // Save to contractor_requests for user to see
+        const existingRequests = JSON.parse(localStorage.getItem('contractor_requests') || '[]');
+        existingRequests.push(request);
+        localStorage.setItem('contractor_requests', JSON.stringify(existingRequests));
+        
+        // Track applied jobs for this contractor with request ID mapping
+        const updatedAppliedJobs = [...appliedJobs, jobId];
+        setAppliedJobs(updatedAppliedJobs);
+        localStorage.setItem('contractor_applied_jobs', JSON.stringify(updatedAppliedJobs));
+        
+        // Store request ID mapping for this contractor
+        const requestMapping = JSON.parse(localStorage.getItem('contractor_request_mapping') || '{}');
+        requestMapping[jobId] = requestId;
+        localStorage.setItem('contractor_request_mapping', JSON.stringify(requestMapping));
+        
+        toast.success('Request sent successfully!', {
+            duration: 3000,
+            position: 'top-center',
+        });
+        
         console.log('Apply Now clicked for job:', jobId);
     };
 
@@ -151,6 +210,7 @@ const FindUser = () => {
                             key={job.id}
                             job={job}
                             index={index}
+                            appliedJobs={appliedJobs}
                             onViewDetails={handleViewDetails}
                             onApplyNow={handleApplyNow}
                         />

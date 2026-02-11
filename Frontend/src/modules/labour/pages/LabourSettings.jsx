@@ -42,6 +42,7 @@ const LabourSettings = () => {
         { icon: Briefcase, label: 'Work', path: '/labour/work-details', color: 'text-gray-700' },
         { icon: Shield, label: 'Legal', path: '/labour/legal-details', color: 'text-gray-700' },
         { icon: Briefcase, label: 'My Card', path: '/labour/my-card', color: 'text-gray-700' },
+        { icon: Briefcase, label: 'History', path: '/labour/history', color: 'text-gray-700' },
         { icon: Phone, label: 'Contact us', path: '/labour/contact-us', color: 'text-gray-700', divider: true },
         { icon: Info, label: 'About us', path: '/labour/about-us', color: 'text-gray-700' },
         { icon: MessageSquare, label: 'Feedback and Reports', path: '/labour/feedback', color: 'text-gray-700' }

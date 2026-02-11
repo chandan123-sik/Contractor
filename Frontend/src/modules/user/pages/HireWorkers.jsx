@@ -13,70 +13,33 @@ const HireWorkers = () => {
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [selectedCity, setSelectedCity] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
+    const [hiredWorkers, setHiredWorkers] = useState({});
 
     const cities = ['Indore', 'Bhopal', 'Dewas', 'Ujjain', 'Jabalpur', 'Gwalior', 'Ratlam'];
 
-    // Dummy cards for all categories
+    // Dummy cards - reduced to 10
     const dummyCards = [
         // Electrician
         { id: 'e1', fullName: 'Rajesh Kumar', primarySkill: 'Electrician', rating: 4, gender: 'Male', city: 'Indore', mobileNumber: '9876543210', experience: '5', availability: 'Full Time', address: 'Vijay Nagar, Indore', skills: 'Wiring, Panel Installation' },
         { id: 'e2', fullName: 'Amit Sharma', primarySkill: 'Electrician', rating: 5, gender: 'Male', city: 'Bhopal', mobileNumber: '9876543211', experience: '7', availability: 'Part Time', address: 'MP Nagar, Bhopal', skills: 'Electrical Repairs, Maintenance' },
-        { id: 'e3', fullName: 'Suresh Patel', primarySkill: 'Electrician', rating: 3, gender: 'Male', city: 'Ujjain', mobileNumber: '9876543212', experience: '3', availability: 'Full Time', address: 'Freeganj, Ujjain', skills: 'Home Wiring, Commercial Work' },
         
         // Plumber
         { id: 'p1', fullName: 'Rahul Verma', primarySkill: 'Plumber', rating: 4, gender: 'Male', city: 'Indore', mobileNumber: '9876543213', experience: '6', availability: 'Full Time', address: 'Palasia, Indore', skills: 'Pipe Fitting, Leak Repair' },
         { id: 'p2', fullName: 'Mohan Singh', primarySkill: 'Plumber', rating: 5, gender: 'Male', city: 'Dewas', mobileNumber: '9876543214', experience: '8', availability: 'Full Time', address: 'Civil Lines, Dewas', skills: 'Bathroom Fitting, Water Tank' },
-        { id: 'p3', fullName: 'Vikram Joshi', primarySkill: 'Plumber', rating: 3, gender: 'Male', city: 'Bhopal', mobileNumber: '9876543215', experience: '4', availability: 'Part Time', address: 'Arera Colony, Bhopal', skills: 'Drainage, Pipe Installation' },
         
         // Carpenter
         { id: 'c1', fullName: 'Ramesh Yadav', primarySkill: 'Carpenter', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543216', experience: '10', availability: 'Full Time', address: 'Rau, Indore', skills: 'Furniture Making, Door Fitting' },
         { id: 'c2', fullName: 'Dinesh Kumar', primarySkill: 'Carpenter', rating: 4, gender: 'Male', city: 'Jabalpur', mobileNumber: '9876543217', experience: '6', availability: 'Full Time', address: 'Napier Town, Jabalpur', skills: 'Wood Work, Cabinet Making' },
-        { id: 'c3', fullName: 'Prakash Gupta', primarySkill: 'Carpenter', rating: 4, gender: 'Male', city: 'Gwalior', mobileNumber: '9876543218', experience: '5', availability: 'Part Time', address: 'Lashkar, Gwalior', skills: 'Interior Work, Furniture Repair' },
         
         // Painter
         { id: 'pa1', fullName: 'Anil Mishra', primarySkill: 'Painter', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543219', experience: '7', availability: 'Full Time', address: 'Bhawarkua, Indore', skills: 'Wall Painting, Texture Work' },
         { id: 'pa2', fullName: 'Sanjay Tiwari', primarySkill: 'Painter', rating: 4, gender: 'Male', city: 'Bhopal', mobileNumber: '9876543220', experience: '5', availability: 'Full Time', address: 'Kolar Road, Bhopal', skills: 'Interior Painting, Exterior Work' },
-        { id: 'pa3', fullName: 'Manoj Dubey', primarySkill: 'Painter', rating: 3, gender: 'Male', city: 'Ujjain', mobileNumber: '9876543221', experience: '4', availability: 'Part Time', address: 'Nanakheda, Ujjain', skills: 'Home Painting, Office Painting' },
         
-        // Mechanic
-        { id: 'm1', fullName: 'Ravi Chouhan', primarySkill: 'Mechanic', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543222', experience: '9', availability: 'Full Time', address: 'Aerodrome, Indore', skills: 'Car Repair, Bike Service' },
-        { id: 'm2', fullName: 'Deepak Solanki', primarySkill: 'Mechanic', rating: 4, gender: 'Male', city: 'Dewas', mobileNumber: '9876543223', experience: '6', availability: 'Full Time', address: 'Station Road, Dewas', skills: 'Engine Repair, AC Service' },
-        { id: 'm3', fullName: 'Ashok Patidar', primarySkill: 'Mechanic', rating: 4, gender: 'Male', city: 'Ratlam', mobileNumber: '9876543224', experience: '5', availability: 'Part Time', address: 'Mhow Road, Ratlam', skills: 'Vehicle Maintenance, Electrical Work' },
-        
-        // Electronics Repair
-        { id: 'er1', fullName: 'Karan Malviya', primarySkill: 'Electronics Repair', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543225', experience: '8', availability: 'Full Time', address: 'Sapna Sangeeta, Indore', skills: 'TV Repair, Mobile Repair' },
-        { id: 'er2', fullName: 'Nitin Jain', primarySkill: 'Electronics Repair', rating: 4, gender: 'Male', city: 'Bhopal', mobileNumber: '9876543226', experience: '6', availability: 'Full Time', address: 'New Market, Bhopal', skills: 'Laptop Repair, AC Repair' },
-        { id: 'er3', fullName: 'Vishal Agrawal', primarySkill: 'Electronics Repair', rating: 3, gender: 'Male', city: 'Jabalpur', mobileNumber: '9876543227', experience: '4', availability: 'Part Time', address: 'Gohalpur, Jabalpur', skills: 'Home Appliances, Gadget Repair' },
-        
-        // Room Shifting
-        { id: 'rs1', fullName: 'Mukesh Rao', primarySkill: 'Room Shifting', rating: 4, gender: 'Male', city: 'Indore', mobileNumber: '9876543228', experience: '7', availability: 'Full Time', address: 'Kanadiya Road, Indore', skills: 'Packing, Loading, Unloading' },
-        { id: 'rs2', fullName: 'Santosh Meena', primarySkill: 'Room Shifting', rating: 5, gender: 'Male', city: 'Bhopal', mobileNumber: '9876543229', experience: '10', availability: 'Full Time', address: 'Hoshangabad Road, Bhopal', skills: 'Home Shifting, Office Shifting' },
-        { id: 'rs3', fullName: 'Ganesh Bhil', primarySkill: 'Room Shifting', rating: 4, gender: 'Male', city: 'Ujjain', mobileNumber: '9876543230', experience: '5', availability: 'Part Time', address: 'Agar Road, Ujjain', skills: 'Furniture Moving, Safe Transport' },
-        
-        // Welder
-        { id: 'w1', fullName: 'Sunil Barela', primarySkill: 'Welder', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543231', experience: '12', availability: 'Full Time', address: 'Sanwer Road, Indore', skills: 'Arc Welding, Gas Welding' },
-        { id: 'w2', fullName: 'Rajendra Damor', primarySkill: 'Welder', rating: 4, gender: 'Male', city: 'Dewas', mobileNumber: '9876543232', experience: '8', availability: 'Full Time', address: 'Industrial Area, Dewas', skills: 'Metal Fabrication, Pipe Welding' },
-        { id: 'w3', fullName: 'Bharat Ninama', primarySkill: 'Welder', rating: 4, gender: 'Male', city: 'Gwalior', mobileNumber: '9876543233', experience: '6', availability: 'Part Time', address: 'Morar, Gwalior', skills: 'Steel Work, Gate Welding' },
-        
-        // News Paper Ads
-        { id: 'na1', fullName: 'Ajay Sharma', primarySkill: 'News Paper Ads', rating: 4, gender: 'Male', city: 'Indore', mobileNumber: '9876543234', experience: '5', availability: 'Full Time', address: 'Press Complex, Indore', skills: 'Ad Design, Publishing' },
-        { id: 'na2', fullName: 'Vijay Saxena', primarySkill: 'News Paper Ads', rating: 5, gender: 'Male', city: 'Bhopal', mobileNumber: '9876543235', experience: '7', availability: 'Full Time', address: 'Press Complex, Bhopal', skills: 'Classified Ads, Display Ads' },
-        { id: 'na3', fullName: 'Rohit Pandey', primarySkill: 'News Paper Ads', rating: 3, gender: 'Male', city: 'Jabalpur', mobileNumber: '9876543236', experience: '3', availability: 'Part Time', address: 'Civil Lines, Jabalpur', skills: 'Advertisement Booking' },
+        // Mason
+        { id: 'ma1', fullName: 'Kalyan Singh', primarySkill: 'Mason', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543243', experience: '15', availability: 'Full Time', address: 'Limbodi, Indore', skills: 'Construction, Masonry, Plastering' },
         
         // Cleaner
-        { id: 'cl1', fullName: 'Sunita Devi', primarySkill: 'Cleaner', rating: 5, gender: 'Female', city: 'Indore', mobileNumber: '9876543237', experience: '6', availability: 'Full Time', address: 'Rajendra Nagar, Indore', skills: 'House Cleaning, Office Cleaning' },
-        { id: 'cl2', fullName: 'Rekha Bai', primarySkill: 'Cleaner', rating: 4, gender: 'Female', city: 'Bhopal', mobileNumber: '9876543238', experience: '5', availability: 'Part Time', address: 'Bairagarh, Bhopal', skills: 'Deep Cleaning, Daily Cleaning' },
-        { id: 'cl3', fullName: 'Kamla Devi', primarySkill: 'Cleaner', rating: 4, gender: 'Female', city: 'Ujjain', mobileNumber: '9876543239', experience: '4', availability: 'Full Time', address: 'Mahakal Road, Ujjain', skills: 'Home Cleaning, Sanitization' },
-        
-        // Women's Parlour
-        { id: 'wp1', fullName: 'Priya Malhotra', primarySkill: "Women's Parlour", rating: 5, gender: 'Female', city: 'Indore', mobileNumber: '9876543240', experience: '8', availability: 'Full Time', address: 'South Tukoganj, Indore', skills: 'Hair Styling, Makeup, Facial' },
-        { id: 'wp2', fullName: 'Neha Kapoor', primarySkill: "Women's Parlour", rating: 4, gender: 'Female', city: 'Bhopal', mobileNumber: '9876543241', experience: '6', availability: 'Full Time', address: 'Bittan Market, Bhopal', skills: 'Bridal Makeup, Hair Treatment' },
-        { id: 'wp3', fullName: 'Anjali Verma', primarySkill: "Women's Parlour", rating: 5, gender: 'Female', city: 'Jabalpur', mobileNumber: '9876543242', experience: '7', availability: 'Part Time', address: 'Sadar Bazar, Jabalpur', skills: 'Beauty Services, Spa' },
-        
-        // Mistri
-        { id: 'mi1', fullName: 'Kalyan Singh', primarySkill: 'Mistri', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543243', experience: '15', availability: 'Full Time', address: 'Limbodi, Indore', skills: 'Construction, Masonry, Plastering' },
-        { id: 'mi2', fullName: 'Ramkaran Patel', primarySkill: 'Mistri', rating: 4, gender: 'Male', city: 'Dewas', mobileNumber: '9876543244', experience: '10', availability: 'Full Time', address: 'Tonk Phatak, Dewas', skills: 'Building Work, Tile Fitting' },
-        { id: 'mi3', fullName: 'Shyam Lal', primarySkill: 'Mistri', rating: 4, gender: 'Male', city: 'Ratlam', mobileNumber: '9876543245', experience: '8', availability: 'Part Time', address: 'Jaora Road, Ratlam', skills: 'Brick Work, Concrete Work' }
+        { id: 'cl1', fullName: 'Sunita Devi', primarySkill: 'Cleaner', rating: 5, gender: 'Female', city: 'Indore', mobileNumber: '9876543237', experience: '6', availability: 'Full Time', address: 'Rajendra Nagar, Indore', skills: 'House Cleaning, Office Cleaning' }
     ];
 
     useEffect(() => {
@@ -89,6 +52,20 @@ const HireWorkers = () => {
         // Check if category was passed from home page
         if (location.state?.selectedCategory) {
             setSelectedCategory(location.state.selectedCategory);
+        }
+
+        // Load hired workers state
+        const hired = JSON.parse(localStorage.getItem('hired_workers_state') || '{}');
+        setHiredWorkers(hired);
+
+        // Update user profile with phone number if missing
+        const userProfile = JSON.parse(localStorage.getItem('user_profile') || '{}');
+        const mobileNumber = localStorage.getItem('mobile_number') || '';
+        
+        if (userProfile && Object.keys(userProfile).length > 0 && !userProfile.phoneNumber && mobileNumber) {
+            userProfile.phoneNumber = mobileNumber;
+            localStorage.setItem('user_profile', JSON.stringify(userProfile));
+            console.log('Updated user profile with phone number:', userProfile);
         }
     }, [location.state]);
 
@@ -146,6 +123,51 @@ const HireWorkers = () => {
     const handleClearFilter = () => {
         setSelectedCity('');
         setShowFilterModal(false);
+    };
+
+    const handleHireWorker = (card) => {
+        // Get user profile
+        const userProfile = JSON.parse(localStorage.getItem('user_profile') || '{}');
+        const mobileNumber = localStorage.getItem('mobile_number') || '';
+        
+        // Use phoneNumber from profile, or fallback to mobile_number from localStorage
+        const userPhone = userProfile.phoneNumber || mobileNumber || '';
+        
+        // Create full name from firstName and lastName
+        const userFullName = `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || 'User';
+        
+        console.log('User Profile:', userProfile); // Debug
+        console.log('Mobile Number from localStorage:', mobileNumber); // Debug
+        console.log('Final User Phone:', userPhone); // Debug
+        console.log('User Full Name:', userFullName); // Debug
+        
+        // Create request object
+        const request = {
+            id: Date.now(),
+            labourId: card.id,
+            labourName: card.fullName,
+            labourSkill: card.primarySkill,
+            labourPhone: card.mobileNumber,
+            labourCity: card.city,
+            userName: userFullName,
+            userPhone: userPhone,
+            userLocation: userProfile.city || 'N/A',
+            requestDate: new Date().toLocaleDateString('en-IN'),
+            requestTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+            status: 'pending'
+        };
+
+        console.log('Request Object:', request); // Debug
+
+        // Save request to labour panel requests
+        const existingRequests = JSON.parse(localStorage.getItem('labour_user_requests') || '[]');
+        existingRequests.push(request);
+        localStorage.setItem('labour_user_requests', JSON.stringify(existingRequests));
+
+        // Update hired workers state
+        const updatedHired = { ...hiredWorkers, [card.id]: 'pending' };
+        setHiredWorkers(updatedHired);
+        localStorage.setItem('hired_workers_state', JSON.stringify(updatedHired));
     };
 
     return (
@@ -294,9 +316,25 @@ const HireWorkers = () => {
                                         View Details
                                     </button>
                                     <button
-                                        className="flex-1 btn-primary"
+                                        onClick={() => handleHireWorker(card)}
+                                        disabled={hiredWorkers[card.id]}
+                                        className={`flex-1 font-bold py-3 rounded-lg transition-all active:scale-95 ${
+                                            hiredWorkers[card.id] === 'approved'
+                                                ? 'bg-green-500 text-white cursor-not-allowed'
+                                                : hiredWorkers[card.id] === 'declined'
+                                                ? 'bg-gray-500 text-white cursor-not-allowed'
+                                                : hiredWorkers[card.id] === 'pending'
+                                                ? 'bg-red-500 text-white cursor-not-allowed'
+                                                : 'btn-primary'
+                                        }`}
                                     >
-                                        Hire Worker
+                                        {hiredWorkers[card.id] === 'approved'
+                                            ? 'Approved'
+                                            : hiredWorkers[card.id] === 'declined'
+                                            ? 'Not Approved'
+                                            : hiredWorkers[card.id] === 'pending'
+                                            ? 'Request Sent'
+                                            : 'Hire Worker'}
                                     </button>
                                 </div>
                             </div>

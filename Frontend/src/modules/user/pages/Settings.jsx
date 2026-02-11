@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Hammer, Shield, Phone, HelpCircle, LogOut, MessageSquare, X } from 'lucide-react';
+import { User, Hammer, Shield, Phone, HelpCircle, LogOut, MessageSquare, X, History } from 'lucide-react';
 import UserBottomNav from '../components/UserBottomNav';
 import PageHeader from '../components/PageHeader';
 import SettingsMenuItem from '../components/SettingsMenuItem';
@@ -14,6 +14,7 @@ const Settings = () => {
     const menuItems = [
         { icon: User, label: 'Personal', path: '/user/personal-details', color: 'text-gray-700' },
         { icon: Hammer, label: 'My Projects', path: '/user/my-projects', color: 'text-gray-700' },
+        { icon: History, label: 'History', path: '/user/history', color: 'text-gray-700' },
         { icon: Shield, label: 'Legal', path: '/user/legal', color: 'text-gray-700' },
         { icon: Phone, label: 'Contact us', path: '/user/contact-us', color: 'text-gray-700' },
         { icon: HelpCircle, label: 'About us', path: '/user/about-us', color: 'text-gray-700' },

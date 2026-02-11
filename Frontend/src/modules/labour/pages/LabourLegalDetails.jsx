@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Shield, Upload } from 'lucide-react';
+import { ChevronLeft, Shield, Upload, X, CheckCircle, XCircle } from 'lucide-react';
 import LabourBottomNav from '../components/LabourBottomNav';
 import toast from 'react-hot-toast';
 
@@ -8,16 +8,30 @@ const LabourLegalDetails = () => {
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
     const [aadharNumber, setAadharNumber] = useState('');
-    const [documentPhotos, setDocumentPhotos] = useState([]);
+    const [uploadedPhotos, setUploadedPhotos] = useState([]);
+    const [verificationStatus, setVerificationStatus] = useState('pending'); // pending, submitted, verified, rejected
 
     useEffect(() => {
         const profile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
         if (profile.aadharNumber) {
             setAadharNumber(profile.aadharNumber);
         }
+        
+        // Load verification data from localStorage
+        const verificationData = JSON.parse(localStorage.getItem('labour_verification') || '{}');
+        if (verificationData.photos) {
+            setUploadedPhotos(verificationData.photos);
+        }
+        if (verificationData.status) {
+            setVerificationStatus(verificationData.status);
+        }
     }, []);
 
-    const handlePhotoUpload = () => {
+    const handleUploadClick = () => {
+        if (verificationStatus === 'verified') {
+            toast.error('Already verified');
+            return;
+        }
         fileInputRef.current?.click();
     };
 
@@ -33,24 +47,120 @@ const LabourLegalDetails = () => {
             });
 
             Promise.all(newPhotos).then(photos => {
-                setDocumentPhotos(prev => [...prev, ...photos]);
-                toast.success('Document photos added successfully');
+                const updatedPhotos = [...uploadedPhotos, ...photos];
+                setUploadedPhotos(updatedPhotos);
+                
+                // Save to localStorage but don't change status
+                const verificationData = JSON.parse(localStorage.getItem('labour_verification') || '{}');
+                verificationData.photos = updatedPhotos;
+                // Keep existing status or set to pending if no status
+                if (!verificationData.status) {
+                    verificationData.status = 'pending';
+                }
+                localStorage.setItem('labour_verification', JSON.stringify(verificationData));
+                
+                toast.success('Document uploaded successfully');
             });
         }
     };
 
-    const handleSubmit = () => {
+    const handleRemovePhoto = (index) => {
+        if (verificationStatus === 'verified') {
+            toast.error('Cannot remove verified documents');
+            return;
+        }
+        
+        const updatedPhotos = uploadedPhotos.filter((_, i) => i !== index);
+        setUploadedPhotos(updatedPhotos);
+        
+        // Update localStorage
+        if (updatedPhotos.length === 0) {
+            // If no photos left, reset verification status to pending
+            const verificationData = {
+                status: 'pending',
+                photos: []
+            };
+            localStorage.setItem('labour_verification', JSON.stringify(verificationData));
+            setVerificationStatus('pending');
+        } else {
+            const verificationData = JSON.parse(localStorage.getItem('labour_verification') || '{}');
+            verificationData.photos = updatedPhotos;
+            localStorage.setItem('labour_verification', JSON.stringify(verificationData));
+        }
+        
+        toast.success('Document removed');
+    };
+
+    const handleSubmitVerification = () => {
         if (!aadharNumber) {
-            toast.error('Aadhaar number not found');
+            toast.error('Aadhaar number is required');
             return;
         }
 
-        if (documentPhotos.length === 0) {
-            toast.error('Please upload at least one document photo');
+        if (uploadedPhotos.length === 0) {
+            toast.error('Please upload at least one document');
             return;
         }
 
-        toast.success('Submitted for verification successfully!');
+        if (verificationStatus === 'submitted') {
+            toast.error('Verification already submitted. Waiting for admin approval.');
+            return;
+        }
+
+        if (verificationStatus === 'verified') {
+            toast.error('Already verified');
+            return;
+        }
+
+        // Save verification request
+        const verificationData = {
+            aadharNumber,
+            photos: uploadedPhotos,
+            status: 'submitted',
+            submittedAt: new Date().toISOString(),
+            labourId: JSON.parse(localStorage.getItem('labour_profile') || '{}').firstName || 'Labour'
+        };
+        
+        localStorage.setItem('labour_verification', JSON.stringify(verificationData));
+        setVerificationStatus('submitted');
+        
+        toast.success('Submitted for verification! Admin will review your documents.');
+    };
+
+    const getButtonStyle = () => {
+        switch (verificationStatus) {
+            case 'verified':
+                return 'bg-green-500 hover:bg-green-600';
+            case 'rejected':
+                return 'bg-red-500 hover:bg-red-600';
+            case 'submitted':
+                return 'bg-blue-500 hover:bg-blue-600';
+            default:
+                return 'bg-yellow-400 hover:bg-yellow-500';
+        }
+    };
+
+    const getButtonText = () => {
+        switch (verificationStatus) {
+            case 'verified':
+                return (
+                    <span className="flex items-center justify-center gap-2">
+                        <CheckCircle className="w-5 h-5" />
+                        Verified
+                    </span>
+                );
+            case 'rejected':
+                return (
+                    <span className="flex items-center justify-center gap-2">
+                        <XCircle className="w-5 h-5" />
+                        Not Verified
+                    </span>
+                );
+            case 'submitted':
+                return 'Pending Verification';
+            default:
+                return 'Submit for Verification';
+        }
     };
 
     return (
@@ -83,42 +193,99 @@ const LabourLegalDetails = () => {
                     </div>
                 </div>
 
-                {/* Upload Document Photos */}
-                <div className="mb-6">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">
-                        Upload Document Photos
-                    </label>
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileChange}
-                        className="hidden"
-                        accept="image/*"
-                        multiple
-                    />
-                    
-                    <div className="grid grid-cols-3 gap-3">
-                        {documentPhotos.map((photo, index) => (
-                            <div key={index} className="aspect-square rounded-xl overflow-hidden border-2 border-gray-200">
-                                <img src={photo} alt={`Document ${index + 1}`} className="w-full h-full object-cover" />
-                            </div>
-                        ))}
-                        <button
-                            onClick={handlePhotoUpload}
-                            className="aspect-square border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center hover:border-yellow-400 hover:bg-yellow-50 transition-all"
-                        >
-                            <Upload className="w-8 h-8 text-gray-400 mb-1" />
-                            <span className="text-xs text-gray-500 font-medium">Add</span>
-                        </button>
+                {/* Upload Section */}
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept="image/*"
+                    multiple
+                />
+
+                {uploadedPhotos.length > 0 ? (
+                    <div className="mb-6">
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                            Uploaded Documents
+                        </label>
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                            {uploadedPhotos.map((photo, index) => (
+                                <div key={index} className="relative">
+                                    <img
+                                        src={photo}
+                                        alt={`Document ${index + 1}`}
+                                        className="w-full h-32 object-cover rounded-xl border-2 border-gray-200"
+                                    />
+                                    {verificationStatus !== 'verified' && (
+                                        <button
+                                            onClick={() => handleRemovePhoto(index)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition-all"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        {verificationStatus !== 'verified' && (
+                            <button
+                                onClick={handleUploadClick}
+                                className="w-full py-3 rounded-xl border-2 border-dashed border-gray-300 bg-white hover:border-yellow-400 hover:bg-yellow-50 transition-all flex items-center justify-center gap-2 text-gray-600 font-medium"
+                            >
+                                <Upload className="w-5 h-5" />
+                                Add More Documents
+                            </button>
+                        )}
                     </div>
-                </div>
+                ) : (
+                    <div
+                        onClick={handleUploadClick}
+                        className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-8 mb-6 cursor-pointer hover:border-yellow-400 hover:bg-yellow-50 transition-all"
+                    >
+                        <div className="flex flex-col items-center justify-center text-center">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                <Upload className="w-6 h-6 text-gray-400" />
+                            </div>
+                            <p className="text-gray-500 font-medium">Upload Document Photos</p>
+                            <p className="text-xs text-gray-400 mt-1">Tap to upload Aadhaar card photos</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Status Message */}
+                {verificationStatus === 'submitted' && (
+                    <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <p className="text-sm text-blue-700 font-medium">
+                            ⏳ Your verification is pending. Admin will review your documents soon.
+                        </p>
+                    </div>
+                )}
+
+                {verificationStatus === 'verified' && (
+                    <div className="mb-4 bg-green-50 border border-green-200 rounded-xl p-4">
+                        <p className="text-sm text-green-700 font-medium">
+                            ✅ Your documents have been verified successfully!
+                        </p>
+                    </div>
+                )}
+
+                {verificationStatus === 'rejected' && (
+                    <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-4">
+                        <p className="text-sm text-red-700 font-medium">
+                            ❌ Your verification was rejected. Please upload correct documents and try again.
+                        </p>
+                    </div>
+                )}
 
                 {/* Submit Button */}
                 <button
-                    onClick={handleSubmit}
-                    className="w-full py-3.5 rounded-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold text-base transition-all shadow-md active:scale-[0.98]"
+                    onClick={handleSubmitVerification}
+                    disabled={verificationStatus === 'submitted' || verificationStatus === 'verified'}
+                    className={`w-full py-3.5 rounded-full text-white font-bold text-base transition-all shadow-md active:scale-[0.98] ${getButtonStyle()} ${
+                        (verificationStatus === 'submitted' || verificationStatus === 'verified') ? 'opacity-90 cursor-not-allowed' : ''
+                    }`}
                 >
-                    Submit for Verification
+                    {getButtonText()}
                 </button>
             </div>
             

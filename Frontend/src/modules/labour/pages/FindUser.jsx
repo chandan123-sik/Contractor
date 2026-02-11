@@ -1,53 +1,33 @@
 import { useEffect, useState } from 'react';
-import { Bell, Crown, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import LabourBottomNav from '../components/LabourBottomNav';
 import LabourJobCard from '../components/LabourJobCard';
+import LabourHeader from '../components/LabourHeader';
 
 const FindUser = () => {
     const navigate = useNavigate();
-    const [labourName, setLabourName] = useState('');
     const [jobs, setJobs] = useState([]);
     const [filteredJobs, setFilteredJobs] = useState([]);
     const [selectedJob, setSelectedJob] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [selectedCity, setSelectedCity] = useState('');
+    const [appliedJobs, setAppliedJobs] = useState([]);
 
     const cities = ['Indore', 'Bhopal', 'Dewas', 'Ujjain', 'Jabalpur', 'Gwalior', 'Ratlam'];
 
     useEffect(() => {
-        // Function to update labour name from localStorage
-        const updateLabourName = () => {
-            try {
-                const profile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
-                if (profile.firstName) {
-                    setLabourName(profile.firstName);
-                } else {
-                    setLabourName('User');
-                }
-            } catch (error) {
-                console.error('Error reading labour profile:', error);
-                setLabourName('User');
-            }
-        };
-
-        // Initial load
-        updateLabourName();
-
         // Load jobs from localStorage (user created jobs)
         const savedJobs = JSON.parse(localStorage.getItem('user_jobs') || '[]');
         console.log('All saved jobs:', savedJobs);
         setJobs(savedJobs);
         setFilteredJobs(savedJobs);
-
-        // Listen for storage changes
-        window.addEventListener('storage', updateLabourName);
-
-        // Cleanup
-        return () => {
-            window.removeEventListener('storage', updateLabourName);
-        };
+        
+        // Load applied jobs for this labour
+        const labourAppliedJobs = JSON.parse(localStorage.getItem('labour_applied_jobs') || '[]');
+        setAppliedJobs(labourAppliedJobs);
     }, []);
 
     // Filter jobs based on selected city and search query
@@ -79,7 +59,60 @@ const FindUser = () => {
     };
 
     const handleApplyNow = (jobId) => {
-        // This will be implemented later
+        // Get labour profile data
+        const labourProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
+        
+        if (!labourProfile.firstName || !labourProfile.lastName) {
+            toast.error('Please complete your profile first', {
+                duration: 3000,
+                position: 'top-center',
+            });
+            return;
+        }
+        
+        // Find the job
+        const job = jobs.find(j => j.id === jobId);
+        if (!job) return;
+        
+        // Get mobile number - try from profile first, then from localStorage
+        const mobileNumber = labourProfile.mobileNumber || localStorage.getItem('mobile_number') || 'Not specified';
+        
+        // Create unique request ID
+        const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Create request object
+        const request = {
+            id: requestId,
+            jobId: jobId,
+            jobTitle: job.jobTitle,
+            workerName: `${labourProfile.firstName} ${labourProfile.lastName}`,
+            location: labourProfile.city || 'Not specified',
+            phoneNumber: mobileNumber,
+            date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+            time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+            type: 'worker'
+        };
+        
+        // Save to worker_requests for user to see
+        const existingRequests = JSON.parse(localStorage.getItem('worker_requests') || '[]');
+        existingRequests.push(request);
+        localStorage.setItem('worker_requests', JSON.stringify(existingRequests));
+        
+        // Track applied jobs for this labour with request ID mapping
+        const updatedAppliedJobs = [...appliedJobs, jobId];
+        setAppliedJobs(updatedAppliedJobs);
+        localStorage.setItem('labour_applied_jobs', JSON.stringify(updatedAppliedJobs));
+        
+        // Store request ID mapping for this labour
+        const requestMapping = JSON.parse(localStorage.getItem('labour_request_mapping') || '{}');
+        requestMapping[jobId] = requestId;
+        localStorage.setItem('labour_request_mapping', JSON.stringify(requestMapping));
+        
+        toast.success('Request sent successfully!', {
+            duration: 3000,
+            position: 'top-center',
+        });
+        
         console.log('Apply Now clicked for job:', jobId);
     };
 
@@ -108,40 +141,7 @@ const FindUser = () => {
     return (
         <div className="h-screen bg-gray-50 flex flex-col">
             {/* Header */}
-            <div className="bg-white px-4 py-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        {/* Profile Icon */}
-                        <div className="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center">
-                            <span className="text-2xl">👤</span>
-                        </div>
-                        {/* Welcome Text and Name */}
-                        <div>
-                            <p className="text-sm text-gray-500">Hey, Welcome 👋</p>
-                            <h1 className="text-xl font-bold text-gray-900">
-                                {labourName || 'User'}
-                            </h1>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button 
-                            onClick={() => navigate('/labour/notifications')}
-                            className="bg-blue-500 hover:bg-blue-600 p-3 rounded-full shadow-md transition-all relative"
-                        >
-                            <Bell className="w-5 h-5 text-white" />
-                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                                0
-                            </span>
-                        </button>
-                        <button 
-                            onClick={() => navigate('/labour/subscription')}
-                            className="bg-gray-200 hover:bg-gray-300 p-3 rounded-full shadow-md transition-all"
-                        >
-                            <Crown className="w-5 h-5 text-gray-700" />
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <LabourHeader />
 
             {/* Search Bar */}
             <div className="bg-white px-4 py-3 shadow-sm">
@@ -213,6 +213,7 @@ const FindUser = () => {
                             key={job.id}
                             job={job}
                             index={index}
+                            appliedJobs={appliedJobs}
                             onViewDetails={handleViewDetails}
                             onApplyNow={handleApplyNow}
                         />

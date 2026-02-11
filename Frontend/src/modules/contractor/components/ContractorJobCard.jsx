@@ -1,6 +1,48 @@
 import { MapPin, Briefcase, Calendar, IndianRupee } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useEffect, useState } from 'react';
 
-const ContractorJobCard = ({ job, onViewDetails, onApplyNow, index = 0 }) => {
+const ContractorJobCard = ({ job, onViewDetails, onApplyNow, appliedJobs = [], index = 0 }) => {
+    const [applicationStatus, setApplicationStatus] = useState(null);
+    const isApplied = appliedJobs.includes(job.id);
+    
+    useEffect(() => {
+        // Check if this job has been accepted/declined
+        const jobApplications = JSON.parse(localStorage.getItem('job_applications') || '{}');
+        const contractorAppliedJobs = JSON.parse(localStorage.getItem('contractor_applied_jobs') || '[]');
+        
+        if (jobApplications[job.id] && contractorAppliedJobs.includes(job.id)) {
+            // Get the request ID for this contractor's application
+            const requestMapping = JSON.parse(localStorage.getItem('contractor_request_mapping') || '{}');
+            const requestId = requestMapping[job.id];
+            
+            if (requestId && jobApplications[job.id] && jobApplications[job.id][requestId]) {
+                setApplicationStatus(jobApplications[job.id][requestId]);
+            }
+        }
+    }, [job.id]);
+    
+    const handleApplyClick = () => {
+        if (job.status !== 'Open') {
+            // Show toast message for closed job
+            toast.error('This job is closed, you cannot apply.', {
+                duration: 3000,
+                position: 'top-center',
+            });
+            return;
+        }
+        
+        if (isApplied) {
+            toast.info('You have already applied for this job.', {
+                duration: 2000,
+                position: 'top-center',
+            });
+            return;
+        }
+        
+        onApplyNow(job.id);
+    };
+
     return (
         <div className="premium-card card-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
             {/* Header with User Info and Status */}
@@ -63,10 +105,27 @@ const ContractorJobCard = ({ job, onViewDetails, onApplyNow, index = 0 }) => {
                     View Details
                 </button>
                 <button
-                    onClick={() => onApplyNow(job.id)}
-                    className="flex-1 btn-primary"
+                    onClick={handleApplyClick}
+                    disabled={job.status !== 'Open' || isApplied}
+                    className={`flex-1 font-bold py-2 rounded-lg transition-all duration-200 ease-out ${
+                        applicationStatus === 'accepted'
+                            ? 'bg-green-500 text-white cursor-default'
+                            : applicationStatus === 'declined'
+                                ? 'bg-gray-500 text-white cursor-default'
+                                : isApplied
+                                    ? 'bg-red-500 text-white cursor-default'
+                                    : job.status === 'Open' 
+                                        ? 'btn-primary' 
+                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
                 >
-                    Apply Now
+                    {applicationStatus === 'accepted' 
+                        ? 'Accepted' 
+                        : applicationStatus === 'declined'
+                            ? 'Not Accepted'
+                            : isApplied 
+                                ? 'Request Sent' 
+                                : 'Apply Now'}
                 </button>
             </div>
         </div>

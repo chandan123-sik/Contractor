@@ -60,17 +60,37 @@ const PostJob = () => {
             return;
         }
 
-        // Create contractor card
+        if (!formData.rating || formData.rating === 0) {
+            alert('Please select a rating');
+            return;
+        }
+
+        // Create contractor card with mapped field names for ContractorProfileCard
         const newCard = {
             id: Date.now(),
-            ...formData,
+            contractorName: formData.contractorName,
+            phoneNumber: formData.phoneNumber,
+            contactNo: formData.phoneNumber, // Map phoneNumber to contactNo
+            city: formData.city,
+            address: formData.address,
+            businessType: formData.businessType,
+            businessName: formData.businessName,
+            labourSkill: formData.labourSkill,
+            primaryWorkCategory: formData.labourSkill, // Map labourSkill to primaryWorkCategory
+            experience: formData.experience,
+            workDuration: formData.workDuration,
+            budgetType: formData.budgetType,
+            budgetAmount: formData.budgetAmount,
+            rating: formData.rating,
+            profileStatus: formData.profileStatus,
+            availabilityStatus: 'Available', // Default availability
             createdAt: new Date().toISOString()
         };
 
-        // Save to localStorage
-        const existingCards = JSON.parse(localStorage.getItem('contractor_cards') || '[]');
+        // Save to localStorage (for labour panel)
+        const existingCards = JSON.parse(localStorage.getItem('contractor_cards_for_labour') || '[]');
         existingCards.push(newCard);
-        localStorage.setItem('contractor_cards', JSON.stringify(existingCards));
+        localStorage.setItem('contractor_cards_for_labour', JSON.stringify(existingCards));
 
         // Navigate to My Projects
         navigate('/contractor/my-projects');
@@ -295,6 +315,32 @@ const PostJob = () => {
                                 />
                             </div>
                         )}
+                    </div>
+
+                    {/* Rating Section */}
+                    <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Rating</h3>
+                        <div className="flex justify-center gap-2 mb-2">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                    key={star}
+                                    type="button"
+                                    onClick={() => setFormData(prev => ({ ...prev, rating: star }))}
+                                    className="transition-transform hover:scale-110"
+                                >
+                                    <span className={`text-4xl ${
+                                        star <= formData.rating
+                                            ? 'text-yellow-400'
+                                            : 'text-gray-300'
+                                    }`}>
+                                        ★
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                        <p className="text-center text-sm text-gray-600">
+                            {formData.rating > 0 ? `${formData.rating}.0 / 5` : 'Tap stars to rate'}
+                        </p>
                     </div>
 
                     {/* Submit Button */}

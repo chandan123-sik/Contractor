@@ -1,6 +1,6 @@
-import { MapPin, Briefcase, Phone, Calendar, IndianRupee } from 'lucide-react';
+import { MapPin, Star, Phone, IndianRupee } from 'lucide-react';
 
-const UserContractorCard = ({ card, onViewDetails, onApplyNow, index = 0 }) => {
+const UserContractorCard = ({ card, onViewDetails, onApplyNow, index = 0, hiredStatus }) => {
     return (
         <div className="premium-card card-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
             {/* Header with Contractor Info and Status Badge */}
@@ -20,45 +20,45 @@ const UserContractorCard = ({ card, onViewDetails, onApplyNow, index = 0 }) => {
                     </div>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    card.profileStatus === 'Active' 
+                    card.availabilityStatus === 'Available' 
                         ? 'bg-green-100 text-green-700' 
                         : 'bg-gray-100 text-gray-700'
                 }`}>
-                    {card.profileStatus === 'Active' ? 'Open' : 'Closed'}
+                    {card.availabilityStatus === 'Available' ? 'Open' : 'Closed'}
                 </span>
             </div>
 
-            {/* Primary Work */}
+            {/* Primary Work Category */}
             <div className="mb-3">
                 <p className="text-sm text-gray-500">Primary Work:</p>
-                <p className="text-lg font-bold text-gray-900">{card.labourSkill}</p>
+                <p className="text-lg font-bold text-gray-900">{card.primaryWorkCategory}</p>
             </div>
 
-            {/* Experience and Work Duration */}
-            <div className="flex gap-4 mb-3 flex-wrap">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Briefcase className="w-4 h-4" />
-                    <span>Exp: {card.experience}</span>
+            {/* Experience and Business Type */}
+            <div className="flex gap-4 mb-3 flex-wrap text-sm text-gray-600">
+                <div className="flex items-center gap-1">
+                    <span className="font-medium">Exp:</span>
+                    <span>{card.experience}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="w-4 h-4" />
-                    <span>{card.workDuration}</span>
+                <div className="flex items-center gap-1">
+                    <span className="font-medium">📅</span>
+                    <span>{card.businessType}</span>
                 </div>
             </div>
 
-            {/* Budget and Phone */}
+            {/* Rating and Budget */}
             <div className="flex gap-4 mb-4 flex-wrap">
-                <div className="flex items-center gap-2 text-sm text-yellow-600 font-medium">
-                    <IndianRupee className="w-4 h-4" />
-                    <span>
-                        {card.budgetType === 'Negotiable' 
-                            ? 'Negotiable' 
-                            : `₹${card.budgetAmount}`}
-                    </span>
+                <div className="flex items-center gap-1 text-sm">
+                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    <span className="font-medium text-gray-900">{card.rating || 0}.0/5</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-1 text-sm text-yellow-600 font-medium">
+                    <IndianRupee className="w-4 h-4" />
+                    <span>₹{card.budgetAmount}</span>
+                </div>
+                <div className="flex items-center gap-1 text-sm text-gray-600">
                     <Phone className="w-4 h-4" />
-                    <span>{card.phoneNumber}</span>
+                    <span>{card.contactNo}</span>
                 </div>
             </div>
 
@@ -72,9 +72,24 @@ const UserContractorCard = ({ card, onViewDetails, onApplyNow, index = 0 }) => {
                 </button>
                 <button
                     onClick={() => onApplyNow(card.id)}
-                    className="btn-primary flex-1"
+                    disabled={hiredStatus}
+                    className={`flex-1 font-bold py-3 rounded-lg transition-all active:scale-95 ${
+                        hiredStatus === 'approved'
+                            ? 'bg-green-500 text-white cursor-not-allowed'
+                            : hiredStatus === 'declined'
+                            ? 'bg-gray-500 text-white cursor-not-allowed'
+                            : hiredStatus === 'pending'
+                            ? 'bg-red-500 text-white cursor-not-allowed'
+                            : 'btn-primary'
+                    }`}
                 >
-                    Hire Contractor
+                    {hiredStatus === 'approved'
+                        ? 'Approved'
+                        : hiredStatus === 'declined'
+                        ? 'Not Approved'
+                        : hiredStatus === 'pending'
+                        ? 'Request Sent'
+                        : 'Hire Contractor'}
                 </button>
             </div>
         </div>

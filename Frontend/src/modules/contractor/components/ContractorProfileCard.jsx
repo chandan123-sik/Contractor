@@ -1,90 +1,102 @@
-import { MapPin, Briefcase, Phone, Calendar, IndianRupee } from 'lucide-react';
+import { MapPin, Briefcase, Calendar, Phone, Star } from 'lucide-react';
 
-const ContractorProfileCard = ({ card, onViewDetails, onToggleStatus, index = 0 }) => {
+const ContractorProfileCard = ({ data, onViewDetails, onToggleAvailability }) => {
+    // Safety check - if data is not available, return null
+    if (!data || !data.contractorName) {
+        return null;
+    }
+
+    // Get first letter of contractor name for avatar
+    const getInitial = (name) => {
+        return name ? name.charAt(0).toUpperCase() : 'C';
+    };
+
+    const isAvailable = data.availabilityStatus === 'Available';
+
     return (
-        <div className="premium-card card-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
-            {/* Header with Contractor Info and Status Badge */}
-            <div className="flex justify-between items-start mb-3">
-                <div className="flex items-start gap-3">
-                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-md">
-                        <span className="text-2xl font-bold text-gray-900">
-                            {card.contractorName.charAt(0).toUpperCase()}
-                        </span>
-                    </div>
-                    <div className="flex-1">
-                        <h3 className="font-bold text-lg text-gray-900">{card.contractorName}</h3>
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
-                            <MapPin className="w-4 h-4" />
-                            <span>{card.city}</span>
-                        </div>
-                    </div>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    card.profileStatus === 'Active' 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-gray-100 text-gray-700'
+        <div className="bg-white rounded-2xl shadow-md p-4 mb-4 relative">
+            {/* Status Badge - Top Right Corner (Current Status) */}
+            <div className="absolute top-4 right-4">
+                <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                    isAvailable
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
                 }`}>
-                    {card.profileStatus === 'Active' ? 'Open' : 'Closed'}
+                    {data.availabilityStatus}
                 </span>
             </div>
 
+            {/* Header Section */}
+            <div className="flex items-start justify-between mb-4 pr-20">
+                <div className="flex items-center gap-3">
+                    {/* Avatar */}
+                    <div className="w-20 h-20 bg-yellow-400 rounded-full flex items-center justify-center">
+                        <span className="text-3xl font-bold text-gray-900">
+                            {getInitial(data.contractorName)}
+                        </span>
+                    </div>
+                    
+                    {/* Name and Location */}
+                    <div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-1">
+                            {data.contractorName}
+                        </h3>
+                        <div className="flex items-center gap-1 text-gray-600">
+                            <MapPin className="w-4 h-4" />
+                            <span className="text-sm">{data.city}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Primary Work */}
-            <div className="mb-3">
-                <p className="text-sm text-gray-500">Primary Work:</p>
-                <p className="text-lg font-bold text-gray-900">{card.labourSkill}</p>
+            <div className="mb-4">
+                <p className="text-sm text-gray-500 mb-1">Primary Work:</p>
+                <h4 className="text-lg font-bold text-gray-900">{data.primaryWorkCategory}</h4>
             </div>
 
-            {/* Experience and Work Duration */}
-            <div className="flex gap-4 mb-3 flex-wrap">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Briefcase className="w-4 h-4" />
-                    <span>Exp: {card.experience}</span>
+            {/* Experience and Business Type */}
+            <div className="flex items-center gap-4 mb-4 text-gray-600">
+                <div className="flex items-center gap-2">
+                    <Briefcase className="w-5 h-5" />
+                    <span className="text-sm">Exp: {data.experience}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="w-4 h-4" />
-                    <span>{card.workDuration}</span>
-                </div>
-            </div>
-
-            {/* Budget and Phone */}
-            <div className="flex gap-4 mb-4 flex-wrap">
-                <div className="flex items-center gap-2 text-sm text-yellow-600 font-medium">
-                    <IndianRupee className="w-4 h-4" />
-                    <span>
-                        {card.budgetType === 'Negotiable' 
-                            ? 'Negotiable' 
-                            : `₹${card.budgetAmount}`}
-                    </span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone className="w-4 h-4" />
-                    <span>{card.phoneNumber}</span>
+                <div className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5" />
+                    <span className="text-sm">{data.businessType}</span>
                 </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3">
+            {/* Rating and Contact */}
+            <div className="flex items-center gap-4 mb-4">
+                <div className="flex items-center gap-1">
+                    <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                    <span className="text-lg font-bold text-gray-900">{data.rating || 0}.0/5</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                    <Phone className="w-5 h-5" />
+                    <span className="text-sm">{data.contactNo}</span>
+                </div>
+            </div>
+
+            {/* Buttons - View Details and Toggle Button (shows opposite action) */}
+            <div className="grid grid-cols-2 gap-3">
                 <button
-                    onClick={() => onViewDetails(card)}
-                    className="btn-secondary flex-1"
+                    onClick={onViewDetails}
+                    className="py-3 rounded-xl border-2 border-blue-500 text-blue-500 font-bold text-base transition-all hover:bg-blue-50 active:scale-[0.98]"
                 >
                     View Details
                 </button>
-                {card.profileStatus === 'Active' ? (
-                    <button
-                        onClick={() => onToggleStatus(card.id)}
-                        className="btn-primary flex-1"
-                    >
-                        Close Job
-                    </button>
-                ) : (
-                    <button
-                        onClick={() => onToggleStatus(card.id)}
-                        className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg transition-all duration-200 ease-out hover:shadow-lg active:scale-95"
-                    >
-                        Open Job
-                    </button>
-                )}
+                <button
+                    onClick={() => onToggleAvailability(data.id)}
+                    className={`py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98] ${
+                        isAvailable
+                            ? 'bg-red-500 hover:bg-red-600 text-white'
+                            : 'bg-green-500 hover:bg-green-600 text-white'
+                    }`}
+                >
+                    {isAvailable ? 'Busy' : 'Available'}
+                </button>
             </div>
         </div>
     );

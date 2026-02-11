@@ -3,8 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#ffffff" />
     <title>frontend</title>
+    <style>
+      /* Prevent FOUC and layout shift */
+      #root {
+        min-height: 100vh;
+        display: block;
+      }
+      
+      /* Prevent scrollbar shift */
+      html {
+        overflow-y: scroll;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

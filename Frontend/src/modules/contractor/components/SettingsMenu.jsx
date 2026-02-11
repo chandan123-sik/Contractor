@@ -1,4 +1,4 @@
-import { User, Briefcase, Hammer, Shield, Phone, HelpCircle, LogOut, MessageSquare } from 'lucide-react';
+import { User, Briefcase, Hammer, Shield, Phone, HelpCircle, LogOut, MessageSquare, FolderKanban, History } from 'lucide-react';
 import SettingsMenuItem from '../../user/components/SettingsMenuItem';
 
 const SettingsMenu = ({ onMenuClick }) => {
@@ -6,6 +6,8 @@ const SettingsMenu = ({ onMenuClick }) => {
         { icon: User, label: 'Personal', path: '/contractor/personal-details', color: 'text-gray-700' },
         { icon: Briefcase, label: 'Business', path: '/contractor/business-details', color: 'text-gray-700' },
         { icon: Hammer, label: 'My Projects', path: '/contractor/my-projects', color: 'text-gray-700' },
+        { icon: FolderKanban, label: 'My Project for User', path: '/contractor/my-project-for-user', color: 'text-gray-700' },
+        { icon: History, label: 'History', path: '/contractor/history', color: 'text-gray-700' },
         { icon: Shield, label: 'Legal', path: '/contractor/legal', color: 'text-gray-700' },
         { icon: Phone, label: 'Contact us', path: '/contractor/contact-us', color: 'text-gray-700' },
         { icon: HelpCircle, label: 'About us', path: '/contractor/about-us', color: 'text-gray-700' },
