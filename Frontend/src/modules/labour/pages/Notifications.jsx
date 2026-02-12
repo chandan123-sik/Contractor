@@ -24,7 +24,7 @@ const Notifications = () => {
                 return;
             }
 
-            const response = await fetch('http://localhost:5000/api/notifications', {
+            const response = await fetch('http://localhost:5000/api/notifications?userType=LABOUR', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -91,7 +91,7 @@ const Notifications = () => {
         try {
             const token = localStorage.getItem('access_token');
             
-            const response = await fetch(`http://localhost:5000/api/notifications/${id}`, {
+            const response = await fetch(`http://localhost:5000/api/notifications/${id}?userType=LABOUR`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -216,15 +216,6 @@ const Notifications = () => {
                                             </p>
                                         </div>
                                         <div className="flex flex-col gap-2">
-                                            {!notification.isRead && (
-                                                <button
-                                                    onClick={() => markAsRead(notification._id)}
-                                                    className="p-2 hover:bg-green-50 rounded-lg transition-colors"
-                                                    title="Mark as read"
-                                                >
-                                                    <Check className="w-5 h-5 text-green-600" />
-                                                </button>
-                                            )}
                                             <button
                                                 onClick={() => deleteNotification(notification._id)}
                                                 className="p-2 hover:bg-red-50 rounded-lg transition-colors"

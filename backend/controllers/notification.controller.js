@@ -5,9 +5,14 @@ import Notification from '../models/Notification.model.js';
 // @access  Private
 export const getUserNotifications = async (req, res, next) => {
     try {
-        const { page = 1, limit = 20, isRead } = req.query;
+        const { page = 1, limit = 20, isRead, userType } = req.query;
 
         const query = { user: req.user._id };
+        
+        // Determine userType from query parameter or default to USER
+        const notificationUserType = userType || 'USER';
+        query.userType = notificationUserType;
+        
         if (isRead !== undefined) {
             query.isRead = isRead === 'true';
         }
@@ -19,7 +24,8 @@ export const getUserNotifications = async (req, res, next) => {
 
         const total = await Notification.countDocuments(query);
         const unreadCount = await Notification.countDocuments({ 
-            user: req.user._id, 
+            user: req.user._id,
+            userType: notificationUserType,
             isRead: false 
         });
 
@@ -45,9 +51,13 @@ export const getUserNotifications = async (req, res, next) => {
 // @access  Private
 export const markAsRead = async (req, res, next) => {
     try {
+        const { userType } = req.body;
+        const notificationUserType = userType || 'USER';
+        
         const notification = await Notification.findOne({
             _id: req.params.id,
-            user: req.user._id
+            user: req.user._id,
+            userType: notificationUserType
         });
 
         if (!notification) {
@@ -75,8 +85,11 @@ export const markAsRead = async (req, res, next) => {
 // @access  Private
 export const markAllAsRead = async (req, res, next) => {
     try {
+        const { userType } = req.body;
+        const notificationUserType = userType || 'USER';
+        
         await Notification.updateMany(
-            { user: req.user._id, isRead: false },
+            { user: req.user._id, userType: notificationUserType, isRead: false },
             { isRead: true }
         );
 
@@ -94,9 +107,13 @@ export const markAllAsRead = async (req, res, next) => {
 // @access  Private
 export const deleteNotification = async (req, res, next) => {
     try {
+        const { userType } = req.query;
+        const notificationUserType = userType || 'USER';
+        
         const notification = await Notification.findOne({
             _id: req.params.id,
-            user: req.user._id
+            user: req.user._id,
+            userType: notificationUserType
         });
 
         if (!notification) {
@@ -122,8 +139,12 @@ export const deleteNotification = async (req, res, next) => {
 // @access  Private
 export const getUnreadCount = async (req, res, next) => {
     try {
+        const { userType } = req.query;
+        const notificationUserType = userType || 'USER';
+        
         const count = await Notification.countDocuments({
             user: req.user._id,
+            userType: notificationUserType,
             isRead: false
         });
 

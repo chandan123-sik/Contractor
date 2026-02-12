@@ -22,27 +22,49 @@ const LabourMyCard = () => {
             if (token) {
                 // Fetch from database
                 const response = await labourAPI.getLabourProfile();
-                if (response.success && response.data.labour && response.data.labour.hasLabourCard) {
+                if (response.success && response.data.labour) {
                     const labour = response.data.labour;
                     
-                    // Transform database structure to match UI expectations
-                    const transformedCard = {
-                        id: labour._id,
-                        fullName: labour.labourCardDetails?.fullName || 'N/A',
-                        primarySkill: labour.skillType || 'N/A',
-                        rating: labour.rating || 0,
-                        gender: labour.labourCardDetails?.gender || 'N/A',
-                        mobileNumber: labour.labourCardDetails?.mobileNumber || 'N/A',
-                        city: labour.labourCardDetails?.city || 'N/A',
-                        address: labour.labourCardDetails?.address || 'N/A',
-                        skills: labour.labourCardDetails?.skills || 'N/A',
-                        experience: labour.experience || '0',
-                        previousWorkLocation: labour.previousWorkLocation || 'N/A',
-                        availability: labour.availability || 'Available',
-                        availabilityStatus: labour.availabilityStatus || 'Available'
-                    };
-                    
-                    setCards([transformedCard]);
+                    // Check if labour has multiple cards in labourCards array
+                    if (labour.labourCards && labour.labourCards.length > 0) {
+                        // Transform multiple cards
+                        const transformedCards = labour.labourCards.map(card => ({
+                            id: card._id,
+                            fullName: card.fullName || 'N/A',
+                            primarySkill: card.primarySkill || card.skills || 'N/A',
+                            rating: card.rating || 0,
+                            gender: card.gender || 'N/A',
+                            mobileNumber: card.mobileNumber || 'N/A',
+                            city: card.city || 'N/A',
+                            address: card.address || 'N/A',
+                            skills: card.skills || card.primarySkill || 'N/A',
+                            experience: card.experience || '0',
+                            previousWorkLocation: card.previousWorkLocation || 'N/A',
+                            availability: card.availability || 'Full Time',
+                            availabilityStatus: card.availabilityStatus || 'Available'
+                        }));
+                        setCards(transformedCards);
+                    } else if (labour.hasLabourCard && labour.labourCardDetails) {
+                        // Fallback to old single card format
+                        const transformedCard = {
+                            id: labour._id,
+                            fullName: labour.labourCardDetails?.fullName || 'N/A',
+                            primarySkill: labour.skillType || 'N/A',
+                            rating: labour.rating || 0,
+                            gender: labour.labourCardDetails?.gender || 'N/A',
+                            mobileNumber: labour.labourCardDetails?.mobileNumber || 'N/A',
+                            city: labour.labourCardDetails?.city || 'N/A',
+                            address: labour.labourCardDetails?.address || 'N/A',
+                            skills: labour.labourCardDetails?.skills || 'N/A',
+                            experience: labour.experience || '0',
+                            previousWorkLocation: labour.previousWorkLocation || 'N/A',
+                            availability: labour.availability || 'Available',
+                            availabilityStatus: labour.availabilityStatus || 'Available'
+                        };
+                        setCards([transformedCard]);
+                    } else {
+                        setCards([]);
+                    }
                 } else {
                     setCards([]);
                 }
@@ -200,11 +222,13 @@ const LabourMyCard = () => {
                             {/* Availability Type */}
                             <div className="mb-3">
                                 <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                                    card.availability === 'Full Time' 
+                                    card.availabilityStatus === 'Available' 
                                         ? 'bg-green-100 text-green-700' 
-                                        : 'bg-blue-100 text-blue-700'
+                                        : card.availabilityStatus === 'Busy'
+                                        ? 'bg-orange-100 text-orange-700'
+                                        : 'bg-gray-100 text-gray-700'
                                 }`}>
-                                    {card.availability || 'Available'}
+                                    {card.availabilityStatus || 'Available'}
                                 </span>
                             </div>
 

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, X, Briefcase, HardHat, MessageSquare, Star } from 'lucide-react';
+import { Plus, Trash2, Edit, X, Briefcase, HardHat, MessageSquare, Star, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { userManagementAPI } from '../../../services/admin.api';
 
 const UserManagement = () => {
     const [users, setUsers] = useState([]);
+    const [filteredUsers, setFilteredUsers] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
 
@@ -42,6 +44,7 @@ const UserManagement = () => {
             if (response.success) {
                 console.log('✅ Users received:', response.data.users.length);
                 setUsers(response.data.users);
+                setFilteredUsers(response.data.users);
                 setPagination(prev => ({
                     ...prev,
                     total: response.data.total,
@@ -57,6 +60,28 @@ const UserManagement = () => {
             toast.error(error.response?.data?.message || 'Failed to fetch users');
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Search functionality
+    const handleSearch = (e) => {
+        const query = e.target.value;
+        setSearchQuery(query);
+        
+        if (query.trim() === '') {
+            setFilteredUsers(users);
+        } else {
+            const filtered = users.filter(user => {
+                const searchLower = query.toLowerCase();
+                const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
+                const phone = user.mobileNumber || '';
+                const email = user.email || '';
+                
+                return fullName.includes(searchLower) ||
+                       phone.includes(searchLower) ||
+                       email.toLowerCase().includes(searchLower);
+            });
+            setFilteredUsers(filtered);
         }
     };
 
@@ -162,6 +187,20 @@ const UserManagement = () => {
                 </button>
             </div>
 
+            {/* Search Bar */}
+            <div style={{ marginBottom: '20px' }}>
+                <div className="admin-search-bar" style={{ maxWidth: '400px' }}>
+                    <Search size={18} color="#6b7280" />
+                    <input 
+                        type="text" 
+                        placeholder="Search users..." 
+                        className="admin-search-input"
+                        value={searchQuery}
+                        onChange={handleSearch}
+                    />
+                </div>
+            </div>
+
             {loading && <div style={{ textAlign: 'center', padding: '20px' }}>Loading...</div>}
 
             <div className="interaction-monitor">
@@ -177,7 +216,7 @@ const UserManagement = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {users.map(user => (
+                        {filteredUsers.map(user => (
                             <tr key={user._id}>
                                 <td>{getFullName(user)}</td>
                                 <td>{user.mobileNumber}</td>

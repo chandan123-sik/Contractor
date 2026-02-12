@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import LabourBottomNav from '../components/LabourBottomNav';
 import LabourContractorCard from '../components/LabourContractorCard';
 import LabourHeader from '../components/LabourHeader';
+import PromotionalBanner from '../../../components/shared/PromotionalBanner';
 import { contractorAPI } from '../../../services/api';
 
 const FindContractor = () => {
@@ -192,48 +193,52 @@ const FindContractor = () => {
 
     return (
         <div className="h-screen bg-gray-50 flex flex-col">
-            {/* Header */}
-            <LabourHeader />
+            <div className="flex-1 overflow-y-auto">
+                {/* Header - Scrolls with content */}
+                <LabourHeader />
 
-            {/* Search Bar */}
-            <div className="bg-white px-4 py-3 shadow-sm">
-                <div className="flex items-center gap-3">
-                    <div className="flex-1 flex items-center bg-gray-100 rounded-lg px-4 py-2">
-                        <Search className="w-5 h-5 text-gray-400 mr-2" />
-                        <input
-                            type="text"
-                            placeholder="Search contractors..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="flex-1 bg-transparent outline-none text-gray-700 placeholder-gray-400"
-                        />
-                    </div>
-                    <button 
-                        onClick={handleOpenFilter}
-                        className={`p-2 rounded-lg relative ${selectedCity ? 'bg-blue-500' : 'bg-gray-100'}`}
-                    >
-                        <SlidersHorizontal className={`w-5 h-5 ${selectedCity ? 'text-white' : 'text-gray-600'}`} />
-                        {selectedCity && (
-                            <span className="absolute -top-1 -right-1 bg-red-500 w-3 h-3 rounded-full"></span>
-                        )}
-                    </button>
-                </div>
-                {/* Active Filter Badge */}
-                {selectedCity && (
-                    <div className="mt-2 flex items-center gap-2">
-                        <span className="text-xs text-gray-600">Filtered by:</span>
-                        <div className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                            <span>{selectedCity}</span>
-                            <button onClick={handleClearFilter} className="hover:bg-blue-200 rounded-full p-0.5">
-                                <X className="w-3 h-3" />
-                            </button>
+                {/* Search Bar - Scrolls with content */}
+                <div className="bg-white px-4 py-3 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="flex-1 flex items-center bg-gray-100 rounded-lg px-4 py-2">
+                            <Search className="w-5 h-5 text-gray-400 mr-2" />
+                            <input
+                                type="text"
+                                placeholder="Search contractors..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="flex-1 bg-transparent outline-none text-gray-700 placeholder-gray-400"
+                            />
                         </div>
+                        <button 
+                            onClick={handleOpenFilter}
+                            className={`p-2 rounded-lg relative ${selectedCity ? 'bg-blue-500' : 'bg-gray-100'}`}
+                        >
+                            <SlidersHorizontal className={`w-5 h-5 ${selectedCity ? 'text-white' : 'text-gray-600'}`} />
+                            {selectedCity && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 w-3 h-3 rounded-full"></span>
+                            )}
+                        </button>
                     </div>
-                )}
-            </div>
+                    {/* Active Filter Badge */}
+                    {selectedCity && (
+                        <div className="mt-2 flex items-center gap-2">
+                            <span className="text-xs text-gray-600">Filtered by:</span>
+                            <div className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                                <span>{selectedCity}</span>
+                                <button onClick={handleClearFilter} className="hover:bg-blue-200 rounded-full p-0.5">
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
-            {/* Content Area */}
-            <div className="flex-1 overflow-y-auto p-4 pb-20">
+                {/* Content Area */}
+                <div className="p-4 pb-20">
+                    {/* Promotional Banners */}
+                    <PromotionalBanner />
+                    
                 <h2 className="text-xl font-bold text-gray-900 mb-4">
                     Available Contractors
                     {selectedCity && <span className="text-sm font-normal text-gray-600"> in {selectedCity}</span>}
@@ -427,6 +432,7 @@ const FindContractor = () => {
                     </div>
                 </div>
             )}
+            </div>
 
             {/* Bottom Navigation */}
             <LabourBottomNav />

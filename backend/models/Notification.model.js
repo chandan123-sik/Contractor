@@ -6,6 +6,11 @@ const notificationSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    userType: {
+        type: String,
+        enum: ['USER', 'LABOUR', 'CONTRACTOR'],
+        default: 'USER'
+    },
     title: {
         type: String,
         required: true,
@@ -42,7 +47,7 @@ const notificationSchema = new mongoose.Schema({
     timestamps: true
 });
 
-notificationSchema.index({ user: 1, createdAt: -1 });
+notificationSchema.index({ user: 1, userType: 1, createdAt: -1 });
 
 const Notification = mongoose.model('Notification', notificationSchema);
 

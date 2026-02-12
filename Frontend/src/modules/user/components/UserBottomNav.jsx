@@ -1,15 +1,42 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, Users, Search, FileText, Settings } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 const UserBottomNav = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const [requestCount, setRequestCount] = useState(0);
+
+    useEffect(() => {
+        // Calculate total requests from localStorage
+        const calculateRequests = () => {
+            try {
+                // Get contractor requests
+                const contractorRequests = JSON.parse(localStorage.getItem('user_contractor_requests') || '[]');
+                // Get worker requests  
+                const workerRequests = JSON.parse(localStorage.getItem('user_worker_requests') || '[]');
+                
+                const total = contractorRequests.length + workerRequests.length;
+                setRequestCount(total);
+            } catch (error) {
+                console.error('Error calculating requests:', error);
+                setRequestCount(0);
+            }
+        };
+
+        calculateRequests();
+
+        // Listen for storage changes
+        window.addEventListener('storage', calculateRequests);
+        
+        return () => window.removeEventListener('storage', calculateRequests);
+    }, []);
 
     const navItems = [
         { path: '/user/home', label: 'Home', icon: Home },
         { path: '/user/hire-workers', label: 'Hire Workers', icon: Users },
         { path: '/user/find-contractor', label: 'Find Contractor', icon: Search },
-        { path: '/user/requests', label: 'Requests', icon: FileText },
+        { path: '/user/requests', label: 'Requests', icon: FileText, badge: requestCount },
         { path: '/user/settings', label: 'Settings', icon: Settings }
     ];
 
@@ -24,11 +51,18 @@ const UserBottomNav = () => {
                         <button
                             key={item.path}
                             onClick={() => navigate(item.path)}
-                            className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
+                            className={`flex flex-col items-center justify-center flex-1 h-full transition-colors relative ${
                                 isActive ? 'text-yellow-500' : 'text-gray-500'
                             }`}
                         >
-                            <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-yellow-500' : 'text-gray-500'}`} />
+                            <div className="relative">
+                                <Icon className={`w-6 h-6 mb-1 ${isActive ? 'text-yellow-500' : 'text-gray-500'}`} />
+                                {item.badge > 0 && (
+                                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                        {item.badge > 9 ? '9+' : item.badge}
+                                    </span>
+                                )}
+                            </div>
                             <span className={`text-xs font-medium ${isActive ? 'text-yellow-500' : 'text-gray-600'}`}>
                                 {item.label}
                             </span>

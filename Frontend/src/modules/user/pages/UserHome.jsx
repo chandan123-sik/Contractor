@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import UserBottomNav from '../components/UserBottomNav';
 import UserHeader from '../components/UserHeader';
+import PromotionalBanner from '../../../components/shared/PromotionalBanner';
 import { categoryAPI } from '../../../services/api';
 
 const UserHome = () => {
@@ -73,16 +74,13 @@ const UserHome = () => {
                 </div>
             </div>
 
+            {/* Promotional Banners */}
+            <PromotionalBanner />
+
             {/* Categories Section */}
-            <div className="px-4 mt-6 mb-6">
+            <div className="px-4 mt-2 mb-6">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-gray-900">Categories</h3>
-                    <button 
-                        onClick={handleSeeAllClick}
-                        className="text-sm text-blue-500 font-medium hover:text-blue-600"
-                    >
-                        {showAllCategories ? 'Show Less' : 'See All'}
-                    </button>
                 </div>
 
                 {loading ? (

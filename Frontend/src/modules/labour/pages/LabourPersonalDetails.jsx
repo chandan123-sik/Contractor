@@ -81,6 +81,10 @@ const LabourPersonalDetails = () => {
             address: formData.address
         };
         localStorage.setItem('labour_profile', JSON.stringify(updatedProfile));
+        
+        // Dispatch event to update header
+        window.dispatchEvent(new Event('profileUpdated'));
+        
         toast.success('Changes saved successfully!');
     };
 

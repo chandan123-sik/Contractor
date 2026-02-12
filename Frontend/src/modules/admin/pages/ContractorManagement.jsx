@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, X, Briefcase, HardHat, MessageSquare, Star, Users } from 'lucide-react';
+import { Plus, Trash2, Edit, X, Briefcase, HardHat, MessageSquare, Star, Users, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { contractorManagementAPI } from '../../../services/admin.api';
 
 const ContractorManagement = () => {
     const [contractors, setContractors] = useState([]);
+    const [filteredContractors, setFilteredContractors] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
 
@@ -39,6 +41,7 @@ const ContractorManagement = () => {
             
             if (response.success) {
                 setContractors(response.data.contractors);
+                setFilteredContractors(response.data.contractors);
                 setPagination(prev => ({
                     ...prev,
                     total: response.data.total,
@@ -50,6 +53,30 @@ const ContractorManagement = () => {
             toast.error('Failed to fetch contractors');
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Search functionality
+    const handleSearch = (e) => {
+        const query = e.target.value;
+        setSearchQuery(query);
+        
+        if (query.trim() === '') {
+            setFilteredContractors(contractors);
+        } else {
+            const filtered = contractors.filter(contractor => {
+                const searchLower = query.toLowerCase();
+                const firstName = contractor.user?.firstName || contractor.firstName || '';
+                const lastName = contractor.user?.lastName || contractor.lastName || '';
+                const fullName = `${firstName} ${lastName}`.toLowerCase();
+                const phone = contractor.user?.mobileNumber || contractor.mobileNumber || '';
+                const company = contractor.businessName || '';
+                
+                return fullName.includes(searchLower) ||
+                       phone.includes(searchLower) ||
+                       company.toLowerCase().includes(searchLower);
+            });
+            setFilteredContractors(filtered);
         }
     };
 
@@ -163,6 +190,20 @@ const ContractorManagement = () => {
                 </button>
             </div>
 
+            {/* Search Bar */}
+            <div style={{ marginBottom: '20px' }}>
+                <div className="admin-search-bar" style={{ maxWidth: '400px' }}>
+                    <Search size={18} color="#6b7280" />
+                    <input 
+                        type="text" 
+                        placeholder="Search contractors..." 
+                        className="admin-search-input"
+                        value={searchQuery}
+                        onChange={handleSearch}
+                    />
+                </div>
+            </div>
+
             {loading && <div style={{ textAlign: 'center', padding: '20px' }}>Loading...</div>}
 
             <div className="interaction-monitor">
@@ -179,7 +220,7 @@ const ContractorManagement = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {contractors.map(contractor => (
+                        {filteredContractors.map(contractor => (
                             <tr key={contractor._id}>
                                 <td>{getFullName(contractor)}</td>
                                 <td>{contractor.businessName || 'N/A'}</td>

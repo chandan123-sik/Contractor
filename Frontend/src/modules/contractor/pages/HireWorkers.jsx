@@ -21,31 +21,31 @@ const HireWorkers = () => {
     // Dummy cards for all categories
     const dummyCards = [
         // Electrician
-        { id: 'e1', fullName: 'Rajesh Kumar', primarySkill: 'Electrician', rating: 4, gender: 'Male', city: 'Indore', mobileNumber: '9876543210', experience: '5', availability: 'Full Time', address: 'Vijay Nagar, Indore', skills: 'Wiring, Panel Installation' },
+        { id: 'e1', fullName: 'Rajesh Kumar', primarySkill: 'Electrician', rating: 4, gender: 'Male', city: 'Indore', mobileNumber: '9876543210', experience: '5', availability: 'Full Time', availabilityStatus: 'Available', address: 'Vijay Nagar, Indore', skills: 'Wiring, Panel Installation' },
         
         // Plumber
-        { id: 'p1', fullName: 'Rahul Verma', primarySkill: 'Plumber', rating: 4, gender: 'Male', city: 'Indore', mobileNumber: '9876543213', experience: '6', availability: 'Full Time', address: 'Palasia, Indore', skills: 'Pipe Fitting, Leak Repair' },
+        { id: 'p1', fullName: 'Rahul Verma', primarySkill: 'Plumber', rating: 4, gender: 'Male', city: 'Indore', mobileNumber: '9876543213', experience: '6', availability: 'Full Time', availabilityStatus: 'Available', address: 'Palasia, Indore', skills: 'Pipe Fitting, Leak Repair' },
         
         // Carpenter
-        { id: 'c1', fullName: 'Ramesh Yadav', primarySkill: 'Carpenter', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543216', experience: '10', availability: 'Full Time', address: 'Rau, Indore', skills: 'Furniture Making, Door Fitting' },
+        { id: 'c1', fullName: 'Ramesh Yadav', primarySkill: 'Carpenter', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543216', experience: '10', availability: 'Full Time', availabilityStatus: 'Available', address: 'Rau, Indore', skills: 'Furniture Making, Door Fitting' },
         
         // Painter
-        { id: 'pa1', fullName: 'Anil Mishra', primarySkill: 'Painter', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543219', experience: '7', availability: 'Full Time', address: 'Bhawarkua, Indore', skills: 'Wall Painting, Texture Work' },
+        { id: 'pa1', fullName: 'Anil Mishra', primarySkill: 'Painter', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543219', experience: '7', availability: 'Full Time', availabilityStatus: 'Busy', address: 'Bhawarkua, Indore', skills: 'Wall Painting, Texture Work' },
         
         // Mechanic
-        { id: 'm1', fullName: 'Ravi Chouhan', primarySkill: 'Mechanic', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543222', experience: '9', availability: 'Full Time', address: 'Aerodrome, Indore', skills: 'Car Repair, Bike Service' },
+        { id: 'm1', fullName: 'Ravi Chouhan', primarySkill: 'Mechanic', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543222', experience: '9', availability: 'Full Time', availabilityStatus: 'Available', address: 'Aerodrome, Indore', skills: 'Car Repair, Bike Service' },
         
         // Electronics Repair
-        { id: 'er1', fullName: 'Karan Malviya', primarySkill: 'Electronics Repair', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543225', experience: '8', availability: 'Full Time', address: 'Sapna Sangeeta, Indore', skills: 'TV Repair, Mobile Repair' },
+        { id: 'er1', fullName: 'Karan Malviya', primarySkill: 'Electronics Repair', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543225', experience: '8', availability: 'Full Time', availabilityStatus: 'Available', address: 'Sapna Sangeeta, Indore', skills: 'TV Repair, Mobile Repair' },
         
         // Welder
-        { id: 'w1', fullName: 'Sunil Barela', primarySkill: 'Welder', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543231', experience: '12', availability: 'Full Time', address: 'Sanwer Road, Indore', skills: 'Arc Welding, Gas Welding' },
+        { id: 'w1', fullName: 'Sunil Barela', primarySkill: 'Welder', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543231', experience: '12', availability: 'Full Time', availabilityStatus: 'Available', address: 'Sanwer Road, Indore', skills: 'Arc Welding, Gas Welding' },
         
         // Cleaner
-        { id: 'cl1', fullName: 'Sunita Devi', primarySkill: 'Cleaner', rating: 5, gender: 'Female', city: 'Indore', mobileNumber: '9876543237', experience: '6', availability: 'Full Time', address: 'Rajendra Nagar, Indore', skills: 'House Cleaning, Office Cleaning' },
+        { id: 'cl1', fullName: 'Sunita Devi', primarySkill: 'Cleaner', rating: 5, gender: 'Female', city: 'Indore', mobileNumber: '9876543237', experience: '6', availability: 'Full Time', availabilityStatus: 'Available', address: 'Rajendra Nagar, Indore', skills: 'House Cleaning, Office Cleaning' },
         
         // Women's Parlour
-        { id: 'wp1', fullName: 'Priya Malhotra', primarySkill: "Women's Parlour", rating: 5, gender: 'Female', city: 'Indore', mobileNumber: '9876543240', experience: '8', availability: 'Full Time', address: 'South Tukoganj, Indore', skills: 'Hair Styling, Makeup, Facial' },
+        { id: 'wp1', fullName: 'Priya Malhotra', primarySkill: "Women's Parlour", rating: 5, gender: 'Female', city: 'Indore', mobileNumber: '9876543240', experience: '8', availability: 'Full Time', availabilityStatus: 'Available', address: 'South Tukoganj, Indore', skills: 'Hair Styling, Makeup, Facial' },
         
         // Mistri
         { id: 'mi1', fullName: 'Kalyan Singh', primarySkill: 'Mistri', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543243', experience: '15', availability: 'Full Time', address: 'Limbodi, Indore', skills: 'Construction, Masonry, Plastering' }
@@ -429,14 +429,16 @@ const HireWorkers = () => {
                                     </div>
                                 </div>
 
-                                {/* Availability Type */}
+                                {/* Availability Status */}
                                 <div className="mb-3">
                                     <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium transition-all ${
-                                        card.availability === 'Full Time' 
+                                        card.availabilityStatus === 'Available' 
                                             ? 'bg-green-100 text-green-700' 
-                                            : 'bg-blue-100 text-blue-700'
+                                            : card.availabilityStatus === 'Busy'
+                                            ? 'bg-orange-100 text-orange-700'
+                                            : 'bg-gray-100 text-gray-700'
                                     }`}>
-                                        {card.availability}
+                                        {card.availabilityStatus || 'Available'}
                                     </span>
                                 </div>
 

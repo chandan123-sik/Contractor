@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, X, HardHat, Briefcase, MessageSquare, Star, Users } from 'lucide-react';
+import { Plus, Trash2, Edit, X, HardHat, Briefcase, MessageSquare, Star, Users, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { labourManagementAPI } from '../../../services/admin.api';
 
 const LabourManagement = () => {
     const [labours, setLabours] = useState([]);
+    const [filteredLabours, setFilteredLabours] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
 
@@ -43,6 +45,7 @@ const LabourManagement = () => {
             if (response.success) {
                 console.log('✅ Labours received:', response.data.labours.length);
                 setLabours(response.data.labours);
+                setFilteredLabours(response.data.labours);
                 setPagination(prev => ({
                     ...prev,
                     total: response.data.total,
@@ -58,6 +61,28 @@ const LabourManagement = () => {
             toast.error(error.response?.data?.message || 'Failed to fetch labours');
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Search functionality
+    const handleSearch = (e) => {
+        const query = e.target.value;
+        setSearchQuery(query);
+        
+        if (query.trim() === '') {
+            setFilteredLabours(labours);
+        } else {
+            const filtered = labours.filter(labour => {
+                const searchLower = query.toLowerCase();
+                const fullName = `${labour.firstName || ''} ${labour.lastName || ''}`.toLowerCase();
+                const phone = labour.mobileNumber || '';
+                const trade = labour.trade || '';
+                
+                return fullName.includes(searchLower) ||
+                       phone.includes(searchLower) ||
+                       trade.toLowerCase().includes(searchLower);
+            });
+            setFilteredLabours(filtered);
         }
     };
 
@@ -167,6 +192,20 @@ const LabourManagement = () => {
                 </button>
             </div>
 
+            {/* Search Bar */}
+            <div style={{ marginBottom: '20px' }}>
+                <div className="admin-search-bar" style={{ maxWidth: '400px' }}>
+                    <Search size={18} color="#6b7280" />
+                    <input 
+                        type="text" 
+                        placeholder="Search labours..." 
+                        className="admin-search-input"
+                        value={searchQuery}
+                        onChange={handleSearch}
+                    />
+                </div>
+            </div>
+
             {loading && <div style={{ textAlign: 'center', padding: '20px' }}>Loading...</div>}
 
             <div className="interaction-monitor">
@@ -183,7 +222,7 @@ const LabourManagement = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {labours.map(labour => (
+                        {filteredLabours.map(labour => (
                             <tr key={labour._id}>
                                 <td>{getFullName(labour)}</td>
                                 <td>{labour.trade || 'N/A'}</td>

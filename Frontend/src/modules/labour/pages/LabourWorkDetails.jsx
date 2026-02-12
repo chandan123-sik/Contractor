@@ -90,6 +90,10 @@ const LabourWorkDetails = () => {
             availability: formData.availability
         };
         localStorage.setItem('labour_profile', JSON.stringify(updatedProfile));
+        
+        // Dispatch event to update header
+        window.dispatchEvent(new Event('profileUpdated'));
+        
         toast.success('Work details saved successfully!');
     };
 

@@ -18,7 +18,8 @@ import {
     AlertCircle,
     MoreVertical,
     LogOut,
-    SlidersHorizontal
+    SlidersHorizontal,
+    Image
 } from 'lucide-react';
 import { Outlet, useNavigate, useLocation, Link, NavLink } from 'react-router-dom';
 import './AdminDashboard.css';
@@ -254,6 +255,7 @@ export function DashboardHome() {
 const ProfessionalDashboard = () => {
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
     const location = useLocation();
     const adminRole = localStorage.getItem('adminRole');
@@ -263,6 +265,12 @@ const ProfessionalDashboard = () => {
         localStorage.removeItem('adminRole');
         localStorage.removeItem('adminToken');
         navigate('/admin/login');
+    };
+
+    const handleSearch = (e) => {
+        setSearchQuery(e.target.value);
+        // Search functionality can be implemented here
+        console.log('Searching for:', e.target.value);
     };
 
     const hasAccess = (allowedRoles) => {
@@ -304,7 +312,7 @@ const ProfessionalDashboard = () => {
             <aside className={`admin-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
                 <div className="admin-sidebar-logo">
                     <HardHat size={32} color="#f97316" />
-                    <span>Rajghar</span>
+                    <span>Majdoor Sathi</span>
                 </div>
                 <nav className="admin-sidebar-nav">
                     <NavLink
@@ -382,6 +390,17 @@ const ProfessionalDashboard = () => {
                         </NavLink>
                     )}
                     
+                    {hasAccess(['SUPER_ADMIN']) && (
+                        <NavLink
+                            to="/admin/dashboard/banners"
+                            onClick={closeMobileMenu}
+                            className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
+                        >
+                            <Image size={20} />
+                            <span>Banner Section</span>
+                        </NavLink>
+                    )}
+                    
                     <NavLink
                         to="/admin/dashboard/settings"
                         onClick={closeMobileMenu}
@@ -405,10 +424,7 @@ const ProfessionalDashboard = () => {
             {/* Main Content */}
             <main className="admin-main">
                 <header className="admin-header">
-                    <div className="admin-search-bar">
-                        <Search size={18} color="#6b7280" />
-                        <input type="text" placeholder="User rajsisgn" className="admin-search-input" />
-                    </div>
+                    <div></div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#ccc', overflow: 'hidden' }}>

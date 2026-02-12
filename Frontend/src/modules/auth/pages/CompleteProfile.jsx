@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useRef } from 'react';
-import { Camera, User, Hammer, Briefcase } from 'lucide-react';
+import { User, Hammer, Briefcase } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const CompleteProfile = () => {
@@ -19,10 +19,117 @@ const CompleteProfile = () => {
         userType: 'User', // Default
         profileImage: null
     });
+    const [errors, setErrors] = useState({});
+
+    const validateField = (name, value) => {
+        let error = '';
+
+        switch (name) {
+            case 'firstName':
+                if (!value.trim()) {
+                    error = 'First name is required';
+                } else if (value.trim().length < 2) {
+                    error = 'First name must be at least 2 characters';
+                } else if (!/^[a-zA-Z\s]+$/.test(value)) {
+                    error = 'First name can only contain letters';
+                }
+                break;
+
+            case 'middleName':
+                if (value && !/^[a-zA-Z\s]+$/.test(value)) {
+                    error = 'Middle name can only contain letters';
+                }
+                break;
+
+            case 'lastName':
+                if (!value.trim()) {
+                    error = 'Last name is required';
+                } else if (value.trim().length < 2) {
+                    error = 'Last name must be at least 2 characters';
+                } else if (!/^[a-zA-Z\s]+$/.test(value)) {
+                    error = 'Last name can only contain letters';
+                }
+                break;
+
+            case 'gender':
+                if (!value) {
+                    error = 'Gender is required';
+                }
+                break;
+
+            case 'dob':
+                if (!value) {
+                    error = 'Date of birth is required';
+                } else {
+                    const today = new Date();
+                    const birthDate = new Date(value);
+                    let age = today.getFullYear() - birthDate.getFullYear();
+                    const monthDiff = today.getMonth() - birthDate.getMonth();
+                    
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                        age--;
+                    }
+
+                    if (birthDate > today) {
+                        error = 'Date of birth cannot be in the future';
+                    } else if (age < 18) {
+                        error = 'You must be at least 18 years old';
+                    } else if (age > 100) {
+                        error = 'Please enter a valid date of birth';
+                    }
+                }
+                break;
+
+            case 'aadharNumber':
+                if (value && !/^\d{12}$/.test(value.replace(/\s/g, ''))) {
+                    error = 'Aadhar number must be exactly 12 digits';
+                }
+                break;
+
+            case 'city':
+                if (value && !/^[a-zA-Z\s]+$/.test(value)) {
+                    error = 'City name can only contain letters';
+                }
+                break;
+
+            case 'state':
+                if (value && !/^[a-zA-Z\s]+$/.test(value)) {
+                    error = 'State name can only contain letters';
+                }
+                break;
+
+            case 'address':
+                if (value && value.length > 200) {
+                    error = 'Address cannot exceed 200 characters';
+                }
+                break;
+
+            default:
+                break;
+        }
+
+        return error;
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
+        
+        // For aadhar number, only allow digits
+        if (name === 'aadharNumber') {
+            const digitsOnly = value.replace(/\D/g, '');
+            if (digitsOnly.length <= 12) {
+                setFormData(prev => ({ ...prev, [name]: digitsOnly }));
+                const error = validateField(name, digitsOnly);
+                setErrors(prev => ({ ...prev, [name]: error }));
+            }
+            return;
+        }
+
         setFormData(prev => ({ ...prev, [name]: value }));
+        
+        // Validate on change
+        const error = validateField(name, value);
+        setErrors(prev => ({ ...prev, [name]: error }));
     };
 
     const handlePhotoClick = () => {
@@ -42,26 +149,43 @@ const CompleteProfile = () => {
     };
 
     const handleContinue = async () => {
-        // Photo validation removed as per request
-
-        if (!formData.firstName.trim()) {
-            toast.error('First name is required');
-            return;
+        // Validate all required fields
+        const newErrors = {};
+        
+        // Validate required fields
+        newErrors.firstName = validateField('firstName', formData.firstName);
+        newErrors.lastName = validateField('lastName', formData.lastName);
+        newErrors.gender = validateField('gender', formData.gender);
+        newErrors.dob = validateField('dob', formData.dob);
+        
+        // Validate optional fields if they have values
+        if (formData.middleName) {
+            newErrors.middleName = validateField('middleName', formData.middleName);
+        }
+        if (formData.aadharNumber) {
+            newErrors.aadharNumber = validateField('aadharNumber', formData.aadharNumber);
+        }
+        if (formData.city) {
+            newErrors.city = validateField('city', formData.city);
+        }
+        if (formData.state) {
+            newErrors.state = validateField('state', formData.state);
+        }
+        if (formData.address) {
+            newErrors.address = validateField('address', formData.address);
         }
 
-        localStorage.setItem('user_type', formData.userType);
-        if (!formData.lastName.trim()) {
-            toast.error('Last name is required');
-            return;
-        }
+        // Filter out empty errors
+        const filteredErrors = Object.fromEntries(
+            Object.entries(newErrors).filter(([_, value]) => value !== '')
+        );
 
-        if (!formData.gender) {
-            toast.error('Gender is required');
-            return;
-        }
+        setErrors(filteredErrors);
 
-        if (!formData.dob) {
-            toast.error('Date of birth is required');
+        // If there are any errors, show the first one and stop
+        if (Object.keys(filteredErrors).length > 0) {
+            const firstError = Object.values(filteredErrors)[0];
+            toast.error(firstError);
             return;
         }
 
@@ -69,6 +193,8 @@ const CompleteProfile = () => {
             // Get mobile number and token
             const mobileNumber = localStorage.getItem('mobile_number') || '';
             const token = localStorage.getItem('access_token');
+
+            localStorage.setItem('user_type', formData.userType);
 
             if (token) {
                 // Update profile via API
@@ -79,15 +205,15 @@ const CompleteProfile = () => {
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        firstName: formData.firstName,
-                        middleName: formData.middleName,
-                        lastName: formData.lastName,
+                        firstName: formData.firstName.trim(),
+                        middleName: formData.middleName.trim(),
+                        lastName: formData.lastName.trim(),
                         gender: formData.gender,
                         dob: formData.dob,
                         aadharNumber: formData.aadharNumber,
-                        city: formData.city,
-                        state: formData.state,
-                        address: formData.address,
+                        city: formData.city.trim(),
+                        state: formData.state.trim(),
+                        address: formData.address.trim(),
                         userType: formData.userType,
                         profileImage: formData.profileImage
                     })
@@ -98,6 +224,9 @@ const CompleteProfile = () => {
                 if (data.success) {
                     console.log('Profile updated successfully:', data.data.user);
                     toast.success('Profile updated successfully!');
+                } else {
+                    toast.error(data.message || 'Failed to update profile');
+                    return;
                 }
             }
 
@@ -169,6 +298,11 @@ const CompleteProfile = () => {
                     mobileNumber: mobileNumber
                 };
                 localStorage.setItem('labour_profile', JSON.stringify(labourProfile));
+                console.log('Labour profile saved:', labourProfile);
+                
+                // Dispatch event to update header
+                window.dispatchEvent(new Event('profileUpdated'));
+                
                 console.log('Labour profile saved to localStorage:', labourProfile);
                 
                 // Also create labour profile in database
@@ -204,7 +338,7 @@ const CompleteProfile = () => {
             }
         } catch (error) {
             console.error('Error updating profile:', error);
-            toast.error('Failed to update profile');
+            toast.error('Failed to update profile. Please try again.');
         }
     };
 
@@ -250,8 +384,9 @@ const CompleteProfile = () => {
                         value={formData.firstName}
                         onChange={handleChange}
                         placeholder="Ex: John"
-                        className="w-full bg-white border border-gray-200 rounded-lg p-2.5 text-sm text-gray-700 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
+                        className={`w-full bg-white border rounded-lg p-2.5 text-sm text-gray-700 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all ${errors.firstName ? 'border-red-500' : 'border-gray-200'}`}
                     />
+                    {errors.firstName && <p className="text-xs text-red-500 mt-1">{errors.firstName}</p>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mb-3">
@@ -263,8 +398,9 @@ const CompleteProfile = () => {
                             value={formData.middleName}
                             onChange={handleChange}
                             placeholder="Ex: Kumar"
-                            className="w-full bg-white border border-gray-200 rounded-lg p-2.5 text-sm text-gray-700 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
+                            className={`w-full bg-white border rounded-lg p-2.5 text-sm text-gray-700 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all ${errors.middleName ? 'border-red-500' : 'border-gray-200'}`}
                         />
+                        {errors.middleName && <p className="text-xs text-red-500 mt-1">{errors.middleName}</p>}
                     </div>
                     <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-1">Last name <span className="text-red-500">*</span></label>
@@ -274,8 +410,9 @@ const CompleteProfile = () => {
                             value={formData.lastName}
                             onChange={handleChange}
                             placeholder="Ex: Doe"
-                            className="w-full bg-white border border-gray-200 rounded-lg p-2.5 text-sm text-gray-700 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
+                            className={`w-full bg-white border rounded-lg p-2.5 text-sm text-gray-700 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all ${errors.lastName ? 'border-red-500' : 'border-gray-200'}`}
                         />
+                        {errors.lastName && <p className="text-xs text-red-500 mt-1">{errors.lastName}</p>}
                     </div>
                 </div>
 
@@ -286,13 +423,14 @@ const CompleteProfile = () => {
                             name="gender"
                             value={formData.gender}
                             onChange={handleChange}
-                            className={`w-full bg-white border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-yellow-400 outline-none transition-all ${formData.gender ? 'text-gray-700' : 'text-gray-400'}`}
+                            className={`w-full bg-white border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-yellow-400 outline-none transition-all ${formData.gender ? 'text-gray-700' : 'text-gray-400'} ${errors.gender ? 'border-red-500' : 'border-gray-200'}`}
                         >
                             <option value="" disabled hidden>Select Gender</option>
                             <option value="Male" className="text-gray-700">Male</option>
                             <option value="Female" className="text-gray-700">Female</option>
                             <option value="Other" className="text-gray-700">Other</option>
                         </select>
+                        {errors.gender && <p className="text-xs text-red-500 mt-1">{errors.gender}</p>}
                     </div>
                     <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-1">Date of birth <span className="text-red-500">*</span></label>
@@ -301,8 +439,10 @@ const CompleteProfile = () => {
                             name="dob"
                             value={formData.dob}
                             onChange={handleChange}
-                            className={`w-full bg-white border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-yellow-400 outline-none transition-all ${formData.dob ? 'text-gray-700' : 'text-gray-400'}`}
+                            max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+                            className={`w-full bg-white border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-yellow-400 outline-none transition-all ${formData.dob ? 'text-gray-700' : 'text-gray-400'} ${errors.dob ? 'border-red-500' : 'border-gray-200'}`}
                         />
+                        {errors.dob && <p className="text-xs text-red-500 mt-1">{errors.dob}</p>}
                     </div>
                 </div>
 
@@ -316,8 +456,9 @@ const CompleteProfile = () => {
                             value={formData.city}
                             onChange={handleChange}
                             placeholder="Enter city"
-                            className="w-full bg-white border border-gray-200 rounded-lg p-2.5 text-sm text-gray-700 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
+                            className={`w-full bg-white border rounded-lg p-2.5 text-sm text-gray-700 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all ${errors.city ? 'border-red-500' : 'border-gray-200'}`}
                         />
+                        {errors.city && <p className="text-xs text-red-500 mt-1">{errors.city}</p>}
                     </div>
                     <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-1">State</label>
@@ -327,8 +468,9 @@ const CompleteProfile = () => {
                             value={formData.state}
                             onChange={handleChange}
                             placeholder="Enter state"
-                            className="w-full bg-white border border-gray-200 rounded-lg p-2.5 text-sm text-gray-700 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
+                            className={`w-full bg-white border rounded-lg p-2.5 text-sm text-gray-700 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all ${errors.state ? 'border-red-500' : 'border-gray-200'}`}
                         />
+                        {errors.state && <p className="text-xs text-red-500 mt-1">{errors.state}</p>}
                     </div>
                 </div>
 
@@ -341,8 +483,11 @@ const CompleteProfile = () => {
                         onChange={handleChange}
                         placeholder="Enter address"
                         rows="2"
-                        className="w-full bg-white border border-gray-200 rounded-lg p-2.5 text-sm text-gray-700 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all resize-none"
+                        maxLength="200"
+                        className={`w-full bg-white border rounded-lg p-2.5 text-sm text-gray-700 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all resize-none ${errors.address ? 'border-red-500' : 'border-gray-200'}`}
                     />
+                    {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}
+                    {formData.address && <p className="text-xs text-gray-400 mt-1">{formData.address.length}/200</p>}
                 </div>
 
                 {/* Aadhar Card Number */}
@@ -353,10 +498,12 @@ const CompleteProfile = () => {
                         name="aadharNumber"
                         value={formData.aadharNumber}
                         onChange={handleChange}
-                        placeholder="Ex: 1234 5678 9012"
+                        placeholder="Ex: 123456789012"
                         maxLength="12"
-                        className="w-full bg-white border border-gray-200 rounded-lg p-2.5 text-sm text-gray-700 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all"
+                        className={`w-full bg-white border rounded-lg p-2.5 text-sm text-gray-700 focus:ring-2 focus:ring-yellow-400 focus:border-transparent outline-none transition-all ${errors.aadharNumber ? 'border-red-500' : 'border-gray-200'}`}
                     />
+                    {errors.aadharNumber && <p className="text-xs text-red-500 mt-1">{errors.aadharNumber}</p>}
+                    {formData.aadharNumber && <p className="text-xs text-gray-400 mt-1">{formData.aadharNumber.length}/12 digits</p>}
                 </div>
 
                 {/* User Type Selection */}

@@ -147,6 +147,9 @@ const LabourDetails = () => {
                     ...formData
                 }));
 
+                // Dispatch event to update header
+                window.dispatchEvent(new Event('profileUpdated'));
+
                 toast.success('Profile completed successfully!');
                 navigate('/labour/find-user');
             } else {

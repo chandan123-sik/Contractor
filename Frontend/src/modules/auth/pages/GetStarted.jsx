@@ -51,7 +51,7 @@ const GetStarted = () => {
 
                     {/* CTA Button */}
                     <button
-                        onClick={() => navigate('/mobile-login')}
+                        onClick={() => navigate('/select-language')}
                         className="w-full max-w-md bg-white text-gray-900 font-bold py-4 px-6 rounded-full shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 group"
                     >
                         <span className="text-lg">Get Started</span>

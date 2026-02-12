@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 
 // Auth Pages
 import GetStarted from '../modules/auth/pages/GetStarted';
+import SelectLanguage from '../modules/auth/pages/SelectLanguage';
 import MobileInput from '../modules/auth/pages/MobileInput';
 import OTPVerification from '../modules/auth/pages/OTPVerification';
 import CompleteProfile from '../modules/auth/pages/CompleteProfile';
@@ -78,6 +79,7 @@ import AdminSettings from '../modules/admin/pages/AdminSettings';
 import RoleProtectedRoute from '../modules/admin/components/RoleProtectedRoute';
 import LabourCategoryManagement from '../modules/admin/pages/LabourCategoryManagement';
 import BroadcastManagement from '../modules/admin/pages/BroadcastManagement';
+import BannerSection from '../modules/admin/pages/BannerSection';
 
 const AppRoutes = () => {
     const location = useLocation();
@@ -94,7 +96,9 @@ const AppRoutes = () => {
             {/* Auth Routes */}
             <Route path="/" element={<GetStarted />} />
             <Route path="/get-started" element={<GetStarted />} />
+            <Route path="/select-language" element={<SelectLanguage />} />
             <Route path="/mobile-login" element={<MobileInput />} />
+            <Route path="/mobile-input" element={<MobileInput />} /> {/* Alias for backward compatibility */}
             <Route path="/otp-verify" element={<OTPVerification />} />
             <Route path="/complete-profile" element={<CompleteProfile />} />
 
@@ -170,6 +174,7 @@ const AppRoutes = () => {
                 <Route path="contractors" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN_CONTRACTOR']}><ContractorManagement /></RoleProtectedRoute>} />
                 <Route path="verification" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN']}><VerificationManagement /></RoleProtectedRoute>} />
                 <Route path="broadcasts" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN_USER']}><BroadcastManagement /></RoleProtectedRoute>} />
+                <Route path="banners" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN']}><BannerSection /></RoleProtectedRoute>} />
                 <Route path="settings" element={<AdminSettings />} />
             </Route>
         </Routes>

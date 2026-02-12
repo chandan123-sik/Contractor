@@ -292,23 +292,45 @@ export const sendBroadcast = async (req, res) => {
         // Get recipients based on target audience
         let recipients = [];
         
+        console.log('🎯 Target Audience:', broadcast.targetAudience);
+        
         switch (broadcast.targetAudience) {
             case 'USERS':
-                recipients = await User.find({}, '_id');
+                const usersOnly = await User.find({}, '_id');
+                recipients = usersOnly.map(u => ({ userId: u._id, userType: 'USER' }));
+                console.log('👥 USER recipients:', recipients.length);
                 break;
             case 'LABOUR':
-                const labours = await Labour.find({}).populate('user', '_id');
-                recipients = labours.map(l => ({ _id: l.user?._id })).filter(r => r._id);
+                // Send to all users as LABOUR type (they can view it in labour panel)
+                const usersForLabour = await User.find({}, '_id');
+                recipients = usersForLabour.map(u => ({ userId: u._id, userType: 'LABOUR' }));
+                console.log('🔨 LABOUR recipients:', recipients.length);
                 break;
             case 'CONTRACTORS':
-                const contractors = await Contractor.find({}).populate('user', '_id');
-                recipients = contractors.map(c => ({ _id: c.user?._id })).filter(r => r._id);
+                // Send to all users as CONTRACTOR type (they can view it in contractor panel)
+                const usersForContractor = await User.find({}, '_id');
+                recipients = usersForContractor.map(u => ({ userId: u._id, userType: 'CONTRACTOR' }));
+                console.log('🏗️ CONTRACTOR recipients:', recipients.length);
                 break;
             case 'ALL':
             default:
-                recipients = await User.find({}, '_id');
+                // Send to all users for all three roles
+                const allUsers = await User.find({}, '_id');
+                console.log('👥 Total users in database:', allUsers.length);
+                
+                const userRecipients = allUsers.map(u => ({ userId: u._id, userType: 'USER' }));
+                const labourRecipients = allUsers.map(u => ({ userId: u._id, userType: 'LABOUR' }));
+                const contractorRecipients = allUsers.map(u => ({ userId: u._id, userType: 'CONTRACTOR' }));
+                
+                recipients = [...userRecipients, ...labourRecipients, ...contractorRecipients];
+                console.log('📊 Total recipients (3x users):', recipients.length);
+                console.log('   - USER:', userRecipients.length);
+                console.log('   - LABOUR:', labourRecipients.length);
+                console.log('   - CONTRACTOR:', contractorRecipients.length);
                 break;
         }
+
+        console.log('📧 Creating notifications for', recipients.length, 'recipients');
 
         // Create notifications for all recipients
         let deliveredCount = 0;
@@ -316,8 +338,9 @@ export const sendBroadcast = async (req, res) => {
 
         const notificationPromises = recipients.map(async (recipient) => {
             try {
-                await Notification.create({
-                    user: recipient._id,
+                const notification = await Notification.create({
+                    user: recipient.userId,
+                    userType: recipient.userType,
                     title: broadcast.title,
                     message: broadcast.message,
                     type: 'BROADCAST',
@@ -326,8 +349,10 @@ export const sendBroadcast = async (req, res) => {
                         broadcastId: broadcast._id
                     }
                 });
+                console.log(`✅ Created notification for ${recipient.userType}:`, recipient.userId);
                 deliveredCount++;
             } catch (error) {
+                console.error(`❌ Failed to create notification for ${recipient.userType}:`, recipient.userId, error.message);
                 failedCount++;
             }
         });
