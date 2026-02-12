@@ -58,13 +58,14 @@ const LabourManagement = () => {
         setCurrentLabour(labour);
         if (labour) {
             setFormData({
-                firstName: labour.firstName || '',
-                lastName: labour.lastName || '',
-                mobileNumber: labour.mobileNumber || '',
-                trade: labour.trade || '',
-                gender: labour.gender || 'Male',
-                city: labour.city || '',
-                state: labour.state || '',
+                firstName: labour.user?.firstName || labour.firstName || '',
+                lastName: labour.user?.lastName || labour.lastName || '',
+                mobileNumber: labour.user?.mobileNumber || labour.mobileNumber || '',
+                trade: labour.skillType || labour.trade || '',
+                skillType: labour.skillType || labour.trade || '',
+                gender: labour.user?.gender || labour.gender || 'Male',
+                city: labour.user?.city || labour.city || '',
+                state: labour.user?.state || labour.state || '',
                 isActive: labour.isActive !== undefined ? labour.isActive : true
             });
         } else {
@@ -73,6 +74,7 @@ const LabourManagement = () => {
                 lastName: '', 
                 mobileNumber: '', 
                 trade: '',
+                skillType: '',
                 gender: 'Male', 
                 city: '', 
                 state: '', 
@@ -281,7 +283,7 @@ const LabourManagement = () => {
                                     style={{ width: '100%', border: '1px solid #ddd', borderRadius: '8px', padding: '10px' }}
                                     value={formData.trade}
                                     placeholder="e.g. Mason, Plumber, Electrician"
-                                    onChange={(e) => setFormData({ ...formData, trade: e.target.value })}
+                                    onChange={(e) => setFormData({ ...formData, trade: e.target.value, skillType: e.target.value })}
                                     required
                                 />
                             </div>

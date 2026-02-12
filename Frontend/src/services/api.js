@@ -149,6 +149,24 @@ export const jobAPI = {
         return response.data;
     },
 
+    // Get all contractor applications for user's jobs
+    getContractorApplications: async () => {
+        const response = await api.get('/users/contractor-applications');
+        return response.data;
+    },
+
+    // Get my own applications (for contractor to see their application statuses)
+    getMyApplications: async () => {
+        const response = await api.get('/users/my-applications');
+        return response.data;
+    },
+
+    // Get application history (accepted/rejected applications for user)
+    getApplicationHistory: async () => {
+        const response = await api.get('/users/application-history');
+        return response.data;
+    },
+
     // Update application status (accept/reject)
     updateApplicationStatus: async (jobId, applicationId, status) => {
         const response = await api.put(`/users/jobs/${jobId}/applications/${applicationId}`, { status });
@@ -287,6 +305,44 @@ export const labourAPI = {
         } catch (error) {
             console.error('Failed to sync labour cards:', error);
         }
+    },
+
+    // ==================== HIRE REQUEST APIs ====================
+
+    // Create hire request (User/Contractor hiring Labour)
+    createHireRequest: async (requestData) => {
+        const response = await api.post('/labour/hire-request', requestData);
+        return response.data;
+    },
+
+    // Get hire requests for labour (received requests)
+    getLabourHireRequests: async (params = {}) => {
+        const response = await api.get('/labour/hire-requests', { params });
+        return response.data;
+    },
+
+    // Get sent hire requests (User/Contractor)
+    getSentHireRequests: async (params = {}) => {
+        const response = await api.get('/labour/hire-requests/sent', { params });
+        return response.data;
+    },
+
+    // Update hire request status (Accept/Decline)
+    updateHireRequestStatus: async (requestId, status) => {
+        const response = await api.patch(`/labour/hire-request/${requestId}`, { status });
+        return response.data;
+    },
+
+    // Delete hire request
+    deleteHireRequest: async (requestId) => {
+        const response = await api.delete(`/labour/hire-request/${requestId}`);
+        return response.data;
+    },
+
+    // Get labour's application history
+    getLabourApplicationHistory: async () => {
+        const response = await api.get('/labour/application-history');
+        return response.data;
     }
 };
 
@@ -366,7 +422,62 @@ export const contractorAPI = {
     deleteContractorJob: async (jobId) => {
         const response = await api.delete(`/contractor/jobs/${jobId}`);
         return response.data;
+    },
+
+    // Contractor Hire Request APIs
+    createContractorHireRequest: async (contractorId) => {
+        const response = await api.post('/contractor/hire-request', { contractorId });
+        return response.data;
+    },
+
+    getContractorHireRequests: async (params = {}) => {
+        const response = await api.get('/contractor/hire-requests', { params });
+        return response.data;
+    },
+
+    getSentContractorHireRequests: async () => {
+        const response = await api.get('/contractor/hire-requests/sent');
+        return response.data;
+    },
+
+    updateContractorHireRequestStatus: async (requestId, status) => {
+        const response = await api.patch(`/contractor/hire-request/${requestId}`, { status });
+        return response.data;
+    },
+
+    deleteContractorHireRequest: async (requestId) => {
+        const response = await api.delete(`/contractor/hire-request/${requestId}`);
+        return response.data;
+    },
+
+    // Contractor Job Application APIs (Labour → Contractor Job)
+    applyToContractorJob: async (jobId, message = '') => {
+        const response = await api.post(`/contractor/jobs/${jobId}/apply`, { message });
+        return response.data;
+    },
+
+    getContractorJobApplications: async () => {
+        const response = await api.get('/contractor/job-applications');
+        return response.data;
+    },
+
+    getLabourApplications: async () => {
+        const response = await api.get('/contractor/my-applications');
+        return response.data;
+    },
+
+    updateContractorJobApplicationStatus: async (jobId, applicationId, status) => {
+        const response = await api.patch(`/contractor/jobs/${jobId}/applications/${applicationId}`, { status });
+        return response.data;
+    },
+
+    getContractorApplicationHistory: async () => {
+        const response = await api.get('/contractor/application-history');
+        return response.data;
     }
 };
 
 export default api;
+
+
+

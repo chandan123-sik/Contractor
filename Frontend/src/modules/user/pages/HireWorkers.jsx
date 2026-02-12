@@ -51,9 +51,42 @@ const HireWorkers = () => {
             setSelectedCategory(location.state.selectedCategory);
         }
 
-        // Load hired workers state
-        const hired = JSON.parse(localStorage.getItem('hired_workers_state') || '{}');
-        setHiredWorkers(hired);
+        // Load hired workers state from database
+        const loadHiredState = async () => {
+            try {
+                // Fetch sent hire requests from database
+                const response = await labourAPI.getSentHireRequests({ requesterModel: 'User' });
+                
+                if (response.success) {
+                    console.log('📊 Sent hire requests:', response.data.hireRequests);
+                    
+                    // Create state map from requests
+                    const uiStateMap = {};
+                    response.data.hireRequests.forEach(req => {
+                        const labourId = req.labourId; // Already a string from backend
+                        
+                        console.log(`Mapping labourId: ${labourId} → status: ${req.status}`);
+                        
+                        // Map status to UI states
+                        if (req.status === 'accepted') {
+                            uiStateMap[labourId] = 'approved';
+                        } else if (req.status === 'declined') {
+                            uiStateMap[labourId] = 'declined';
+                        } else {
+                            uiStateMap[labourId] = 'pending';
+                        }
+                    });
+                    
+                    console.log('✅ Final UI state map:', uiStateMap);
+                    setHiredWorkers(uiStateMap);
+                }
+            } catch (error) {
+                console.error('Failed to load hired state:', error);
+                setHiredWorkers({});
+            }
+        };
+        
+        loadHiredState();
 
         // Update user profile with phone number if missing
         const userProfile = JSON.parse(localStorage.getItem('user_profile') || '{}');
@@ -62,19 +95,42 @@ const HireWorkers = () => {
         if (userProfile && Object.keys(userProfile).length > 0 && !userProfile.phoneNumber && mobileNumber) {
             userProfile.phoneNumber = mobileNumber;
             localStorage.setItem('user_profile', JSON.stringify(userProfile));
-            console.log('Updated user profile with phone number:', userProfile);
         }
+
+        // Update when page becomes visible (user switches back to this tab/page)
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                loadHiredState();
+            }
+        };
+
+        // Listen for hire request updates from labour panel
+        const handleHireRequestUpdate = () => {
+            loadHiredState();
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('hire-request-updated', handleHireRequestUpdate);
+
+        // Cleanup
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('hire-request-updated', handleHireRequestUpdate);
+        };
     }, [location.state]);
 
     const fetchLabourCards = async () => {
         try {
+            const userId = localStorage.getItem('user_id') || '';
+            const userType = localStorage.getItem('user_type') || '';
+            
             // Try to fetch from database first
             try {
                 const response = await labourAPI.browseLabourCards();
                 
                 if (response.success && response.data.labours) {
                     // Transform API data
-                    const dbCards = response.data.labours.map(labour => ({
+                    let dbCards = response.data.labours.map(labour => ({
                         id: labour._id,
                         fullName: labour.labourCardDetails?.fullName || '',
                         primarySkill: labour.skillType,
@@ -88,8 +144,14 @@ const HireWorkers = () => {
                         previousWorkLocation: labour.previousWorkLocation || '',
                         availability: labour.availability || 'Full Time',
                         availabilityStatus: labour.availabilityStatus || 'Available',
-                        createdAt: labour.createdAt
+                        createdAt: labour.createdAt,
+                        userId: labour.user // Store user ID for filtering
                     }));
+                    
+                    // Filter out logged-in labour's own card if they're a Labour user
+                    if (userType === 'Labour' && userId) {
+                        dbCards = dbCards.filter(card => card.userId !== userId);
+                    }
                     
                     // Also load from localStorage
                     const localCards = JSON.parse(localStorage.getItem('labour_cards') || '[]');
@@ -104,7 +166,6 @@ const HireWorkers = () => {
                     
                     setLabourCards(uniqueCards);
                     setFilteredCards(uniqueCards);
-                    console.log('Loaded labour cards - DB:', dbCards.length, 'Local:', localCards.length, 'Dummy:', dummyCards.length, 'Total:', uniqueCards.length);
                     return;
                 }
             } catch (apiError) {
@@ -116,8 +177,6 @@ const HireWorkers = () => {
             const allCards = [...localCards, ...dummyCards];
             setLabourCards(allCards);
             setFilteredCards(allCards);
-            console.log('Loaded labour cards from localStorage + dummy:', allCards.length);
-            
         } catch (error) {
             console.error('Failed to fetch labour cards:', error);
             // Use dummy cards as last resort
@@ -182,49 +241,91 @@ const HireWorkers = () => {
         setShowFilterModal(false);
     };
 
-    const handleHireWorker = (card) => {
-        // Get user profile
-        const userProfile = JSON.parse(localStorage.getItem('user_profile') || '{}');
-        const mobileNumber = localStorage.getItem('mobile_number') || '';
-        
-        // Use phoneNumber from profile, or fallback to mobile_number from localStorage
-        const userPhone = userProfile.phoneNumber || mobileNumber || '';
-        
-        // Create full name from firstName and lastName
-        const userFullName = `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || 'User';
-        
-        console.log('User Profile:', userProfile); // Debug
-        console.log('Mobile Number from localStorage:', mobileNumber); // Debug
-        console.log('Final User Phone:', userPhone); // Debug
-        console.log('User Full Name:', userFullName); // Debug
-        
-        // Create request object
-        const request = {
-            id: Date.now(),
-            labourId: card.id,
-            labourName: card.fullName,
-            labourSkill: card.primarySkill,
-            labourPhone: card.mobileNumber,
-            labourCity: card.city,
-            userName: userFullName,
-            userPhone: userPhone,
-            userLocation: userProfile.city || 'N/A',
-            requestDate: new Date().toLocaleDateString('en-IN'),
-            requestTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-            status: 'pending'
-        };
+    const handleHireWorker = async (card) => {
+        try {
+            // Check if this is a dummy card (string ID) or real database card (ObjectId)
+            const isDummyCard = typeof card.id === 'string' && card.id.length < 10;
+            
+            if (isDummyCard) {
+                alert('⚠️ This is a demo worker. Please hire a real worker from the database.');
+                return;
+            }
 
-        console.log('Request Object:', request); // Debug
+            // Get user profile and info
+            const userProfile = JSON.parse(localStorage.getItem('user_profile') || '{}');
+            const mobileNumber = localStorage.getItem('mobile_number') || '';
+            const userId = localStorage.getItem('user_id') || '';
+            const userType = localStorage.getItem('user_type') || '';
+            
+            console.log('DEBUG - User Info:', { userId, userProfile, mobileNumber, userType });
+            
+            if (!userId) {
+                alert('Please login first');
+                return;
+            }
 
-        // Save request to labour panel requests
-        const existingRequests = JSON.parse(localStorage.getItem('labour_user_requests') || '[]');
-        existingRequests.push(request);
-        localStorage.setItem('labour_user_requests', JSON.stringify(existingRequests));
+            // Check if user is Labour - Labour cannot hire themselves
+            if (userType === 'Labour') {
+                alert('⚠️ Labour account cannot hire workers!\n\nPlease login with a User or Contractor account to hire workers.');
+                return;
+            }
 
-        // Update hired workers state
-        const updatedHired = { ...hiredWorkers, [card.id]: 'pending' };
-        setHiredWorkers(updatedHired);
-        localStorage.setItem('hired_workers_state', JSON.stringify(updatedHired));
+            // Check if trying to hire yourself (extra safety check)
+            if (userId === card.id) {
+                alert('⚠️ You cannot hire yourself!');
+                return;
+            }
+            
+            // Use phoneNumber from profile, or fallback to mobile_number from localStorage
+            const userPhone = userProfile.phoneNumber || mobileNumber || '';
+            
+            // Create full name from firstName and lastName
+            const userFullName = `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || 'User';
+            
+            // Create request object for API
+            const requestData = {
+                labourId: card.id,
+                labourName: card.fullName,
+                labourSkill: card.primarySkill,
+                labourPhone: card.mobileNumber,
+                labourCity: card.city,
+                requesterId: userId,
+                requesterModel: 'User',
+                requesterName: userFullName,
+                requesterPhone: userPhone,
+                requesterLocation: userProfile.city || 'N/A'
+            };
+
+            console.log('DEBUG - Request Data:', requestData);
+
+            // Send request to database
+            const response = await labourAPI.createHireRequest(requestData);
+
+            if (response.success) {
+                // Update button state immediately
+                const updatedHired = { ...hiredWorkers, [card.id]: 'pending' };
+                setHiredWorkers(updatedHired);
+
+                // Show success message
+                alert('✅ Hire request sent successfully!');
+            }
+
+        } catch (error) {
+            console.error('DEBUG - Error:', error);
+            console.error('DEBUG - Error Response:', error.response?.data);
+            
+            // Show user-friendly error message
+            if (error.response?.data?.message) {
+                const errorMsg = error.response.data.message;
+                if (errorMsg.includes('pending hire request already exists')) {
+                    alert('⚠️ You already sent a request to this worker');
+                } else {
+                    alert(errorMsg);
+                }
+            } else {
+                alert('Failed to send hire request. Please try again.');
+            }
+        }
     };
 
     return (
@@ -375,22 +476,22 @@ const HireWorkers = () => {
                                     <button
                                         onClick={() => handleHireWorker(card)}
                                         disabled={hiredWorkers[card.id]}
-                                        className={`flex-1 font-bold py-3 rounded-lg transition-all active:scale-95 ${
+                                        className={`flex-1 font-bold py-3 rounded-lg transition-all ${
                                             hiredWorkers[card.id] === 'approved'
-                                                ? 'bg-green-500 text-white cursor-not-allowed'
+                                                ? 'bg-green-500 text-white cursor-default shadow-lg'
                                                 : hiredWorkers[card.id] === 'declined'
-                                                ? 'bg-gray-500 text-white cursor-not-allowed'
+                                                ? 'bg-gray-400 text-white cursor-not-allowed'
                                                 : hiredWorkers[card.id] === 'pending'
-                                                ? 'bg-red-500 text-white cursor-not-allowed'
-                                                : 'btn-primary'
+                                                ? 'bg-orange-500 text-white cursor-not-allowed'
+                                                : 'btn-primary hover:bg-yellow-500 active:scale-95'
                                         }`}
                                     >
                                         {hiredWorkers[card.id] === 'approved'
-                                            ? 'Approved'
+                                            ? '✓ Approved'
                                             : hiredWorkers[card.id] === 'declined'
-                                            ? 'Not Approved'
+                                            ? '✗ Declined'
                                             : hiredWorkers[card.id] === 'pending'
-                                            ? 'Request Sent'
+                                            ? '⏳ Request Sent'
                                             : 'Hire Worker'}
                                     </button>
                                 </div>

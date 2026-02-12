@@ -13,7 +13,7 @@ const FindUser = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [selectedCity, setSelectedCity] = useState('');
-    const [appliedJobs, setAppliedJobs] = useState([]);
+    const [appliedJobs, setAppliedJobs] = useState({});
     const [loading, setLoading] = useState(true);
 
     const cities = ['Indore', 'Bhopal', 'Dewas', 'Ujjain', 'Jabalpur', 'Gwalior', 'Ratlam'];
@@ -21,11 +21,49 @@ const FindUser = () => {
     // Load jobs from database
     useEffect(() => {
         fetchJobs();
-        
-        // Load applied jobs for this contractor
-        const contractorAppliedJobs = JSON.parse(localStorage.getItem('contractor_applied_jobs') || '[]');
-        setAppliedJobs(contractorAppliedJobs);
+        loadApplicationStatuses();
+
+        // Auto-refresh every 5 seconds
+        const interval = setInterval(() => {
+            if (!document.hidden) {
+                console.log('🔄 Auto-refreshing application statuses...');
+                loadApplicationStatuses();
+            }
+        }, 5000);
+
+        // Listen for application updates
+        const handleApplicationUpdate = () => {
+            console.log('📢 Application update event received');
+            loadApplicationStatuses();
+        };
+
+        window.addEventListener('contractor-application-updated', handleApplicationUpdate);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('contractor-application-updated', handleApplicationUpdate);
+        };
     }, []);
+
+    const loadApplicationStatuses = async () => {
+        try {
+            const response = await jobAPI.getMyApplications();
+            
+            if (response.success) {
+                console.log('✅ Loaded application statuses:', response.data.applications);
+                setAppliedJobs(response.data.applications);
+            }
+        } catch (error) {
+            console.error('Failed to load application statuses:', error);
+            // Fallback to localStorage
+            const contractorAppliedJobs = JSON.parse(localStorage.getItem('contractor_applied_jobs') || '[]');
+            const statusMap = {};
+            contractorAppliedJobs.forEach(jobId => {
+                statusMap[jobId] = { status: 'Pending' };
+            });
+            setAppliedJobs(statusMap);
+        }
+    };
 
     const fetchJobs = async () => {
         try {
@@ -146,15 +184,24 @@ const FindUser = () => {
             });
 
             if (response.success) {
-                // Track applied jobs locally
-                const updatedAppliedJobs = [...appliedJobs, jobId];
+                // Update applied jobs state with pending status
+                const updatedAppliedJobs = {
+                    ...appliedJobs,
+                    [jobId]: { status: 'Pending', jobId: jobId }
+                };
                 setAppliedJobs(updatedAppliedJobs);
-                localStorage.setItem('contractor_applied_jobs', JSON.stringify(updatedAppliedJobs));
+                
+                // Also save to localStorage as backup
+                const appliedJobIds = Object.keys(updatedAppliedJobs);
+                localStorage.setItem('contractor_applied_jobs', JSON.stringify(appliedJobIds));
                 
                 toast.success('Application sent successfully!', {
                     duration: 3000,
                     position: 'top-center',
                 });
+
+                // Reload statuses to get the latest
+                loadApplicationStatuses();
             }
         } catch (error) {
             console.error('Failed to apply:', error);

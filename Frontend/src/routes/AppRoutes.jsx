@@ -53,6 +53,7 @@ import LabourFindContractor from '../modules/labour/pages/FindContractor';
 import LabourRequests from '../modules/labour/pages/Requests';
 import LabourUserRequest from '../modules/labour/pages/UserRequest';
 import LabourContractorRequest from '../modules/labour/pages/ContractorRequest';
+import LabourRequestHistory from '../modules/labour/pages/RequestHistory';
 import LabourSettings from '../modules/labour/pages/LabourSettings';
 import LabourPersonalDetails from '../modules/labour/pages/LabourPersonalDetails';
 import LabourWorkDetails from '../modules/labour/pages/LabourWorkDetails';
@@ -144,6 +145,7 @@ const AppRoutes = () => {
             <Route path="/labour/requests" element={<LabourRequests />} />
             <Route path="/labour/user-request" element={<LabourUserRequest />} />
             <Route path="/labour/contractor-request" element={<LabourContractorRequest />} />
+            <Route path="/labour/request-history" element={<LabourRequestHistory />} />
             <Route path="/labour/settings" element={<LabourSettings />} />
             <Route path="/labour/personal-details" element={<LabourPersonalDetails />} />
             <Route path="/labour/work-details" element={<LabourWorkDetails />} />

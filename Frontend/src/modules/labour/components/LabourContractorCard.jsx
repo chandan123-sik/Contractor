@@ -1,6 +1,48 @@
 import { MapPin, Briefcase, Phone, Calendar, IndianRupee } from 'lucide-react';
 
-const LabourContractorCard = ({ card, onViewDetails, onApplyNow, index = 0 }) => {
+const LabourContractorCard = ({ card, onViewDetails, onApplyNow, index = 0, appliedJobs = {} }) => {
+    const applicationStatus = appliedJobs[card.id];
+    const isApplied = applicationStatus && applicationStatus.status;
+
+    const getButtonConfig = () => {
+        if (!isApplied) {
+            return {
+                text: 'Apply Now',
+                className: 'flex-1 btn-primary',
+                disabled: false
+            };
+        }
+
+        switch (applicationStatus.status) {
+            case 'Pending':
+                return {
+                    text: '⏳ Request Sent',
+                    className: 'flex-1 bg-orange-500 text-white font-bold py-2.5 rounded-lg cursor-not-allowed',
+                    disabled: true
+                };
+            case 'Accepted':
+                return {
+                    text: '✓ Approved',
+                    className: 'flex-1 bg-green-500 text-white font-bold py-2.5 rounded-lg cursor-not-allowed',
+                    disabled: true
+                };
+            case 'Rejected':
+                return {
+                    text: '✗ Declined',
+                    className: 'flex-1 bg-gray-400 text-white font-bold py-2.5 rounded-lg cursor-not-allowed',
+                    disabled: true
+                };
+            default:
+                return {
+                    text: 'Apply Now',
+                    className: 'flex-1 btn-primary',
+                    disabled: false
+                };
+        }
+    };
+
+    const buttonConfig = getButtonConfig();
+
     return (
         <div className="premium-card card-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
             {/* Header with Contractor Info and Status Badge */}
@@ -71,10 +113,11 @@ const LabourContractorCard = ({ card, onViewDetails, onApplyNow, index = 0 }) =>
                     View Details
                 </button>
                 <button
-                    onClick={() => onApplyNow(card.id)}
-                    className="flex-1 btn-primary"
+                    onClick={() => !buttonConfig.disabled && onApplyNow(card.id)}
+                    className={buttonConfig.className}
+                    disabled={buttonConfig.disabled}
                 >
-                    Apply Now
+                    {buttonConfig.text}
                 </button>
             </div>
         </div>

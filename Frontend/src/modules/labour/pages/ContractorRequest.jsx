@@ -1,60 +1,108 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, MapPin, Phone, Calendar, Clock } from 'lucide-react';
+import { ChevronLeft, MapPin, Phone, Calendar, Clock, Users } from 'lucide-react';
+import toast from 'react-hot-toast';
 import LabourBottomNav from '../components/LabourBottomNav';
+import { labourAPI } from '../../../services/api';
 
 const ContractorRequest = () => {
     const navigate = useNavigate();
     const [requests, setRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Load requests from localStorage and sort by newest first
-        const savedRequests = JSON.parse(localStorage.getItem('labour_contractor_requests') || '[]');
-        const sortedRequests = savedRequests.sort((a, b) => b.id - a.id);
-        setRequests(sortedRequests);
+        loadRequests();
+
+        // Auto-refresh every 5 seconds
+        const interval = setInterval(() => {
+            if (!document.hidden) {
+                console.log('🔄 Auto-refreshing contractor requests...');
+                loadRequests();
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
     }, []);
 
-    const handleAccept = (requestId) => {
-        // Find the request
-        const request = requests.find(r => r.id === requestId);
-        
-        if (request) {
-            // Add to history
-            const history = JSON.parse(localStorage.getItem('labour_contractor_history') || '[]');
-            history.push({ ...request, status: 'accepted', acceptedAt: new Date().toISOString() });
-            localStorage.setItem('labour_contractor_history', JSON.stringify(history));
-
-            // Update hired workers state in contractor panel
-            const hiredState = JSON.parse(localStorage.getItem('contractor_hired_workers_state') || '{}');
-            hiredState[request.labourId] = 'approved';
-            localStorage.setItem('contractor_hired_workers_state', JSON.stringify(hiredState));
-
-            // Remove from current requests
-            const filteredRequests = requests.filter(req => req.id !== requestId);
-            setRequests(filteredRequests);
-            localStorage.setItem('labour_contractor_requests', JSON.stringify(filteredRequests));
+    const loadRequests = async () => {
+        try {
+            console.log('🔵 Loading contractor hire requests from database...');
+            const response = await labourAPI.getLabourHireRequests({ status: 'pending' });
+            
+            if (response.success) {
+                console.log('✅ Requests loaded:', response.data.hireRequests.length);
+                
+                // Filter only contractor requests
+                const contractorRequests = response.data.hireRequests.filter(
+                    req => req.requesterModel === 'Contractor'
+                );
+                
+                // Format for display
+                const formattedRequests = contractorRequests.map(req => ({
+                    id: req._id,
+                    _id: req._id,
+                    contractorName: req.requesterName,
+                    contractorPhone: req.requesterPhone,
+                    contractorLocation: req.requesterLocation,
+                    labourSkill: req.labourSkill,
+                    labourId: req.labourId,
+                    requestDate: new Date(req.createdAt).toLocaleDateString(),
+                    requestTime: new Date(req.createdAt).toLocaleTimeString(),
+                    status: req.status
+                }));
+                
+                setRequests(formattedRequests);
+            }
+        } catch (error) {
+            console.error('❌ Failed to load requests:', error);
+            // Fallback to localStorage
+            const savedRequests = JSON.parse(localStorage.getItem('labour_contractor_requests') || '[]');
+            const sortedRequests = savedRequests.sort((a, b) => b.id - a.id);
+            setRequests(sortedRequests);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleDecline = (requestId) => {
-        // Find the request
-        const request = requests.find(r => r.id === requestId);
-        
-        if (request) {
-            // Add to history with declined status
-            const history = JSON.parse(localStorage.getItem('labour_contractor_history') || '[]');
-            history.push({ ...request, status: 'declined', declinedAt: new Date().toISOString() });
-            localStorage.setItem('labour_contractor_history', JSON.stringify(history));
+    const handleAccept = async (requestId) => {
+        try {
+            console.log('🟢 Accepting contractor request:', requestId);
+            
+            const response = await labourAPI.updateHireRequestStatus(requestId, 'accepted');
+            
+            if (response.success) {
+                toast.success('Request accepted!');
+                
+                // Trigger event for contractor to update their status
+                window.dispatchEvent(new Event('hire-request-updated'));
+                
+                // Refresh requests
+                await loadRequests();
+            }
+        } catch (error) {
+            console.error('❌ Failed to accept request:', error);
+            toast.error('Failed to accept request');
+        }
+    };
 
-            // Update hired workers state in contractor panel
-            const hiredState = JSON.parse(localStorage.getItem('contractor_hired_workers_state') || '{}');
-            hiredState[request.labourId] = 'declined';
-            localStorage.setItem('contractor_hired_workers_state', JSON.stringify(hiredState));
-
-            // Remove request from current requests
-            const filteredRequests = requests.filter(req => req.id !== requestId);
-            setRequests(filteredRequests);
-            localStorage.setItem('labour_contractor_requests', JSON.stringify(filteredRequests));
+    const handleDecline = async (requestId) => {
+        try {
+            console.log('🔴 Declining contractor request:', requestId);
+            
+            const response = await labourAPI.updateHireRequestStatus(requestId, 'declined');
+            
+            if (response.success) {
+                toast.success('Request declined');
+                
+                // Trigger event for contractor to update their status
+                window.dispatchEvent(new Event('hire-request-updated'));
+                
+                // Refresh requests
+                await loadRequests();
+            }
+        } catch (error) {
+            console.error('❌ Failed to decline request:', error);
+            toast.error('Failed to decline request');
         }
     };
 
@@ -73,9 +121,15 @@ const ContractorRequest = () => {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4 pb-20">
-                {requests.length === 0 ? (
+                {loading ? (
+                    <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+                        <p className="text-gray-600">Loading requests...</p>
+                    </div>
+                ) : requests.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full">
-                        <div className="text-6xl mb-4">📭</div>
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Users className="w-8 h-8 text-gray-400" />
+                        </div>
                         <p className="text-gray-500 text-center">No contractor requests yet</p>
                         <p className="text-gray-400 text-sm text-center mt-2">
                             Requests from contractors will appear here
@@ -83,8 +137,12 @@ const ContractorRequest = () => {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {requests.map((request) => (
-                            <div key={request.id} className="bg-white rounded-xl shadow-md p-4">
+                        {requests.map((request, index) => (
+                            <div 
+                                key={request.id} 
+                                className="premium-card card-fade-in"
+                                style={{ animationDelay: `${index * 0.05}s` }}
+                            >
                                 {/* Contractor Info Header */}
                                 <div className="flex items-start gap-3 mb-4">
                                     <div className="w-14 h-14 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-md">
@@ -123,16 +181,16 @@ const ContractorRequest = () => {
                                 {/* Action Buttons */}
                                 <div className="flex gap-3">
                                     <button
-                                        onClick={() => handleAccept(request.id)}
-                                        className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg transition-all active:scale-95"
-                                    >
-                                        Accept
-                                    </button>
-                                    <button
                                         onClick={() => handleDecline(request.id)}
-                                        className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-lg transition-all active:scale-95"
+                                        className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-lg transition-all duration-200 ease-out hover:shadow-lg active:scale-95"
                                     >
                                         Decline
+                                    </button>
+                                    <button
+                                        onClick={() => handleAccept(request.id)}
+                                        className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2.5 rounded-lg transition-all duration-200 ease-out hover:shadow-lg active:scale-95"
+                                    >
+                                        Accept
                                     </button>
                                 </div>
                             </div>

@@ -7,6 +7,7 @@ import Feedback from '../models/Feedback.model.js';
 // @access  Private (SUPER_ADMIN, ADMIN_USER)
 export const getAllUsers = async (req, res) => {
     try {
+        console.log('\n🔵 ===== GET ALL USERS =====');
         const { page = 1, limit = 10, status, search } = req.query;
 
         const query = {}; // Remove userType filter to show all users from users collection
@@ -23,6 +24,8 @@ export const getAllUsers = async (req, res) => {
             ];
         }
 
+        console.log('Query:', JSON.stringify(query));
+
         const users = await User.find(query)
             .select('-refreshToken -__v')
             .limit(limit * 1)
@@ -30,6 +33,9 @@ export const getAllUsers = async (req, res) => {
             .sort({ createdAt: -1 });
 
         const total = await User.countDocuments(query);
+
+        console.log('✅ Found', users.length, 'users out of', total, 'total');
+        console.log('===========================\n');
 
         res.status(200).json({
             success: true,
@@ -43,6 +49,8 @@ export const getAllUsers = async (req, res) => {
         });
 
     } catch (error) {
+        console.error('❌ GET ALL USERS ERROR:', error.message);
+        console.log('===========================\n');
         res.status(500).json({
             success: false,
             message: 'Server error fetching users',

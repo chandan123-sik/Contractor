@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import LabourBottomNav from '../components/LabourBottomNav';
 import LabourContractorCard from '../components/LabourContractorCard';
 import LabourHeader from '../components/LabourHeader';
@@ -15,19 +16,55 @@ const FindContractor = () => {
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [selectedCity, setSelectedCity] = useState('');
     const [loading, setLoading] = useState(true);
+    const [appliedJobs, setAppliedJobs] = useState({});
 
     const cities = ['Indore', 'Bhopal', 'Dewas', 'Ujjain', 'Jabalpur', 'Gwalior', 'Ratlam'];
 
     useEffect(() => {
         fetchContractorJobs();
+        fetchApplicationStatus();
+
+        // Auto-refresh every 5 seconds
+        const interval = setInterval(() => {
+            if (!document.hidden) {
+                console.log('🔄 Auto-refreshing contractor jobs and application status...');
+                fetchApplicationStatus();
+            }
+        }, 5000);
+
+        // Listen for application updates
+        const handleApplicationUpdate = () => {
+            console.log('📢 Application updated event received');
+            fetchApplicationStatus();
+        };
+
+        window.addEventListener('labour-contractor-application-updated', handleApplicationUpdate);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('labour-contractor-application-updated', handleApplicationUpdate);
+        };
     }, []);
+
+    const fetchApplicationStatus = async () => {
+        try {
+            const response = await contractorAPI.getLabourApplications();
+            
+            if (response.success) {
+                console.log('✅ Application status loaded:', response.data.applications);
+                setAppliedJobs(response.data.applications);
+            }
+        } catch (error) {
+            console.error('Failed to fetch application status:', error);
+        }
+    };
 
     const fetchContractorJobs = async () => {
         try {
             setLoading(true);
             
-            // Fetch from database
-            const response = await contractorAPI.browseContractorJobs();
+            // Fetch from database - pass audience: 'Labour' to get only Labour-targeted cards
+            const response = await contractorAPI.browseContractorJobs({ audience: 'Labour' });
             
             if (response.success && response.data.jobs) {
                 const dbJobs = response.data.jobs.map(job => ({
@@ -108,9 +145,27 @@ const FindContractor = () => {
         setSelectedCard(card);
     };
 
-    const handleApplyNow = (cardId) => {
-        // This will be implemented later
-        console.log('Apply Now clicked for contractor:', cardId);
+    const handleApplyNow = async (cardId) => {
+        try {
+            console.log('🟢 Applying to contractor job:', cardId);
+            
+            const response = await contractorAPI.applyToContractorJob(cardId);
+            
+            if (response.success) {
+                console.log('✅ Application submitted successfully');
+                toast.success('Application submitted successfully!');
+                
+                // Refresh application status
+                await fetchApplicationStatus();
+            }
+        } catch (error) {
+            console.error('❌ Failed to apply:', error);
+            if (error.response?.data?.message) {
+                toast.error(error.response.data.message);
+            } else {
+                toast.error('Failed to submit application');
+            }
+        }
     };
 
     const handleCloseModal = () => {
@@ -212,6 +267,7 @@ const FindContractor = () => {
                             index={index}
                             onViewDetails={handleViewDetails}
                             onApplyNow={handleApplyNow}
+                            appliedJobs={appliedJobs}
                         />
                     ))
                 )}

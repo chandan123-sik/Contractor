@@ -297,6 +297,178 @@ export const getJobApplications = async (req, res, next) => {
     }
 };
 
+export const getContractorApplications = async (req, res, next) => {
+    try {
+        console.log('\n🔵 ===== GET CONTRACTOR APPLICATIONS =====');
+        console.log('User ID:', req.user._id);
+
+        // Find all jobs posted by this user
+        const jobs = await Job.find({ user: req.user._id, isActive: true });
+
+        console.log('✅ Found', jobs.length, 'jobs');
+
+        // Extract all contractor applications from all jobs
+        const contractorApplications = [];
+        
+        jobs.forEach(job => {
+            job.applications.forEach(app => {
+                if (app.applicantType === 'Contractor' && app.status === 'Pending') {
+                    contractorApplications.push({
+                        _id: app._id,
+                        jobId: job._id,
+                        jobTitle: job.jobTitle,
+                        jobCategory: job.category,
+                        applicantName: app.applicantName,
+                        phoneNumber: app.phoneNumber,
+                        location: app.location,
+                        message: app.message,
+                        appliedAt: app.appliedAt,
+                        status: app.status
+                    });
+                }
+            });
+        });
+
+        console.log('✅ Found', contractorApplications.length, 'contractor applications');
+        console.log('===========================\n');
+
+        res.status(200).json({
+            success: true,
+            data: {
+                applications: contractorApplications,
+                count: contractorApplications.length
+            }
+        });
+    } catch (error) {
+        console.error('❌ GET CONTRACTOR APPLICATIONS ERROR:', error.message);
+        console.log('===========================\n');
+        next(error);
+    }
+};
+
+export const getMyApplications = async (req, res, next) => {
+    try {
+        console.log('\n🔵 ===== GET MY APPLICATIONS =====');
+        console.log('User ID:', req.user._id);
+
+        // Find all jobs and filter applications by this user
+        const jobs = await Job.find({ isActive: true });
+
+        console.log('✅ Searching through', jobs.length, 'jobs');
+
+        // Extract applications made by this contractor
+        const myApplications = {};
+        
+        jobs.forEach(job => {
+            job.applications.forEach(app => {
+                // Check if this application is from the current user (contractor)
+                if (app.applicant && app.applicant.toString() === req.user._id.toString()) {
+                    myApplications[job._id.toString()] = {
+                        jobId: job._id.toString(),
+                        applicationId: app._id.toString(),
+                        status: app.status,
+                        appliedAt: app.appliedAt
+                    };
+                }
+            });
+        });
+
+        console.log('✅ Found', Object.keys(myApplications).length, 'applications by this contractor');
+        console.log('===========================\n');
+
+        res.status(200).json({
+            success: true,
+            data: {
+                applications: myApplications,
+                count: Object.keys(myApplications).length
+            }
+        });
+    } catch (error) {
+        console.error('❌ GET MY APPLICATIONS ERROR:', error.message);
+        console.log('===========================\n');
+        next(error);
+    }
+};
+
+export const getApplicationHistory = async (req, res, next) => {
+    try {
+        console.log('\n🔵 ===== GET APPLICATION HISTORY =====');
+        console.log('User ID:', req.user._id);
+
+        // Find all jobs posted by this user
+        const jobs = await Job.find({ user: req.user._id, isActive: true });
+
+        console.log('✅ Found', jobs.length, 'jobs');
+
+        // Extract all accepted/rejected applications
+        const history = [];
+        
+        jobs.forEach(job => {
+            job.applications.forEach(app => {
+                if (app.status === 'Accepted' || app.status === 'Rejected') {
+                    // Format date and time
+                    const appliedDate = new Date(app.appliedAt);
+                    const formattedDate = appliedDate.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                    });
+                    const formattedTime = appliedDate.toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+
+                    const historyItem = {
+                        id: app._id.toString(),
+                        _id: app._id,
+                        jobId: job._id,
+                        jobTitle: job.jobTitle,
+                        jobCategory: job.category,
+                        applicantType: app.applicantType,
+                        applicantName: app.applicantName,
+                        phoneNumber: app.phoneNumber,
+                        location: app.location || 'Not specified',
+                        message: app.message,
+                        appliedAt: app.appliedAt,
+                        date: formattedDate,
+                        time: formattedTime,
+                        status: app.status.toLowerCase(),
+                        type: app.applicantType === 'Contractor' ? 'contractor' : 'worker'
+                    };
+
+                    // Add type-specific fields for compatibility with card components
+                    if (app.applicantType === 'Contractor') {
+                        historyItem.contractorName = app.applicantName;
+                    } else {
+                        historyItem.workerName = app.applicantName;
+                        historyItem.category = job.category;
+                    }
+
+                    history.push(historyItem);
+                }
+            });
+        });
+
+        // Sort by most recent first
+        history.sort((a, b) => new Date(b.appliedAt) - new Date(a.appliedAt));
+
+        console.log('✅ Found', history.length, 'history items');
+        console.log('===========================\n');
+
+        res.status(200).json({
+            success: true,
+            data: {
+                history,
+                count: history.length
+            }
+        });
+    } catch (error) {
+        console.error('❌ GET APPLICATION HISTORY ERROR:', error.message);
+        console.log('===========================\n');
+        next(error);
+    }
+};
+
 export const updateApplicationStatus = async (req, res, next) => {
     try {
         console.log('\n🟡 ===== UPDATE APPLICATION STATUS =====');

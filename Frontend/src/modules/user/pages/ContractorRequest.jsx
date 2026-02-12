@@ -4,70 +4,127 @@ import UserBottomNav from '../components/UserBottomNav';
 import UserHeader from '../components/UserHeader';
 import ContractorRequestCard from '../components/ContractorRequestCard';
 import { Users } from 'lucide-react';
+import { jobAPI } from '../../../services/api';
 
 const ContractorRequest = () => {
     const [requests, setRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Load contractor requests from localStorage
-        const savedRequests = JSON.parse(localStorage.getItem('contractor_requests') || '[]');
-        setRequests(savedRequests);
+        loadContractorApplications();
+
+        // Auto-refresh every 5 seconds
+        const interval = setInterval(() => {
+            if (!document.hidden) {
+                console.log('🔄 Auto-refreshing contractor applications...');
+                loadContractorApplications();
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
     }, []);
 
-    const handleAccept = (requestId) => {
-        // Find the request
-        const request = requests.find(r => r.id === requestId);
-        if (!request) return;
-
-        // Add to history with accepted status
-        const historyItem = { ...request, status: 'accepted' };
-        const history = JSON.parse(localStorage.getItem('request_history') || '[]');
-        history.push(historyItem);
-        localStorage.setItem('request_history', JSON.stringify(history));
-
-        // Update job application status
-        const jobApplications = JSON.parse(localStorage.getItem('job_applications') || '{}');
-        jobApplications[request.jobId] = jobApplications[request.jobId] || {};
-        jobApplications[request.jobId][request.id] = 'accepted';
-        localStorage.setItem('job_applications', JSON.stringify(jobApplications));
-
-        // Remove from contractor_requests
-        const updatedRequests = requests.filter(r => r.id !== requestId);
-        setRequests(updatedRequests);
-        localStorage.setItem('contractor_requests', JSON.stringify(updatedRequests));
-
-        toast.success('Contractor request accepted!', {
-            duration: 3000,
-            position: 'top-center',
-        });
+    const loadContractorApplications = async () => {
+        try {
+            const response = await jobAPI.getContractorApplications();
+            
+            if (response.success) {
+                console.log('✅ Loaded contractor applications:', response.data.applications);
+                
+                // Transform to match component expectations
+                const formattedRequests = response.data.applications.map(app => ({
+                    id: app._id,
+                    jobId: app.jobId,
+                    jobTitle: app.jobTitle,
+                    jobCategory: app.jobCategory,
+                    contractorName: app.applicantName,
+                    phoneNumber: app.phoneNumber,
+                    location: app.location,
+                    message: app.message,
+                    appliedAt: app.appliedAt,
+                    status: app.status
+                }));
+                
+                setRequests(formattedRequests);
+            }
+        } catch (error) {
+            console.error('Failed to load contractor applications:', error);
+            // Fallback to localStorage
+            const savedRequests = JSON.parse(localStorage.getItem('contractor_requests') || '[]');
+            setRequests(savedRequests);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleDecline = (requestId) => {
+    const handleAccept = async (requestId) => {
         // Find the request
         const request = requests.find(r => r.id === requestId);
         if (!request) return;
 
-        // Add to history with declined status
-        const historyItem = { ...request, status: 'declined' };
-        const history = JSON.parse(localStorage.getItem('request_history') || '[]');
-        history.push(historyItem);
-        localStorage.setItem('request_history', JSON.stringify(history));
+        try {
+            // Update status in database
+            const response = await jobAPI.updateApplicationStatus(
+                request.jobId,
+                requestId,
+                'Accepted'
+            );
 
-        // Update job application status
-        const jobApplications = JSON.parse(localStorage.getItem('job_applications') || '{}');
-        jobApplications[request.jobId] = jobApplications[request.jobId] || {};
-        jobApplications[request.jobId][request.id] = 'declined';
-        localStorage.setItem('job_applications', JSON.stringify(jobApplications));
+            if (response.success) {
+                // Remove from pending requests
+                const updatedRequests = requests.filter(r => r.id !== requestId);
+                setRequests(updatedRequests);
 
-        // Remove from contractor_requests
-        const updatedRequests = requests.filter(r => r.id !== requestId);
-        setRequests(updatedRequests);
-        localStorage.setItem('contractor_requests', JSON.stringify(updatedRequests));
+                toast.success('Contractor request accepted!', {
+                    duration: 3000,
+                    position: 'top-center',
+                });
 
-        toast.error('Contractor request declined', {
-            duration: 3000,
-            position: 'top-center',
-        });
+                // Trigger event for other components
+                window.dispatchEvent(new Event('contractor-application-updated'));
+            }
+        } catch (error) {
+            console.error('Failed to accept request:', error);
+            toast.error('Failed to accept request. Please try again.', {
+                duration: 3000,
+                position: 'top-center',
+            });
+        }
+    };
+
+    const handleDecline = async (requestId) => {
+        // Find the request
+        const request = requests.find(r => r.id === requestId);
+        if (!request) return;
+
+        try {
+            // Update status in database
+            const response = await jobAPI.updateApplicationStatus(
+                request.jobId,
+                requestId,
+                'Rejected'
+            );
+
+            if (response.success) {
+                // Remove from pending requests
+                const updatedRequests = requests.filter(r => r.id !== requestId);
+                setRequests(updatedRequests);
+
+                toast.error('Contractor request declined', {
+                    duration: 3000,
+                    position: 'top-center',
+                });
+
+                // Trigger event for other components
+                window.dispatchEvent(new Event('contractor-application-updated'));
+            }
+        } catch (error) {
+            console.error('Failed to decline request:', error);
+            toast.error('Failed to decline request. Please try again.', {
+                duration: 3000,
+                position: 'top-center',
+            });
+        }
     };
 
     return (
@@ -82,7 +139,11 @@ const ContractorRequest = () => {
                     <span className="text-sm font-normal text-gray-600 ml-2">({requests.length})</span>
                 </h2>
                 
-                {requests.length === 0 ? (
+                {loading ? (
+                    <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+                        <p className="text-gray-600">Loading requests...</p>
+                    </div>
+                ) : requests.length === 0 ? (
                     <div className="bg-white rounded-lg shadow-sm p-8 text-center">
                         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Users className="w-8 h-8 text-gray-400" />

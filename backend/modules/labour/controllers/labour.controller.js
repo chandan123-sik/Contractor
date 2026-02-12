@@ -1,16 +1,91 @@
 import Labour from '../models/Labour.model.js';
+import HireRequest from '../models/HireRequest.model.js';
 import User from '../../user/models/User.model.js';
+import Contractor from '../../contractor/models/Contractor.model.js';
 
-// @desc    Create labour profile (during registration)
+// @desc    Create labour profile during registration
 // @route   POST /api/labour/create-profile
-// @access  Public (with token)
-export const createLabourProfile = async (req, res, next) => {
+// @access  Public
+export const createLabourProfile = async (req, res) => {
     try {
-        console.log('\n🟢 ===== CREATE LABOUR PROFILE (REGISTRATION) =====');
+        console.log('\n🟢 ===== CREATE LABOUR PROFILE =====');
         console.log('📦 Request Body:', JSON.stringify(req.body, null, 2));
+        console.log('👤 User from token:', req.user ? req.user._id : 'No token');
 
+        // Get userId from token if available, otherwise from mobileNumber
+        let userId = req.user?._id;
+        
+        if (!userId) {
+            // If no token, find user by mobile number
+            const { mobileNumber } = req.body;
+            
+            if (!mobileNumber) {
+                console.log('❌ No userId or mobileNumber provided');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Authentication required or mobile number must be provided'
+                });
+            }
+
+            const user = await User.findOne({ mobileNumber });
+            if (!user) {
+                console.log('❌ User not found with mobile:', mobileNumber);
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found. Please register first.'
+                });
+            }
+            
+            userId = user._id;
+            console.log('✅ Found user by mobile:', userId);
+        }
+
+        // Check if labour profile already exists
+        const existingLabour = await Labour.findOne({ user: userId });
+        if (existingLabour) {
+            console.log('⚠️ Labour profile already exists');
+            
+            // Update existing profile instead of returning error
+            const {
+                firstName,
+                lastName,
+                gender,
+                city,
+                state,
+                skillType,
+                experience,
+                workPhotos,
+                previousWorkLocation
+            } = req.body;
+
+            // Update User model
+            await User.findByIdAndUpdate(userId, {
+                firstName,
+                lastName,
+                gender,
+                city,
+                state
+            });
+
+            // Update Labour model
+            if (skillType) existingLabour.skillType = skillType;
+            if (experience) existingLabour.experience = experience;
+            if (workPhotos) existingLabour.workPhotos = workPhotos;
+            if (previousWorkLocation) existingLabour.previousWorkLocation = previousWorkLocation;
+            await existingLabour.save();
+
+            console.log('✅ Labour profile updated:', existingLabour._id);
+            console.log('===========================\n');
+
+            return res.status(200).json({
+                success: true,
+                message: 'Labour profile updated successfully',
+                data: { labour: existingLabour }
+            });
+        }
+
+        // Extract data from request body
         const {
-            mobileNumber,
             firstName,
             lastName,
             gender,
@@ -22,125 +97,68 @@ export const createLabourProfile = async (req, res, next) => {
             previousWorkLocation
         } = req.body;
 
-        if (!mobileNumber) {
-            return res.status(400).json({
-                success: false,
-                message: 'Mobile number is required'
-            });
-        }
+        // Update User model with basic info
+        await User.findByIdAndUpdate(userId, {
+            firstName,
+            lastName,
+            gender,
+            city,
+            state
+        });
 
-        // Find or create user
-        let user = await User.findOne({ mobileNumber });
-        
-        if (!user) {
-            console.log('✨ Creating new user...');
-            user = await User.create({
-                mobileNumber,
-                firstName,
-                lastName,
-                gender,
-                city,
-                state,
-                userType: 'Labour',
-                isActive: true
-            });
-            console.log('✅ User created:', user._id);
-        } else {
-            // Update user details if they exist
-            console.log('🔄 Updating existing user:', user._id);
-            if (firstName) user.firstName = firstName;
-            if (lastName) user.lastName = lastName;
-            if (gender) user.gender = gender;
-            if (city) user.city = city;
-            if (state) user.state = state;
-            if (!user.userType) user.userType = 'Labour';
-            await user.save();
-        }
+        // Create labour profile
+        const labour = await Labour.create({
+            user: userId,
+            skillType: skillType || 'Other',
+            experience: experience || '',
+            workPhotos: workPhotos || [],
+            previousWorkLocation: previousWorkLocation || ''
+        });
 
-        // Check if labour profile already exists
-        let labour = await Labour.findOne({ user: user._id });
-
-        if (!labour) {
-            console.log('✨ Creating new labour profile...');
-            labour = await Labour.create({
-                user: user._id,
-                skillType: skillType || 'Other',
-                experience: experience || '',
-                workPhotos: workPhotos || [],
-                previousWorkLocation: previousWorkLocation || '',
-                isActive: true
-            });
-            console.log('✅ Labour profile created:', labour._id);
-        } else {
-            console.log('🔄 Updating existing labour profile:', labour._id);
-            if (skillType) labour.skillType = skillType;
-            if (experience) labour.experience = experience;
-            if (workPhotos) labour.workPhotos = workPhotos;
-            if (previousWorkLocation) labour.previousWorkLocation = previousWorkLocation;
-            await labour.save();
-            console.log('✅ Labour profile updated');
-        }
-
-        // Populate user data
-        await labour.populate('user', 'firstName lastName mobileNumber city state gender');
-
+        console.log('✅ Labour profile created:', labour._id);
         console.log('===========================\n');
 
         res.status(201).json({
             success: true,
             message: 'Labour profile created successfully',
-            data: { labour, user }
+            data: { labour }
         });
     } catch (error) {
         console.error('❌ CREATE LABOUR PROFILE ERROR:', error.message);
         console.log('===========================\n');
-        next(error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create labour profile',
+            error: error.message
+        });
     }
 };
 
-export const updateWorkDetails = async (req, res, next) => {
+// @desc    Update work details
+// @route   PUT /api/labour/work-details
+// @access  Private
+export const updateWorkDetails = async (req, res) => {
     try {
-        console.log('\n🟡 ===== UPDATE LABOUR WORK DETAILS =====');
-        console.log('📦 Request Body:', JSON.stringify(req.body, null, 2));
-        console.log('👤 User ID:', req.user._id);
+        const userId = req.user._id;
+        const { skillType, experience, previousWorkLocation, workPhotos, availabilityStatus, availability } = req.body;
 
-        const {
-            skillType,
-            experience,
-            workPhotos,
-            previousWorkLocation,
-            rating,
-            availability
-        } = req.body;
-
-        let labour = await Labour.findOne({ user: req.user._id });
-
+        const labour = await Labour.findOne({ user: userId });
         if (!labour) {
-            console.log('✨ Creating new labour profile...');
-            labour = await Labour.create({
-                user: req.user._id,
-                skillType,
-                experience,
-                workPhotos,
-                previousWorkLocation,
-                rating,
-                availability
+            return res.status(404).json({
+                success: false,
+                message: 'Labour profile not found'
             });
-            console.log('✅ Labour profile created:', labour._id);
-        } else {
-            console.log('🔄 Updating existing labour profile:', labour._id);
-            if (skillType) labour.skillType = skillType;
-            if (experience) labour.experience = experience;
-            if (workPhotos) labour.workPhotos = workPhotos;
-            if (previousWorkLocation) labour.previousWorkLocation = previousWorkLocation;
-            if (rating !== undefined) labour.rating = rating;
-            if (availability) labour.availability = availability;
-
-            await labour.save();
-            console.log('✅ Labour profile updated');
         }
 
-        console.log('===========================\n');
+        // Update fields
+        if (skillType) labour.skillType = skillType;
+        if (experience) labour.experience = experience;
+        if (previousWorkLocation) labour.previousWorkLocation = previousWorkLocation;
+        if (workPhotos) labour.workPhotos = workPhotos;
+        if (availabilityStatus) labour.availabilityStatus = availabilityStatus;
+        if (availability) labour.availability = availability;
+
+        await labour.save();
 
         res.status(200).json({
             success: true,
@@ -148,41 +166,74 @@ export const updateWorkDetails = async (req, res, next) => {
             data: { labour }
         });
     } catch (error) {
-        console.error('❌ UPDATE WORK DETAILS ERROR:', error.message);
-        console.log('===========================\n');
-        next(error);
+        console.error('Update work details error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update work details',
+            error: error.message
+        });
     }
 };
 
-export const createLabourCard = async (req, res, next) => {
+// @desc    Create labour card
+// @route   POST /api/labour/card
+// @access  Private
+export const createLabourCard = async (req, res) => {
     try {
         console.log('\n🟢 ===== CREATE LABOUR CARD =====');
-        console.log('📦 Request Body keys:', Object.keys(req.body));
-        console.log('👤 User ID:', req.user._id);
+        console.log('📦 Request Body:', JSON.stringify(req.body, null, 2));
+        
+        const userId = req.user._id;
+        const { 
+            labourCardDetails, 
+            skillType, 
+            experience, 
+            previousWorkLocation, 
+            availability, 
+            availabilityStatus, 
+            rating 
+        } = req.body;
 
-        let labour = await Labour.findOne({ user: req.user._id });
-
+        const labour = await Labour.findOne({ user: userId });
         if (!labour) {
-            console.log('✨ Creating new labour profile with card...');
-            labour = await Labour.create({
-                user: req.user._id,
-                ...req.body,
-                hasLabourCard: true
+            console.log('❌ Labour profile not found');
+            return res.status(404).json({
+                success: false,
+                message: 'Labour profile not found'
             });
-            console.log('✅ Labour profile created:', labour._id);
-        } else {
-            console.log('🔄 Updating existing labour profile with card...');
-            Object.keys(req.body).forEach(key => {
-                labour[key] = req.body[key];
-            });
-            labour.hasLabourCard = true;
-            await labour.save();
-            console.log('✅ Labour card updated');
         }
 
+        // Update labour card details
+        labour.hasLabourCard = true;
+        
+        // Update labourCardDetails object
+        if (labourCardDetails) {
+            labour.labourCardDetails = {
+                fullName: labourCardDetails.fullName,
+                gender: labourCardDetails.gender,
+                mobileNumber: labourCardDetails.mobileNumber,
+                city: labourCardDetails.city,
+                address: labourCardDetails.address,
+                skills: labourCardDetails.skills,
+                photo: labourCardDetails.photo
+            };
+        }
+        
+        // Update other labour fields
+        if (skillType) labour.skillType = skillType;
+        if (experience) labour.experience = experience;
+        if (previousWorkLocation) labour.previousWorkLocation = previousWorkLocation;
+        if (availability) labour.availability = availability;
+        if (availabilityStatus) labour.availabilityStatus = availabilityStatus;
+        if (rating !== undefined) labour.rating = rating;
+
+        await labour.save();
+
+        console.log('✅ Labour card created successfully');
+        console.log('Updated labour:', JSON.stringify(labour, null, 2));
         console.log('===========================\n');
 
-        res.status(201).json({
+        res.status(200).json({
             success: true,
             message: 'Labour card created successfully',
             data: { labour }
@@ -190,91 +241,92 @@ export const createLabourCard = async (req, res, next) => {
     } catch (error) {
         console.error('❌ CREATE LABOUR CARD ERROR:', error.message);
         console.log('===========================\n');
-        next(error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create labour card',
+            error: error.message
+        });
     }
 };
 
-export const getLabourProfile = async (req, res, next) => {
+// @desc    Get labour profile
+// @route   GET /api/labour/profile
+// @access  Private
+export const getLabourProfile = async (req, res) => {
     try {
-        console.log('\n🔵 ===== GET LABOUR PROFILE =====');
-        console.log('👤 User ID:', req.user._id);
+        const userId = req.user._id;
 
-        const labour = await Labour.findOne({ user: req.user._id })
-            .populate('user', 'firstName lastName mobileNumber profilePhoto');
-
+        const labour = await Labour.findOne({ user: userId }).populate('user', 'firstName lastName mobileNumber city profilePhoto');
+        
         if (!labour) {
-            console.log('❌ Labour profile not found');
-            console.log('===========================\n');
             return res.status(404).json({
                 success: false,
                 message: 'Labour profile not found'
             });
         }
 
-        console.log('✅ Labour profile found:', labour._id);
-        console.log('===========================\n');
-
         res.status(200).json({
             success: true,
             data: { labour }
         });
     } catch (error) {
-        console.error('❌ GET LABOUR PROFILE ERROR:', error.message);
-        console.log('===========================\n');
-        next(error);
+        console.error('Get labour profile error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get labour profile',
+            error: error.message
+        });
     }
 };
 
-export const browseLabourCards = async (req, res, next) => {
+// @desc    Browse labour cards
+// @route   GET /api/labour/browse
+// @access  Public
+export const browseLabourCards = async (req, res) => {
     try {
-        console.log('\n🔵 ===== BROWSE LABOUR CARDS =====');
+        const { skillType, city, page = 1, limit = 10 } = req.query;
 
-        const { city, skillType, availability, page = 1, limit = 100 } = req.query;
-
-        const query = { isActive: true, hasLabourCard: true };
-
-        if (skillType) {
-            query.skillType = skillType;
-        }
-        if (availability) {
-            query.availability = availability;
-        }
-
-        console.log('Query:', query);
+        const query = { hasLabourCard: true, isActive: true };
+        
+        if (skillType) query.skillType = skillType;
+        if (city) query['labourCardDetails.city'] = city;
 
         const labours = await Labour.find(query)
+            .populate('user', 'firstName lastName mobileNumber city profilePhoto')
             .sort({ createdAt: -1 })
             .limit(limit * 1)
             .skip((page - 1) * limit);
-            // Removed populate to avoid errors if user ref is missing
 
-        const total = await Labour.countDocuments(query);
-
-        console.log('✅ Found', labours.length, 'labour cards');
-        console.log('===========================\n');
+        const count = await Labour.countDocuments(query);
 
         res.status(200).json({
             success: true,
             data: {
                 labours,
-                total,
-                page: parseInt(page),
-                totalPages: Math.ceil(total / limit)
+                totalPages: Math.ceil(count / limit),
+                currentPage: page,
+                count
             }
         });
     } catch (error) {
-        console.error('❌ BROWSE LABOUR CARDS ERROR:', error.message);
-        console.error('Stack:', error.stack);
-        console.log('===========================\n');
-        next(error);
+        console.error('Browse labour cards error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to browse labour cards',
+            error: error.message
+        });
     }
 };
 
-export const getLabourById = async (req, res, next) => {
+// @desc    Get labour by ID
+// @route   GET /api/labour/:id
+// @access  Private
+export const getLabourById = async (req, res) => {
     try {
-        const labour = await Labour.findById(req.params.id)
-            .populate('user', 'firstName lastName mobileNumber city profilePhoto');
+        const { id } = req.params;
 
+        const labour = await Labour.findById(id).populate('user', 'firstName lastName mobileNumber city profilePhoto');
+        
         if (!labour) {
             return res.status(404).json({
                 success: false,
@@ -287,17 +339,24 @@ export const getLabourById = async (req, res, next) => {
             data: { labour }
         });
     } catch (error) {
-        next(error);
+        console.error('Get labour by ID error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get labour',
+            error: error.message
+        });
     }
 };
 
-export const getLabourVerificationStatus = async (req, res, next) => {
+// @desc    Get labour verification status
+// @route   GET /api/labour/verification-status
+// @access  Private
+export const getLabourVerificationStatus = async (req, res) => {
     try {
-        console.log('\n🔵 ===== GET LABOUR VERIFICATION STATUS =====');
-        console.log('👤 User ID:', req.user._id);
+        const userId = req.user._id;
 
-        const labour = await Labour.findOne({ user: req.user._id });
-
+        const labour = await Labour.findOne({ user: userId });
+        
         if (!labour) {
             return res.status(404).json({
                 success: false,
@@ -305,26 +364,412 @@ export const getLabourVerificationStatus = async (req, res, next) => {
             });
         }
 
-        // Import VerificationRequest model
-        const VerificationRequest = (await import('../../admin/models/VerificationRequest.model.js')).default;
-        
-        const verificationRequest = await VerificationRequest.findOne({
-            entityId: labour._id,
-            entityType: 'labour'
-        }).sort({ createdAt: -1 });
+        res.status(200).json({
+            success: true,
+            data: {
+                verificationStatus: labour.verificationStatus,
+                isVerified: labour.isVerified
+            }
+        });
+    } catch (error) {
+        console.error('Get verification status error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get verification status',
+            error: error.message
+        });
+    }
+};
 
-        console.log('✅ Verification status:', verificationRequest?.status || 'Not submitted');
+// @desc    Create hire request
+// @route   POST /api/labour/hire-request
+// @access  Private
+export const createHireRequest = async (req, res) => {
+    try {
+        const { labourId, requesterModel } = req.body;
+        const userId = req.user._id;
+
+        // Validate requester model
+        if (!['User', 'Contractor'].includes(requesterModel)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid requester model'
+            });
+        }
+
+        // Get labour details
+        const labour = await Labour.findById(labourId).populate('user');
+        if (!labour) {
+            return res.status(404).json({
+                success: false,
+                message: 'Labour not found'
+            });
+        }
+
+        // Get requester details
+        let requester;
+        if (requesterModel === 'User') {
+            requester = await User.findById(userId);
+        } else {
+            requester = await Contractor.findOne({ user: userId }).populate('user');
+            if (requester) {
+                requester = requester.user;
+            }
+        }
+
+        if (!requester) {
+            return res.status(404).json({
+                success: false,
+                message: 'Requester not found'
+            });
+        }
+
+        // Check if request already exists
+        const existingRequest = await HireRequest.findOne({
+            labourId,
+            requesterId: userId,
+            requesterModel,
+            status: 'pending'
+        });
+
+        if (existingRequest) {
+            return res.status(400).json({
+                success: false,
+                message: 'Hire request already exists'
+            });
+        }
+
+        // Create hire request
+        const hireRequest = await HireRequest.create({
+            labourId,
+            labourName: labour.labourCardDetails?.fullName || `${labour.user.firstName} ${labour.user.lastName}`,
+            labourSkill: labour.skillType || 'General',
+            labourPhone: labour.labourCardDetails?.mobileNumber || labour.user.mobileNumber,
+            labourCity: labour.labourCardDetails?.city || labour.user.city || 'N/A',
+            requesterId: userId,
+            requesterModel,
+            requesterName: `${requester.firstName} ${requester.lastName}`,
+            requesterPhone: requester.mobileNumber,
+            requesterLocation: requester.city || 'N/A'
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Hire request created successfully',
+            data: { hireRequest }
+        });
+    } catch (error) {
+        console.error('Create hire request error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create hire request',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Get labour hire requests (received by labour)
+// @route   GET /api/labour/hire-requests
+// @access  Private
+export const getLabourHireRequests = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { status } = req.query;
+
+        // Find labour profile
+        const labour = await Labour.findOne({ user: userId });
+        if (!labour) {
+            return res.status(404).json({
+                success: false,
+                message: 'Labour profile not found'
+            });
+        }
+
+        // Build query
+        const query = { labourId: labour._id };
+        if (status) query.status = status;
+
+        const hireRequests = await HireRequest.find(query).sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                hireRequests,
+                count: hireRequests.length
+            }
+        });
+    } catch (error) {
+        console.error('Get labour hire requests error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get hire requests',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Get sent hire requests (sent by user/contractor)
+// @route   GET /api/labour/hire-requests/sent
+// @access  Private
+export const getSentHireRequests = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { requesterModel } = req.query;
+
+        // Build query
+        const query = { requesterId: userId };
+        if (requesterModel) query.requesterModel = requesterModel;
+
+        const hireRequests = await HireRequest.find(query)
+            .select('labourId status createdAt updatedAt')
+            .sort({ createdAt: -1 });
+
+        // Convert labourId to string for frontend mapping
+        const formattedRequests = hireRequests.map(req => ({
+            _id: req._id,
+            labourId: req.labourId.toString(),
+            status: req.status,
+            createdAt: req.createdAt,
+            updatedAt: req.updatedAt
+        }));
+
+        res.status(200).json({
+            success: true,
+            data: {
+                hireRequests: formattedRequests,
+                count: formattedRequests.length
+            }
+        });
+    } catch (error) {
+        console.error('Get sent hire requests error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get sent hire requests',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Update hire request status (accept/decline)
+// @route   PATCH /api/labour/hire-request/:id
+// @access  Private
+export const updateHireRequestStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        const userId = req.user._id;
+
+        // Validate status
+        if (!['accepted', 'declined'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status'
+            });
+        }
+
+        // Find hire request
+        const hireRequest = await HireRequest.findById(id);
+        if (!hireRequest) {
+            return res.status(404).json({
+                success: false,
+                message: 'Hire request not found'
+            });
+        }
+
+        // Verify labour owns this request
+        const labour = await Labour.findOne({ user: userId });
+        if (!labour || labour._id.toString() !== hireRequest.labourId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to update this request'
+            });
+        }
+
+        // Update status
+        hireRequest.status = status;
+        hireRequest.respondedAt = new Date();
+        await hireRequest.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Hire request ${status} successfully`,
+            data: { hireRequest }
+        });
+    } catch (error) {
+        console.error('Update hire request status error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update hire request status',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Delete hire request
+// @route   DELETE /api/labour/hire-request/:id
+// @access  Private
+export const deleteHireRequest = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user._id;
+
+        const hireRequest = await HireRequest.findById(id);
+        if (!hireRequest) {
+            return res.status(404).json({
+                success: false,
+                message: 'Hire request not found'
+            });
+        }
+
+        // Verify user owns this request
+        if (hireRequest.requesterId.toString() !== userId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to delete this request'
+            });
+        }
+
+        await hireRequest.deleteOne();
+
+        res.status(200).json({
+            success: true,
+            message: 'Hire request deleted successfully'
+        });
+    } catch (error) {
+        console.error('Delete hire request error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete hire request',
+            error: error.message
+        });
+    }
+};
+
+
+// @desc    Get labour's application history (accepted/rejected applications)
+// @route   GET /api/labour/application-history
+// @access  Private
+export const getLabourApplicationHistory = async (req, res, next) => {
+    try {
+        console.log('\n🔵 ===== GET LABOUR APPLICATION HISTORY =====');
+        console.log('User ID:', req.user._id);
+
+        // Find labour profile
+        const labour = await Labour.findOne({ user: req.user._id });
+        if (!labour) {
+            return res.status(404).json({
+                success: false,
+                message: 'Labour profile not found'
+            });
+        }
+
+        // Import Job and ContractorJob models
+        const Job = (await import('../../user/models/Job.model.js')).default;
+        const ContractorJob = (await import('../../contractor/models/ContractorJob.model.js')).default;
+
+        console.log('✅ Labour profile found:', labour._id);
+
+        // Find all user jobs where labour applied
+        const userJobs = await Job.find({ isActive: true });
+        
+        // Find all contractor jobs where labour applied
+        const contractorJobs = await ContractorJob.find({ isActive: true });
+
+        console.log('✅ Searching through', userJobs.length, 'user jobs and', contractorJobs.length, 'contractor jobs');
+
+        const history = [];
+
+        // Extract accepted/rejected applications from user jobs
+        userJobs.forEach(job => {
+            job.applications.forEach(app => {
+                if ((app.status === 'Accepted' || app.status === 'Rejected') && 
+                    app.applicant && app.applicant.toString() === req.user._id.toString()) {
+                    
+                    // Format date and time
+                    const appliedDate = new Date(app.appliedAt);
+                    const formattedDate = appliedDate.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                    });
+                    const formattedTime = appliedDate.toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+
+                    history.push({
+                        id: app._id.toString(),
+                        _id: app._id,
+                        jobId: job._id,
+                        jobTitle: job.jobTitle,
+                        category: job.category,
+                        userName: app.applicantName,
+                        phoneNumber: app.phoneNumber,
+                        location: app.location || 'Not specified',
+                        message: app.message,
+                        appliedAt: app.appliedAt,
+                        date: formattedDate,
+                        time: formattedTime,
+                        status: app.status.toLowerCase(),
+                        type: 'user'
+                    });
+                }
+            });
+        });
+
+        // Extract accepted/rejected applications from contractor jobs
+        contractorJobs.forEach(job => {
+            job.applications.forEach(app => {
+                if ((app.status === 'Accepted' || app.status === 'Rejected') && 
+                    app.labour && app.labour.toString() === labour._id.toString()) {
+                    
+                    // Format date and time
+                    const appliedDate = new Date(app.appliedAt);
+                    const formattedDate = appliedDate.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                    });
+                    const formattedTime = appliedDate.toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+
+                    history.push({
+                        id: app._id.toString(),
+                        _id: app._id,
+                        jobId: job._id,
+                        jobTitle: `${job.labourSkill} - ${job.city}`,
+                        category: job.labourSkill,
+                        contractorName: job.contractorName,
+                        phoneNumber: job.phoneNumber,
+                        location: job.city || 'Not specified',
+                        message: app.message,
+                        appliedAt: app.appliedAt,
+                        date: formattedDate,
+                        time: formattedTime,
+                        status: app.status.toLowerCase(),
+                        type: 'contractor'
+                    });
+                }
+            });
+        });
+
+        // Sort by most recent first
+        history.sort((a, b) => new Date(b.appliedAt) - new Date(a.appliedAt));
+
+        console.log('✅ Found', history.length, 'history items');
         console.log('===========================\n');
 
         res.status(200).json({
             success: true,
             data: {
-                isVerified: labour.isVerified || false,
-                verificationRequest: verificationRequest || null
+                history,
+                count: history.length
             }
         });
     } catch (error) {
-        console.error('❌ GET VERIFICATION STATUS ERROR:', error.message);
+        console.error('❌ GET LABOUR APPLICATION HISTORY ERROR:', error.message);
         console.log('===========================\n');
         next(error);
     }

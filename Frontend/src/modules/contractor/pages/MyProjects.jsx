@@ -2,35 +2,120 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import ContractorProfileCard from '../components/ContractorProfileCard';
+import { contractorAPI } from '../../../services/api';
 
 const MyProjects = () => {
     const navigate = useNavigate();
     const [cards, setCards] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [selectedCard, setSelectedCard] = useState(null);
 
-    // Load contractor cards from localStorage (for labour panel)
+    // Load contractor cards from database
+    const loadCards = async () => {
+        try {
+            setLoading(true);
+            console.log('🔄 [MyProjects] Loading contractor cards...');
+            const token = localStorage.getItem('access_token');
+            
+            if (token) {
+                const response = await contractorAPI.getContractorJobs();
+                console.log('📦 [MyProjects] API Response:', response);
+                
+                if (response && response.success && response.data && response.data.jobs) {
+                    console.log('✅ [MyProjects] Jobs found:', response.data.jobs.length);
+                    
+                    const formattedCards = response.data.jobs.map(job => ({
+                        id: job._id,
+                        contractorName: job.contractorName || 'N/A',
+                        phoneNumber: job.phoneNumber || 'N/A',
+                        city: job.city || 'N/A',
+                        address: job.address || 'N/A',
+                        businessType: job.businessType || 'Individual',
+                        businessName: job.businessName || '',
+                        labourSkill: job.labourSkill || 'Other',
+                        experience: job.experience || '0',
+                        workDuration: job.workDuration || 'Contract',
+                        budgetType: job.budgetType || 'Fixed Amount',
+                        budgetAmount: job.budgetAmount || '0',
+                        profileStatus: job.profileStatus || 'Active',
+                        rating: job.rating || 0,
+                        availabilityStatus: job.profileStatus === 'Active' ? 'Available' : 'Closed',
+                        createdAt: job.createdAt
+                    }));
+                    
+                    console.log('✅ [MyProjects] Formatted cards:', formattedCards);
+                    setCards(formattedCards);
+                } else {
+                    console.log('⚠️ [MyProjects] No jobs in response');
+                    setCards([]);
+                }
+            } else {
+                console.log('⚠️ [MyProjects] No token, using localStorage');
+                const savedCards = JSON.parse(localStorage.getItem('contractor_cards_for_labour') || '[]');
+                setCards(savedCards);
+            }
+        } catch (error) {
+            console.error('❌ [MyProjects] Error loading cards:', error);
+            const savedCards = JSON.parse(localStorage.getItem('contractor_cards_for_labour') || '[]');
+            setCards(savedCards);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const savedCards = JSON.parse(localStorage.getItem('contractor_cards_for_labour') || '[]');
-        setCards(savedCards);
+        console.log('🚀 [MyProjects] Component mounted');
+        loadCards();
+        
+        // Auto-refresh every 10 seconds
+        const interval = setInterval(() => {
+            console.log('🔄 [MyProjects] Auto-refresh triggered');
+            loadCards();
+        }, 10000);
+        
+        return () => {
+            console.log('🛑 [MyProjects] Component unmounting');
+            clearInterval(interval);
+        };
     }, []);
 
     const handleViewDetails = (card) => {
         setSelectedCard(card);
     };
 
-    const handleToggleAvailability = (cardId) => {
-        const updatedCards = cards.map(card => {
-            if (card.id === cardId) {
-                return {
-                    ...card,
-                    availabilityStatus: card.availabilityStatus === 'Available' ? 'Busy' : 'Available'
-                };
+    const handleToggleAvailability = async (cardId) => {
+        try {
+            const token = localStorage.getItem('access_token');
+            
+            if (token) {
+                // Update in database
+                const currentCard = cards.find(c => c.id === cardId);
+                const newStatus = currentCard.profileStatus === 'Active' ? 'Closed' : 'Active';
+                
+                await contractorAPI.updateContractorJob(cardId, {
+                    profileStatus: newStatus
+                });
+                
+                // Reload cards
+                await loadCards();
+            } else {
+                // Update in localStorage
+                const updatedCards = cards.map(card => {
+                    if (card.id === cardId) {
+                        return {
+                            ...card,
+                            availabilityStatus: card.availabilityStatus === 'Available' ? 'Busy' : 'Available'
+                        };
+                    }
+                    return card;
+                });
+                
+                setCards(updatedCards);
+                localStorage.setItem('contractor_cards_for_labour', JSON.stringify(updatedCards));
             }
-            return card;
-        });
-        
-        setCards(updatedCards);
-        localStorage.setItem('contractor_cards_for_labour', JSON.stringify(updatedCards));
+        } catch (error) {
+            console.error('Error toggling availability:', error);
+        }
     };
 
     const handleCloseModal = () => {
@@ -69,7 +154,14 @@ const MyProjects = () => {
             </div>
             
             <div className="p-4">
-                {cards.length === 0 ? (
+                {loading ? (
+                    <div className="flex items-center justify-center min-h-[60vh]">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+                            <p className="text-gray-500">Loading projects...</p>
+                        </div>
+                    </div>
+                ) : cards.length === 0 ? (
                     <div className="flex flex-col items-center justify-center min-h-[60vh]">
                         <button
                             onClick={handlePostJob}

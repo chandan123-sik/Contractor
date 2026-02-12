@@ -119,6 +119,15 @@ export const createLabour = async (req, res) => {
                 userType: 'Labour',
                 isActive: true
             });
+        } else {
+            // Update user details
+            if (firstName) user.firstName = firstName;
+            if (lastName) user.lastName = lastName;
+            if (gender) user.gender = gender;
+            if (city) user.city = city;
+            if (state) user.state = state;
+            if (!user.userType) user.userType = 'Labour';
+            await user.save();
         }
 
         // Check if labour profile already exists for this user
@@ -161,9 +170,9 @@ export const createLabour = async (req, res) => {
 // @access  Private (SUPER_ADMIN, ADMIN_LABOUR)
 export const updateLabour = async (req, res) => {
     try {
-        const { firstName, lastName, trade, gender, city, state, isActive } = req.body;
+        const { firstName, lastName, skillType, trade, gender, city, state, isActive, experience } = req.body;
 
-        const labour = await Labour.findById(req.params.id);
+        const labour = await Labour.findById(req.params.id).populate('user');
 
         if (!labour) {
             return res.status(404).json({
@@ -172,15 +181,24 @@ export const updateLabour = async (req, res) => {
             });
         }
 
-        if (firstName !== undefined) labour.firstName = firstName;
-        if (lastName !== undefined) labour.lastName = lastName;
-        if (trade !== undefined) labour.trade = trade;
-        if (gender !== undefined) labour.gender = gender;
-        if (city !== undefined) labour.city = city;
-        if (state !== undefined) labour.state = state;
+        // Update labour fields
+        if (skillType !== undefined) labour.skillType = skillType;
+        if (trade !== undefined) labour.skillType = trade; // trade maps to skillType
+        if (experience !== undefined) labour.experience = experience;
         if (isActive !== undefined) labour.isActive = isActive;
 
+        // Update user fields if user exists
+        if (labour.user) {
+            if (firstName !== undefined) labour.user.firstName = firstName;
+            if (lastName !== undefined) labour.user.lastName = lastName;
+            if (gender !== undefined) labour.user.gender = gender;
+            if (city !== undefined) labour.user.city = city;
+            if (state !== undefined) labour.user.state = state;
+            await labour.user.save();
+        }
+
         await labour.save();
+        await labour.populate('user', 'firstName lastName mobileNumber city state gender');
 
         res.status(200).json({
             success: true,

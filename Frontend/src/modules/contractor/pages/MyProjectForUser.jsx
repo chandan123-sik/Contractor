@@ -5,11 +5,13 @@ import toast from 'react-hot-toast';
 import ContractorPageHeader from '../components/ContractorPageHeader';
 import ContractorBottomNav from '../components/ContractorBottomNav';
 import ContractorProfileCard from '../components/ContractorProfileCard';
+import { contractorAPI } from '../../../services/api';
 
 const MyProjectForUser = () => {
     const navigate = useNavigate();
     const [showForm, setShowForm] = useState(false);
     const [cards, setCards] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [rating, setRating] = useState(0);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [selectedCard, setSelectedCard] = useState(null);
@@ -36,10 +38,85 @@ const MyProjectForUser = () => {
         'Renovation'
     ];
 
+    // Load contractor cards from database
+    const loadCards = async () => {
+        try {
+            setLoading(true);
+            console.log('🔄 Loading contractor cards...');
+            const token = localStorage.getItem('access_token');
+            console.log('Token exists:', !!token);
+            
+            if (token) {
+                console.log('📡 Fetching from API...');
+                const response = await contractorAPI.getContractorJobs();
+                console.log('📦 Full API Response:', JSON.stringify(response, null, 2));
+                
+                if (response && response.success && response.data && response.data.jobs) {
+                    console.log('✅ Jobs found:', response.data.jobs.length);
+                    
+                    if (response.data.jobs.length > 0) {
+                        const formattedCards = response.data.jobs.map(job => {
+                            console.log('Formatting job:', job);
+                            return {
+                                id: job._id,
+                                contractorName: job.contractorName || 'N/A',
+                                businessType: job.businessType || 'Individual',
+                                city: job.city || 'N/A',
+                                primaryWorkCategory: job.labourSkill || 'Other',
+                                experience: job.experience || '0',
+                                contactNo: job.phoneNumber || 'N/A',
+                                budgetAmount: job.budgetAmount || '0',
+                                rating: job.rating || 0,
+                                availabilityStatus: job.profileStatus === 'Active' ? 'Available' : 'Closed',
+                                createdAt: job.createdAt
+                            };
+                        });
+                        
+                        console.log('✅ Formatted cards:', formattedCards);
+                        setCards(formattedCards);
+                    } else {
+                        console.log('⚠️ Jobs array is empty');
+                        setCards([]);
+                    }
+                } else {
+                    console.log('⚠️ Invalid response structure:', response);
+                    setCards([]);
+                }
+            } else {
+                console.log('⚠️ No token, using localStorage');
+                const savedCards = JSON.parse(localStorage.getItem('contractor_cards_for_user') || '[]');
+                console.log('📦 LocalStorage cards:', savedCards);
+                setCards(savedCards);
+            }
+        } catch (error) {
+            console.error('❌ Error loading contractor cards:', error);
+            console.error('Error response:', error.response);
+            console.error('Error message:', error.message);
+            
+            // Fallback to localStorage
+            const savedCards = JSON.parse(localStorage.getItem('contractor_cards_for_user') || '[]');
+            console.log('📦 Fallback to localStorage:', savedCards);
+            setCards(savedCards);
+        } finally {
+            setLoading(false);
+            console.log('✅ Loading complete. Cards count:', cards.length);
+        }
+    };
+
     useEffect(() => {
-        // Load contractor cards FOR USER from localStorage
-        const savedCards = JSON.parse(localStorage.getItem('contractor_cards_for_user') || '[]');
-        setCards(savedCards);
+        console.log('🚀 Component mounted, loading cards...');
+        loadCards();
+        
+        // Auto-refresh every 10 seconds (reduced from 5 for better performance)
+        const interval = setInterval(() => {
+            console.log('🔄 Auto-refresh triggered');
+            loadCards();
+        }, 10000);
+        
+        return () => {
+            console.log('🛑 Component unmounting, clearing interval');
+            clearInterval(interval);
+        };
     }, []);
 
     const handleChange = (e) => {
@@ -51,7 +128,7 @@ const MyProjectForUser = () => {
         setRating(star);
     };
 
-    const handleCreateCard = () => {
+    const handleCreateCard = async () => {
         // Validation
         if (!formData.contractorName.trim()) {
             toast.error('Contractor name is required');
@@ -78,33 +155,102 @@ const MyProjectForUser = () => {
             return;
         }
 
-        // Create new card
-        const newCard = {
-            ...formData,
-            rating: rating,
-            availabilityStatus: 'Available', // Default status
-            id: Date.now(), // Unique ID
-            createdAt: new Date().toISOString()
-        };
+        try {
+            const token = localStorage.getItem('access_token');
+            
+            if (token) {
+                // Map frontend businessType to backend enum
+                let mappedBusinessType = 'Individual Contractor';
+                if (formData.businessType === 'Company' || formData.businessType === 'Firm') {
+                    mappedBusinessType = 'Business';
+                }
+                
+                // Map primaryWorkCategory to labourSkill enum (use 'Other' if not in enum)
+                const validSkills = ['Construction', 'Interior', 'Painting', 'Plumbing', 'Electrical'];
+                const mappedSkill = validSkills.includes(formData.primaryWorkCategory) 
+                    ? formData.primaryWorkCategory 
+                    : 'Other';
+                
+                // Save to database
+                const jobData = {
+                    contractorName: formData.contractorName,
+                    phoneNumber: formData.contactNo,
+                    city: formData.city,
+                    address: formData.city, // Using city as address
+                    businessType: mappedBusinessType,
+                    businessName: formData.contractorName,
+                    labourSkill: mappedSkill,
+                    experience: formData.experience,
+                    workDuration: 'Contract',
+                    budgetType: 'Fixed Amount',
+                    budgetAmount: formData.budgetAmount,
+                    rating: rating,
+                    profileStatus: 'Active',
+                    targetAudience: 'User' // Only for User, not Labour
+                };
 
-        // Add to cards array
-        const updatedCards = [...cards, newCard];
-        setCards(updatedCards);
-        localStorage.setItem('contractor_cards_for_user', JSON.stringify(updatedCards));
-        
-        // Reset form
-        setFormData({
-            contractorName: '',
-            businessType: 'Individual',
-            city: '',
-            primaryWorkCategory: '',
-            experience: '',
-            contactNo: '',
-            budgetAmount: ''
-        });
-        setRating(0);
-        setShowForm(false);
-        toast.success('Contractor card created successfully!');
+                console.log('Creating contractor job:', jobData);
+                
+                const response = await contractorAPI.createContractorJob(jobData);
+                console.log('📦 Create response:', response);
+                
+                if (response.success) {
+                    console.log('✅ Contractor job created in database:', response);
+                    
+                    toast.success('Card created successfully!');
+                    setShowForm(false);
+                    
+                    // Reset form
+                    setFormData({
+                        contractorName: '',
+                        businessType: 'Individual',
+                        city: '',
+                        primaryWorkCategory: '',
+                        experience: '',
+                        contactNo: '',
+                        budgetAmount: ''
+                    });
+                    setRating(0);
+                    
+                    // Reload cards from database
+                    console.log('🔄 Reloading cards after creation...');
+                    await loadCards();
+                } else {
+                    throw new Error(response.message || 'Failed to create card');
+                }
+            } else {
+                // Fallback to localStorage if no token
+                const newCard = {
+                    ...formData,
+                    rating: rating,
+                    availabilityStatus: 'Available',
+                    id: Date.now(),
+                    createdAt: new Date().toISOString()
+                };
+
+                const updatedCards = [...cards, newCard];
+                setCards(updatedCards);
+                localStorage.setItem('contractor_cards_for_user', JSON.stringify(updatedCards));
+                
+                toast.success('Card created successfully!');
+                setShowForm(false);
+                
+                // Reset form
+                setFormData({
+                    contractorName: '',
+                    businessType: 'Individual',
+                    city: '',
+                    primaryWorkCategory: '',
+                    experience: '',
+                    contactNo: '',
+                    budgetAmount: ''
+                });
+                setRating(0);
+            }
+        } catch (error) {
+            console.error('Error creating contractor card:', error);
+            toast.error(error.message || 'Failed to create card. Please try again.');
+        }
     };
 
     const handleViewDetails = (card) => {
@@ -143,7 +289,15 @@ const MyProjectForUser = () => {
             <ContractorPageHeader title="My Project for User" backPath="/contractor/settings" />
 
             <div className="p-4">
-                {!showForm && cards.length === 0 ? (
+                {loading ? (
+                    // Loading State
+                    <div className="flex items-center justify-center min-h-[60vh]">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+                            <p className="text-gray-500">Loading cards...</p>
+                        </div>
+                    </div>
+                ) : cards.length === 0 && !showForm ? (
                     // Empty State with + Icon
                     <div className="flex items-center justify-center min-h-[60vh]">
                         <button

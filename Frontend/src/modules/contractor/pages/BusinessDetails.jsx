@@ -41,24 +41,52 @@ const BusinessDetails = () => {
         return true;
     };
 
-    const handleSaveBusinessDetails = () => {
+    const handleSaveBusinessDetails = async () => {
         if (!validateForm()) return;
 
-        const contractorProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
-        const updatedProfile = {
-            ...contractorProfile,
-            businessDetails: formData
-        };
-        localStorage.setItem('contractor_profile', JSON.stringify(updatedProfile));
+        try {
+            const token = localStorage.getItem('access_token');
+            
+            // Save to database
+            if (token) {
+                const response = await fetch('http://localhost:5000/api/contractor/business-details', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
 
-        toast.success('Business details updated successfully');
-        
-        // Check if coming from settings or onboarding
-        const isFromSettings = contractorProfile.businessDetails !== undefined;
-        if (isFromSettings) {
-            navigate('/contractor/settings');
-        } else {
-            navigate('/contractor/hire-workers');
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log('Business details saved to database:', data.data);
+                    toast.success('Business details saved successfully');
+                } else {
+                    toast.error(data.message || 'Failed to save business details');
+                    return;
+                }
+            }
+
+            // Also save to localStorage
+            const contractorProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
+            const updatedProfile = {
+                ...contractorProfile,
+                businessDetails: formData
+            };
+            localStorage.setItem('contractor_profile', JSON.stringify(updatedProfile));
+            
+            // Check if coming from settings or onboarding
+            const isFromSettings = contractorProfile.businessDetails !== undefined;
+            if (isFromSettings) {
+                navigate('/contractor/settings');
+            } else {
+                navigate('/contractor/hire-workers');
+            }
+        } catch (error) {
+            console.error('Error saving business details:', error);
+            toast.error('Failed to save business details');
         }
     };
 

@@ -1,26 +1,11 @@
 import { MapPin, Briefcase, Calendar, IndianRupee } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useEffect, useState } from 'react';
 
-const LabourJobCard = ({ job, onViewDetails, onApplyNow, appliedJobs = [], index = 0 }) => {
-    const [applicationStatus, setApplicationStatus] = useState(null);
-    const isApplied = appliedJobs.includes(job.id);
-    
-    useEffect(() => {
-        // Check if this job has been accepted/declined
-        const jobApplications = JSON.parse(localStorage.getItem('job_applications') || '{}');
-        const labourAppliedJobs = JSON.parse(localStorage.getItem('labour_applied_jobs') || '[]');
-        
-        if (jobApplications[job.id] && labourAppliedJobs.includes(job.id)) {
-            // Get the request ID for this labour's application
-            const requestMapping = JSON.parse(localStorage.getItem('labour_request_mapping') || '{}');
-            const requestId = requestMapping[job.id];
-            
-            if (requestId && jobApplications[job.id] && jobApplications[job.id][requestId]) {
-                setApplicationStatus(jobApplications[job.id][requestId]);
-            }
-        }
-    }, [job.id]);
+const LabourJobCard = ({ job, onViewDetails, onApplyNow, appliedJobs = {}, index = 0 }) => {
+    // Check if this job has been applied to and get its status
+    const applicationData = appliedJobs[job.id];
+    const isApplied = !!applicationData;
+    const applicationStatus = applicationData?.status;
     
     const handleApplyClick = () => {
         if (job.status !== 'Open') {
@@ -42,6 +27,25 @@ const LabourJobCard = ({ job, onViewDetails, onApplyNow, appliedJobs = [], index
         
         onApplyNow(job.id);
     };
+
+    // Determine button style and text based on status
+    let buttonClass = '';
+    let buttonText = 'Apply Now';
+    
+    if (applicationStatus === 'Accepted') {
+        buttonClass = 'bg-green-500 text-white cursor-default';
+        buttonText = '✓ Approved';
+    } else if (applicationStatus === 'Rejected') {
+        buttonClass = 'bg-gray-500 text-white cursor-default';
+        buttonText = '✗ Declined';
+    } else if (isApplied) {
+        buttonClass = 'bg-orange-500 text-white cursor-default';
+        buttonText = '⏳ Request Sent';
+    } else if (job.status === 'Open') {
+        buttonClass = 'btn-primary';
+    } else {
+        buttonClass = 'bg-gray-300 text-gray-500 cursor-not-allowed';
+    }
 
     return (
         <div className="premium-card card-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
@@ -107,25 +111,9 @@ const LabourJobCard = ({ job, onViewDetails, onApplyNow, appliedJobs = [], index
                 <button
                     onClick={handleApplyClick}
                     disabled={job.status !== 'Open' || isApplied}
-                    className={`flex-1 font-bold py-2 rounded-lg transition-all duration-200 ease-out ${
-                        applicationStatus === 'accepted'
-                            ? 'bg-green-500 text-white cursor-default'
-                            : applicationStatus === 'declined'
-                                ? 'bg-gray-500 text-white cursor-default'
-                                : isApplied
-                                    ? 'bg-red-500 text-white cursor-default'
-                                    : job.status === 'Open' 
-                                        ? 'btn-primary' 
-                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
+                    className={`flex-1 font-bold py-2 rounded-lg transition-all duration-200 ease-out ${buttonClass}`}
                 >
-                    {applicationStatus === 'accepted' 
-                        ? 'Accepted' 
-                        : applicationStatus === 'declined'
-                            ? 'Not Accepted'
-                            : isApplied 
-                                ? 'Request Sent' 
-                                : 'Apply Now'}
+                    {buttonText}
                 </button>
             </div>
         </div>

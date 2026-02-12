@@ -59,10 +59,39 @@ const HireWorkers = () => {
             setSelectedCategory(location.state.selectedCategory);
         }
 
-        // Load hired workers state
-        const loadHiredState = () => {
-            const hired = JSON.parse(localStorage.getItem('contractor_hired_workers_state') || '{}');
-            setHiredWorkers(hired);
+        // Load hired workers state from database
+        const loadHiredState = async () => {
+            try {
+                // Fetch sent hire requests from database
+                const response = await labourAPI.getSentHireRequests({ requesterModel: 'Contractor' });
+                
+                if (response.success) {
+                    console.log('📊 Sent hire requests:', response.data.hireRequests);
+                    
+                    // Create state map from requests
+                    const uiStateMap = {};
+                    response.data.hireRequests.forEach(req => {
+                        const labourId = req.labourId; // Already a string from backend
+                        
+                        console.log(`Mapping labourId: ${labourId} → status: ${req.status}`);
+                        
+                        // Map status to UI states
+                        if (req.status === 'accepted') {
+                            uiStateMap[labourId] = 'approved';
+                        } else if (req.status === 'declined') {
+                            uiStateMap[labourId] = 'declined';
+                        } else {
+                            uiStateMap[labourId] = 'pending';
+                        }
+                    });
+                    
+                    console.log('✅ Final UI state map:', uiStateMap);
+                    setHiredWorkers(uiStateMap);
+                }
+            } catch (error) {
+                console.error('Failed to load hired state:', error);
+                setHiredWorkers({});
+            }
         };
         
         loadHiredState();
@@ -74,17 +103,18 @@ const HireWorkers = () => {
             }
         };
 
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-
-        // Also poll for updates every 3 seconds to check if labour accepted/declined
-        const interval = setInterval(() => {
+        // Listen for hire request updates from labour panel
+        const handleHireRequestUpdate = () => {
             loadHiredState();
-        }, 3000);
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('hire-request-updated', handleHireRequestUpdate);
 
         // Cleanup
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
-            clearInterval(interval);
+            window.removeEventListener('hire-request-updated', handleHireRequestUpdate);
         };
     }, [location.state]);
 
@@ -126,7 +156,6 @@ const HireWorkers = () => {
                     
                     setLabourCards(uniqueCards);
                     setFilteredCards(uniqueCards);
-                    console.log('Loaded labour cards - DB:', dbCards.length, 'Local:', localCards.length, 'Dummy:', dummyCards.length, 'Total:', uniqueCards.length);
                     return;
                 }
             } catch (apiError) {
@@ -138,8 +167,6 @@ const HireWorkers = () => {
             const allCards = [...localCards, ...dummyCards];
             setLabourCards(allCards);
             setFilteredCards(allCards);
-            console.log('Loaded labour cards from localStorage + dummy:', allCards.length);
-            
         } catch (error) {
             console.error('Failed to fetch labour cards:', error);
             // Use dummy cards as last resort
@@ -204,39 +231,66 @@ const HireWorkers = () => {
         setShowFilterModal(false);
     };
 
-    const handleHireWorker = (card) => {
-        // Get contractor profile
-        const contractorProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
-        const mobileNumber = localStorage.getItem('mobile_number') || '';
-        const contractorPhone = contractorProfile.phoneNumber || mobileNumber || '';
+    const handleHireWorker = async (card) => {
+        try {
+            // Check if this is a dummy card (string ID) or real database card (ObjectId)
+            const isDummyCard = typeof card.id === 'string' && card.id.length < 10;
+            
+            if (isDummyCard) {
+                alert('⚠️ This is a demo worker. Please hire a real worker from the database.');
+                return;
+            }
 
-        // Create request object
-        const request = {
-            id: Date.now(),
-            labourId: card.id,
-            labourName: card.fullName,
-            labourSkill: card.primarySkill,
-            labourPhone: card.mobileNumber,
-            labourCity: card.city,
-            contractorName: contractorProfile.firstName || 'Contractor',
-            contractorPhone: contractorPhone,
-            contractorLocation: contractorProfile.city || 'N/A',
-            requestDate: new Date().toLocaleDateString('en-IN'),
-            requestTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-            status: 'pending'
-        };
+            // Get user/contractor info from localStorage
+            const userId = localStorage.getItem('user_id');
+            const mobileNumber = localStorage.getItem('mobile_number') || '';
+            const contractorProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
+            const contractorPhone = contractorProfile.phoneNumber || mobileNumber || '';
 
-        console.log('Contractor to Labour Request:', request); // Debug
+            if (!userId) {
+                alert('Please login first');
+                return;
+            }
 
-        // Save request to labour panel requests
-        const existingRequests = JSON.parse(localStorage.getItem('labour_contractor_requests') || '[]');
-        existingRequests.push(request);
-        localStorage.setItem('labour_contractor_requests', JSON.stringify(existingRequests));
+            // Create request object for API
+            const requestData = {
+                labourId: card.id,
+                labourName: card.fullName,
+                labourSkill: card.primarySkill,
+                labourPhone: card.mobileNumber,
+                labourCity: card.city,
+                requesterId: userId,
+                requesterModel: 'Contractor',
+                requesterName: contractorProfile.firstName || 'Contractor',
+                requesterPhone: contractorPhone,
+                requesterLocation: contractorProfile.city || 'N/A'
+            };
 
-        // Update hired workers state
-        const updatedHired = { ...hiredWorkers, [card.id]: 'pending' };
-        setHiredWorkers(updatedHired);
-        localStorage.setItem('contractor_hired_workers_state', JSON.stringify(updatedHired));
+            // Send request to database
+            const response = await labourAPI.createHireRequest(requestData);
+
+            if (response.success) {
+                // Update button state immediately
+                const updatedHired = { ...hiredWorkers, [card.id]: 'pending' };
+                setHiredWorkers(updatedHired);
+
+                // Show success message
+                alert('✅ Hire request sent successfully!');
+            }
+
+        } catch (error) {
+            // Show user-friendly error message
+            if (error.response?.data?.message) {
+                const errorMsg = error.response.data.message;
+                if (errorMsg.includes('pending hire request already exists')) {
+                    alert('⚠️ You already sent a request to this worker');
+                } else {
+                    alert(errorMsg);
+                }
+            } else {
+                alert('Failed to send hire request. Please try again.');
+            }
+        }
     };
 
     return (
@@ -397,22 +451,22 @@ const HireWorkers = () => {
                                     <button
                                         onClick={() => handleHireWorker(card)}
                                         disabled={hiredWorkers[card.id]}
-                                        className={`flex-1 font-bold py-3 rounded-lg transition-all active:scale-95 ${
+                                        className={`flex-1 font-bold py-3 rounded-lg transition-all ${
                                             hiredWorkers[card.id] === 'approved'
-                                                ? 'bg-green-500 text-white cursor-not-allowed'
+                                                ? 'bg-green-500 text-white cursor-default shadow-lg'
                                                 : hiredWorkers[card.id] === 'declined'
-                                                ? 'bg-gray-500 text-white cursor-not-allowed'
+                                                ? 'bg-gray-400 text-white cursor-not-allowed'
                                                 : hiredWorkers[card.id] === 'pending'
-                                                ? 'bg-red-500 text-white cursor-not-allowed'
-                                                : 'btn-primary'
+                                                ? 'bg-orange-500 text-white cursor-not-allowed'
+                                                : 'btn-primary hover:bg-yellow-500 active:scale-95'
                                         }`}
                                     >
                                         {hiredWorkers[card.id] === 'approved'
-                                            ? 'Approved'
+                                            ? '✓ Approved'
                                             : hiredWorkers[card.id] === 'declined'
-                                            ? 'Not Approved'
+                                            ? '✗ Declined'
                                             : hiredWorkers[card.id] === 'pending'
-                                            ? 'Request Sent'
+                                            ? '⏳ Request Sent'
                                             : 'Hire Worker'}
                                     </button>
                                 </div>

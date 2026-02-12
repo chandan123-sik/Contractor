@@ -4,7 +4,9 @@ const contractorSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: true,
+        unique: true,
+        index: true
     },
     businessType: {
         type: String,
@@ -38,12 +40,15 @@ const contractorSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    profileCompletionStatus: {
+        type: String,
+        enum: ['incomplete', 'basic', 'complete'],
+        default: 'incomplete'
     }
 }, {
     timestamps: true
 });
-
-contractorSchema.index({ user: 1 });
 
 const Contractor = mongoose.model('Contractor', contractorSchema);
 

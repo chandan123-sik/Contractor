@@ -1,37 +1,75 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, MapPin, Phone, Calendar, Clock } from 'lucide-react';
+import { ChevronLeft, MapPin, Phone, Calendar, Clock, Users } from 'lucide-react';
+import toast from 'react-hot-toast';
 import LabourBottomNav from '../components/LabourBottomNav';
+import { labourAPI } from '../../../services/api';
 
 const History = () => {
     const navigate = useNavigate();
-    const [userHistory, setUserHistory] = useState([]);
-    const [contractorHistory, setContractorHistory] = useState([]);
+    const [history, setHistory] = useState([]);
     const [activeTab, setActiveTab] = useState('user'); // 'user' or 'contractor'
     const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'accepted', 'declined'
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Load both user and contractor history from localStorage
-        const userHist = JSON.parse(localStorage.getItem('labour_request_history') || '[]');
-        const contractorHist = JSON.parse(localStorage.getItem('labour_contractor_history') || '[]');
-        
-        // Sort by newest first
-        setUserHistory(userHist.sort((a, b) => b.id - a.id));
-        setContractorHistory(contractorHist.sort((a, b) => b.id - a.id));
+        loadHistory();
+
+        // Auto-refresh every 10 seconds
+        const interval = setInterval(() => {
+            if (!document.hidden) {
+                console.log('🔄 Auto-refreshing labour history...');
+                loadHistory();
+            }
+        }, 10000);
+
+        return () => clearInterval(interval);
     }, []);
+
+    const loadHistory = async () => {
+        try {
+            console.log('🔵 Loading labour application history from database...');
+            const response = await labourAPI.getLabourApplicationHistory();
+            
+            if (response.success) {
+                console.log('✅ History loaded:', response.data.history.length, 'items');
+                console.log('📊 History data sample:', response.data.history[0]);
+                setHistory(response.data.history);
+            }
+        } catch (error) {
+            console.error('❌ Failed to load history:', error);
+            // Fallback to localStorage
+            const userHist = JSON.parse(localStorage.getItem('labour_request_history') || '[]');
+            const contractorHist = JSON.parse(localStorage.getItem('labour_contractor_history') || '[]');
+            const combined = [...userHist, ...contractorHist].sort((a, b) => b.id - a.id);
+            setHistory(combined);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Get filtered history based on active tab and status filter
     const getFilteredHistory = () => {
-        const currentHistory = activeTab === 'user' ? userHistory : contractorHistory;
+        let filtered = history;
         
-        if (statusFilter === 'all') {
-            return currentHistory;
+        // Filter by tab
+        if (activeTab === 'user') {
+            filtered = filtered.filter(item => item.type === 'user');
+        } else if (activeTab === 'contractor') {
+            filtered = filtered.filter(item => item.type === 'contractor');
         }
         
-        return currentHistory.filter(req => req.status === statusFilter);
+        // Filter by status
+        if (statusFilter !== 'all') {
+            filtered = filtered.filter(req => req.status === statusFilter);
+        }
+        
+        return filtered;
     };
 
     const filteredHistory = getFilteredHistory();
+    const userCount = history.filter(h => h.type === 'user').length;
+    const contractorCount = history.filter(h => h.type === 'contractor').length;
 
     return (
         <div className="h-screen bg-gray-50 flex flex-col">
@@ -57,7 +95,7 @@ const History = () => {
                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                     >
-                        User Requests ({userHistory.length})
+                        User Requests ({userCount})
                     </button>
                     <button
                         onClick={() => setActiveTab('contractor')}
@@ -67,7 +105,7 @@ const History = () => {
                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                     >
-                        Contractor Requests ({contractorHistory.length})
+                        Contractor Requests ({contractorCount})
                     </button>
                 </div>
 
@@ -108,9 +146,15 @@ const History = () => {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4 pb-20">
-                {filteredHistory.length === 0 ? (
+                {loading ? (
+                    <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+                        <p className="text-gray-600">Loading history...</p>
+                    </div>
+                ) : filteredHistory.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full">
-                        <div className="text-6xl mb-4">📋</div>
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Users className="w-8 h-8 text-gray-400" />
+                        </div>
                         <p className="text-gray-500 text-center">No history found</p>
                         <p className="text-gray-400 text-sm text-center mt-2">
                             {statusFilter === 'all' 
@@ -121,14 +165,15 @@ const History = () => {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {filteredHistory.map((request) => (
+                        {filteredHistory.map((request, index) => (
                             <div 
                                 key={request.id} 
-                                className={`bg-white rounded-xl shadow-md p-4 border-2 ${
+                                className={`premium-card card-fade-in border-2 ${
                                     request.status === 'accepted' 
                                         ? 'border-green-500' 
                                         : 'border-red-500'
                                 }`}
+                                style={{ animationDelay: `${index * 0.05}s` }}
                             >
                                 {/* Header */}
                                 <div className="flex items-start gap-3 mb-4">
@@ -141,8 +186,8 @@ const History = () => {
                                             activeTab === 'user' ? 'text-white' : 'text-gray-900'
                                         }`}>
                                             {activeTab === 'user'
-                                                ? request.userName.charAt(0).toUpperCase()
-                                                : request.contractorName.charAt(0).toUpperCase()
+                                                ? (request.userName || 'U').charAt(0).toUpperCase()
+                                                : (request.contractorName || 'C').charAt(0).toUpperCase()
                                             }
                                         </span>
                                     </div>
@@ -151,7 +196,7 @@ const History = () => {
                                             {activeTab === 'user' ? request.userName : request.contractorName}
                                         </h3>
                                         <p className="text-sm text-gray-600">
-                                            Requested for: {request.labourSkill}
+                                            Applied for: {request.jobTitle}
                                         </p>
                                     </div>
                                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -167,27 +212,20 @@ const History = () => {
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2 text-gray-700">
                                         <MapPin className="w-4 h-4 text-gray-500" />
-                                        <span className="text-sm">
-                                            {activeTab === 'user' ? request.userLocation : request.contractorLocation}
-                                        </span>
+                                        <span className="text-sm">{request.location}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-gray-700">
                                         <Phone className="w-4 h-4 text-gray-500" />
-                                        <span className="text-sm font-medium">
-                                            {activeTab === 'user' 
-                                                ? (request.userPhone || 'Phone not available')
-                                                : (request.contractorPhone || 'Phone not available')
-                                            }
-                                        </span>
+                                        <span className="text-sm font-medium">{request.phoneNumber}</span>
                                     </div>
                                     <div className="flex items-center gap-4 text-gray-600 text-xs">
                                         <div className="flex items-center gap-1">
                                             <Calendar className="w-4 h-4" />
-                                            <span>{request.requestDate}</span>
+                                            <span>{request.date}</span>
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <Clock className="w-4 h-4" />
-                                            <span>{request.requestTime}</span>
+                                            <span>{request.time}</span>
                                         </div>
                                     </div>
                                 </div>

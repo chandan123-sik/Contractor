@@ -31,22 +31,30 @@ const UserManagement = () => {
     const fetchUsers = async () => {
         setLoading(true);
         try {
+            console.log('🔵 Fetching users from admin API...');
             const response = await userManagementAPI.getAllUsers({
                 page: pagination.page,
                 limit: pagination.limit
             });
             
+            console.log('📦 User API Response:', response);
+            
             if (response.success) {
+                console.log('✅ Users received:', response.data.users.length);
                 setUsers(response.data.users);
                 setPagination(prev => ({
                     ...prev,
                     total: response.data.total,
                     totalPages: response.data.totalPages
                 }));
+            } else {
+                console.log('⚠️ API returned success: false');
+                toast.error(response.message || 'Failed to fetch users');
             }
         } catch (error) {
-            console.error('Error fetching users:', error);
-            toast.error('Failed to fetch users');
+            console.error('❌ Error fetching users:', error);
+            console.error('Error details:', error.response?.data);
+            toast.error(error.response?.data?.message || 'Failed to fetch users');
         } finally {
             setLoading(false);
         }

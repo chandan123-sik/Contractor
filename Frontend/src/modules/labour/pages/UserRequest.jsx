@@ -2,60 +2,116 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, MapPin, Phone, Calendar, Clock } from 'lucide-react';
 import LabourBottomNav from '../components/LabourBottomNav';
+import { labourAPI } from '../../../services/api';
 
 const UserRequest = () => {
     const navigate = useNavigate();
     const [requests, setRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Load requests from localStorage and sort by newest first
-        const savedRequests = JSON.parse(localStorage.getItem('labour_user_requests') || '[]');
-        // Sort by id (timestamp) in descending order - newest first
-        const sortedRequests = savedRequests.sort((a, b) => b.id - a.id);
-        setRequests(sortedRequests);
+        // Load requests from database
+        const loadRequests = async () => {
+            try {
+                setLoading(true);
+                
+                const response = await labourAPI.getLabourHireRequests({ status: 'pending' });
+                
+                if (response.success) {
+                    // Transform API data to match UI format
+                    const transformedRequests = response.data.hireRequests.map(req => ({
+                        id: req._id,
+                        labourId: req.labourId,
+                        labourName: req.labourName,
+                        labourSkill: req.labourSkill,
+                        labourPhone: req.labourPhone,
+                        labourCity: req.labourCity,
+                        userName: req.requesterName,
+                        userPhone: req.requesterPhone,
+                        userLocation: req.requesterLocation,
+                        requestDate: new Date(req.createdAt).toLocaleDateString('en-IN'),
+                        requestTime: new Date(req.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+                        status: req.status
+                    }));
+                    
+                    setRequests(transformedRequests);
+                }
+            } catch (error) {
+                console.error('Failed to load hire requests:', error);
+                
+                // Fallback to localStorage if API fails
+                const savedRequests = JSON.parse(localStorage.getItem('labour_user_requests') || '[]');
+                const sortedRequests = savedRequests.sort((a, b) => b.id - a.id);
+                setRequests(sortedRequests);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        // Initial load
+        loadRequests();
+
+        // Update when page becomes visible (user switches back to this tab/page)
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                loadRequests();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        // Cleanup
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
     }, []);
 
-    const handleAccept = (requestId) => {
-        // Find the request
-        const request = requests.find(r => r.id === requestId);
-        
-        if (request) {
-            // Add to history
-            const history = JSON.parse(localStorage.getItem('labour_request_history') || '[]');
-            history.push({ ...request, status: 'accepted', acceptedAt: new Date().toISOString() });
-            localStorage.setItem('labour_request_history', JSON.stringify(history));
+    const handleAccept = async (requestId) => {
+        try {
+            // Update status in database
+            const response = await labourAPI.updateHireRequestStatus(requestId, 'accepted');
+            
+            if (response.success) {
+                // Remove from current requests
+                const filteredRequests = requests.filter(req => req.id !== requestId);
+                setRequests(filteredRequests);
 
-            // Update hired workers state in user panel
-            const hiredState = JSON.parse(localStorage.getItem('hired_workers_state') || '{}');
-            hiredState[request.labourId] = 'approved';
-            localStorage.setItem('hired_workers_state', JSON.stringify(hiredState));
+                // Trigger update in user/contractor panel
+                // This will notify other tabs/windows to refresh
+                window.dispatchEvent(new CustomEvent('hire-request-updated', {
+                    detail: { action: 'accepted', requestId }
+                }));
 
-            // Remove from current requests
-            const filteredRequests = requests.filter(req => req.id !== requestId);
-            setRequests(filteredRequests);
-            localStorage.setItem('labour_user_requests', JSON.stringify(filteredRequests));
+                // Show success message
+                alert('Request accepted successfully!');
+            }
+        } catch (error) {
+            console.error('Failed to accept request:', error);
+            alert(error.response?.data?.message || 'Failed to accept request. Please try again.');
         }
     };
 
-    const handleDecline = (requestId) => {
-        // Find the request
-        const request = requests.find(r => r.id === requestId);
-        
-        if (request) {
-            // Add to history with declined status
-            const history = JSON.parse(localStorage.getItem('labour_request_history') || '[]');
-            history.push({ ...request, status: 'declined', declinedAt: new Date().toISOString() });
-            localStorage.setItem('labour_request_history', JSON.stringify(history));
+    const handleDecline = async (requestId) => {
+        try {
+            // Update status in database
+            const response = await labourAPI.updateHireRequestStatus(requestId, 'declined');
+            
+            if (response.success) {
+                // Remove from current requests
+                const filteredRequests = requests.filter(req => req.id !== requestId);
+                setRequests(filteredRequests);
 
-            // Update hired workers state in user panel
-            const hiredState = JSON.parse(localStorage.getItem('hired_workers_state') || '{}');
-            hiredState[request.labourId] = 'declined';
-            localStorage.setItem('hired_workers_state', JSON.stringify(hiredState));
+                // Trigger update in user/contractor panel
+                window.dispatchEvent(new CustomEvent('hire-request-updated', {
+                    detail: { action: 'declined', requestId }
+                }));
 
-            // Remove request from current requests
-            const filteredRequests = requests.filter(req => req.id !== requestId);
-            setRequests(filteredRequests);
-            localStorage.setItem('labour_user_requests', JSON.stringify(filteredRequests));
+                // Show success message
+                alert('Request declined successfully!');
+            }
+        } catch (error) {
+            console.error('Failed to decline request:', error);
+            alert(error.response?.data?.message || 'Failed to decline request. Please try again.');
         }
     };
 
@@ -74,7 +130,12 @@ const UserRequest = () => {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4 pb-20">
-                {requests.length === 0 ? (
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center h-full">
+                        <div className="text-6xl mb-4">⏳</div>
+                        <p className="text-gray-500 text-center">Loading requests...</p>
+                    </div>
+                ) : requests.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full">
                         <div className="text-6xl mb-4">📭</div>
                         <p className="text-gray-500 text-center">No user requests yet</p>

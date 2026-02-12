@@ -70,9 +70,14 @@ const PostJob = () => {
             const token = localStorage.getItem('access_token');
             
             if (token) {
-                // Save to database
-                console.log('Creating contractor job:', formData);
-                const response = await contractorAPI.createContractorJob(formData);
+                // Save to database with targetAudience: 'Labour'
+                const jobData = {
+                    ...formData,
+                    targetAudience: 'Labour' // This card is for Labour only
+                };
+                
+                console.log('Creating contractor job for Labour:', jobData);
+                const response = await contractorAPI.createContractorJob(jobData);
                 
                 if (response.success) {
                     console.log('Contractor job created:', response);

@@ -4,23 +4,27 @@ const labourSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: true,
+        unique: true,
+        index: true
     },
     skillType: {
         type: String,
-        trim: true
-        // Removed enum to allow any skill type
+        trim: true,
+        default: 'Other'
     },
     experience: {
         type: String,
-        trim: true
+        trim: true,
+        default: ''
     },
     workPhotos: [{
         type: String
     }],
     previousWorkLocation: {
         type: String,
-        trim: true
+        trim: true,
+        default: ''
     },
     rating: {
         type: Number,
@@ -37,6 +41,10 @@ const labourSchema = new mongoose.Schema({
         type: String,
         enum: ['Available', 'Busy', 'Not Available'],
         default: 'Available'
+    },
+    hasLabourCard: {
+        type: Boolean,
+        default: false
     },
     labourCardDetails: {
         fullName: {
@@ -62,27 +70,33 @@ const labourSchema = new mongoose.Schema({
         skills: {
             type: String,
             trim: true
+        },
+        photo: {
+            type: String
         }
     },
-    hasLabourCard: {
+    isActive: {
         type: Boolean,
-        default: false
+        default: true
     },
     isVerified: {
         type: Boolean,
         default: false
     },
-    isActive: {
-        type: Boolean,
-        default: true
+    verificationStatus: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected', 'not_submitted'],
+        default: 'not_submitted'
     }
 }, {
     timestamps: true
 });
 
-labourSchema.index({ user: 1 });
+// Indexes for faster queries
 labourSchema.index({ skillType: 1 });
-labourSchema.index({ availability: 1 });
+labourSchema.index({ isActive: 1 });
+labourSchema.index({ rating: -1 });
+labourSchema.index({ 'labourCardDetails.city': 1 });
 
 const Labour = mongoose.model('Labour', labourSchema);
 

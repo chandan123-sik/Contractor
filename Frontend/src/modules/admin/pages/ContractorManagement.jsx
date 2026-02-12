@@ -57,13 +57,14 @@ const ContractorManagement = () => {
         setCurrentContractor(contractor);
         if (contractor) {
             setFormData({
-                firstName: contractor.firstName || '',
-                lastName: contractor.lastName || '',
-                mobileNumber: contractor.mobileNumber || '',
+                firstName: contractor.user?.firstName || contractor.firstName || '',
+                lastName: contractor.user?.lastName || contractor.lastName || '',
+                mobileNumber: contractor.user?.mobileNumber || contractor.mobileNumber || '',
                 businessName: contractor.businessName || '',
-                gender: contractor.gender || 'Male',
-                city: contractor.city || '',
-                state: contractor.state || '',
+                businessType: contractor.businessType || 'Proprietorship',
+                gender: contractor.user?.gender || contractor.gender || 'Male',
+                city: contractor.user?.city || contractor.city || '',
+                state: contractor.user?.state || contractor.state || '',
                 isActive: contractor.isActive !== undefined ? contractor.isActive : true
             });
         } else {
@@ -72,6 +73,7 @@ const ContractorManagement = () => {
                 lastName: '', 
                 mobileNumber: '', 
                 businessName: '',
+                businessType: 'Proprietorship',
                 gender: 'Male', 
                 city: '', 
                 state: '', 

@@ -106,6 +106,15 @@ export const createContractor = async (req, res) => {
                 userType: 'Contractor',
                 isActive: true
             });
+        } else {
+            // Update user details
+            if (firstName) user.firstName = firstName;
+            if (lastName) user.lastName = lastName;
+            if (gender) user.gender = gender;
+            if (city) user.city = city;
+            if (state) user.state = state;
+            if (!user.userType) user.userType = 'Contractor';
+            await user.save();
         }
 
         // Check if contractor profile already exists for this user
@@ -126,7 +135,8 @@ export const createContractor = async (req, res) => {
             state: state || '',
             addressLine1: addressLine1 || '',
             landmark: landmark || '',
-            isActive: true
+            isActive: true,
+            profileCompletionStatus: businessName && addressLine1 ? 'complete' : 'basic'
         });
 
         // Populate user data before sending response
@@ -152,9 +162,9 @@ export const createContractor = async (req, res) => {
 // @access  Private (SUPER_ADMIN, ADMIN_CONTRACTOR)
 export const updateContractor = async (req, res) => {
     try {
-        const { firstName, lastName, businessName, gender, city, state, isActive } = req.body;
+        const { firstName, lastName, businessName, businessType, gender, city, state, addressLine1, landmark, isActive } = req.body;
 
-        const contractor = await Contractor.findById(req.params.id);
+        const contractor = await Contractor.findById(req.params.id).populate('user');
 
         if (!contractor) {
             return res.status(404).json({
@@ -163,15 +173,38 @@ export const updateContractor = async (req, res) => {
             });
         }
 
-        if (firstName !== undefined) contractor.firstName = firstName;
-        if (lastName !== undefined) contractor.lastName = lastName;
+        // Update contractor fields
         if (businessName !== undefined) contractor.businessName = businessName;
-        if (gender !== undefined) contractor.gender = gender;
-        if (city !== undefined) contractor.city = city;
-        if (state !== undefined) contractor.state = state;
+        if (businessType !== undefined) contractor.businessType = businessType;
+        if (addressLine1 !== undefined) contractor.addressLine1 = addressLine1;
+        if (landmark !== undefined) contractor.landmark = landmark;
         if (isActive !== undefined) contractor.isActive = isActive;
 
+        // Update profile completion status
+        if (contractor.businessName && contractor.addressLine1) {
+            contractor.profileCompletionStatus = 'complete';
+        } else if (contractor.businessName || contractor.addressLine1) {
+            contractor.profileCompletionStatus = 'basic';
+        }
+
+        // Update user fields if user exists
+        if (contractor.user) {
+            if (firstName !== undefined) contractor.user.firstName = firstName;
+            if (lastName !== undefined) contractor.user.lastName = lastName;
+            if (gender !== undefined) contractor.user.gender = gender;
+            if (city !== undefined) {
+                contractor.user.city = city;
+                contractor.city = city;
+            }
+            if (state !== undefined) {
+                contractor.user.state = state;
+                contractor.state = state;
+            }
+            await contractor.user.save();
+        }
+
         await contractor.save();
+        await contractor.populate('user', 'firstName lastName mobileNumber city state gender');
 
         res.status(200).json({
             success: true,

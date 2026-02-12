@@ -82,6 +82,9 @@ const WorkersRequest = () => {
                     duration: 3000,
                     position: 'top-center',
                 });
+
+                // Trigger event for labour to update their status
+                window.dispatchEvent(new Event('labour-application-updated'));
             }
         } catch (error) {
             console.error('Failed to accept application:', error);
@@ -108,6 +111,9 @@ const WorkersRequest = () => {
                     duration: 3000,
                     position: 'top-center',
                 });
+
+                // Trigger event for labour to update their status
+                window.dispatchEvent(new Event('labour-application-updated'));
             }
         } catch (error) {
             console.error('Failed to reject application:', error);

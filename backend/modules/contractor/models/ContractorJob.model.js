@@ -77,6 +77,11 @@ const contractorJobSchema = new mongoose.Schema({
         max: 5,
         default: 0
     },
+    targetAudience: {
+        type: String,
+        enum: ['User', 'Labour', 'Both'],
+        default: 'Both'
+    },
     applications: [{
         labour: {
             type: mongoose.Schema.Types.ObjectId,

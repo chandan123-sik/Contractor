@@ -32,22 +32,30 @@ const LabourManagement = () => {
     const fetchLabours = async () => {
         setLoading(true);
         try {
+            console.log('🔵 Fetching labours from admin API...');
             const response = await labourManagementAPI.getAllLabours({
                 page: pagination.page,
                 limit: pagination.limit
             });
             
+            console.log('📦 Labour API Response:', response);
+            
             if (response.success) {
+                console.log('✅ Labours received:', response.data.labours.length);
                 setLabours(response.data.labours);
                 setPagination(prev => ({
                     ...prev,
                     total: response.data.total,
                     totalPages: response.data.totalPages
                 }));
+            } else {
+                console.log('⚠️ API returned success: false');
+                toast.error(response.message || 'Failed to fetch labours');
             }
         } catch (error) {
-            console.error('Error fetching labours:', error);
-            toast.error('Failed to fetch labours');
+            console.error('❌ Error fetching labours:', error);
+            console.error('Error details:', error.response?.data);
+            toast.error(error.response?.data?.message || 'Failed to fetch labours');
         } finally {
             setLoading(false);
         }

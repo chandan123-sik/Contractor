@@ -4,18 +4,50 @@ import UserBottomNav from '../components/UserBottomNav';
 import UserHeader from '../components/UserHeader';
 import ContractorRequestCard from '../components/ContractorRequestCard';
 import WorkerRequestCard from '../components/WorkerRequestCard';
+import { jobAPI } from '../../../services/api';
+import toast from 'react-hot-toast';
 
 const History = () => {
     const [activeFilter, setActiveFilter] = useState('all'); // all, contractor, worker
     const [history, setHistory] = useState([]);
     const [filteredHistory, setFilteredHistory] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Load history from localStorage
-        const savedHistory = JSON.parse(localStorage.getItem('request_history') || '[]');
-        setHistory(savedHistory);
-        setFilteredHistory(savedHistory);
+        loadHistory();
+
+        // Auto-refresh every 10 seconds
+        const interval = setInterval(() => {
+            if (!document.hidden) {
+                console.log('🔄 Auto-refreshing history...');
+                loadHistory();
+            }
+        }, 10000);
+
+        return () => clearInterval(interval);
     }, []);
+
+    const loadHistory = async () => {
+        try {
+            console.log('🔵 Loading application history from database...');
+            const response = await jobAPI.getApplicationHistory();
+            
+            if (response.success) {
+                console.log('✅ History loaded:', response.data.history.length, 'items');
+                console.log('📊 History data sample:', response.data.history[0]);
+                setHistory(response.data.history);
+                setFilteredHistory(response.data.history);
+            }
+        } catch (error) {
+            console.error('❌ Failed to load history:', error);
+            // Fallback to localStorage
+            const savedHistory = JSON.parse(localStorage.getItem('request_history') || '[]');
+            setHistory(savedHistory);
+            setFilteredHistory(savedHistory);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         // Filter history based on active filter
@@ -70,7 +102,11 @@ const History = () => {
                 </div>
 
                 {/* History Cards */}
-                {filteredHistory.length === 0 ? (
+                {loading ? (
+                    <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+                        <p className="text-gray-600">Loading history...</p>
+                    </div>
+                ) : filteredHistory.length === 0 ? (
                     <div className="bg-white rounded-lg shadow-sm p-8 text-center">
                         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Users className="w-8 h-8 text-gray-400" />

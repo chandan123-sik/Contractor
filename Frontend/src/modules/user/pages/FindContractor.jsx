@@ -21,9 +21,49 @@ const FindContractor = () => {
     useEffect(() => {
         fetchContractorJobs();
 
-        // Load hired contractors state
-        const hired = JSON.parse(localStorage.getItem('hired_contractors_state') || '{}');
-        setHiredContractors(hired);
+        // Load hired contractors state from database
+        const loadHiredState = async () => {
+            try {
+                const response = await contractorAPI.getSentContractorHireRequests();
+                
+                if (response.success) {
+                    console.log('📊 Sent contractor hire requests:', response.data.hireRequests);
+                    
+                    // Create state map from requests
+                    const uiStateMap = {};
+                    response.data.hireRequests.forEach(req => {
+                        const contractorId = req.contractorId; // Already a string from backend
+                        
+                        console.log(`Mapping contractorId: ${contractorId} → status: ${req.status}`);
+                        
+                        // Map status to UI states
+                        if (req.status === 'accepted') {
+                            uiStateMap[contractorId] = 'approved';
+                        } else if (req.status === 'declined') {
+                            uiStateMap[contractorId] = 'declined';
+                        } else {
+                            uiStateMap[contractorId] = 'pending';
+                        }
+                    });
+                    
+                    console.log('✅ Final contractor UI state map:', uiStateMap);
+                    setHiredContractors(uiStateMap);
+                }
+            } catch (error) {
+                console.error('Failed to load contractor hired state:', error);
+                setHiredContractors({});
+            }
+        };
+        
+        loadHiredState();
+
+        // Auto-refresh every 5 seconds when page is visible
+        const intervalId = setInterval(() => {
+            if (!document.hidden) {
+                console.log('🔄 Auto-refreshing contractor hire request status...');
+                loadHiredState();
+            }
+        }, 5000);
 
         // Poll for updates every 5 seconds
         const interval = setInterval(() => {
@@ -36,6 +76,7 @@ const FindContractor = () => {
             if (!document.hidden) {
                 console.log('👁️ Page visible, reloading cards...');
                 fetchContractorJobs();
+                loadHiredState();
             }
         };
 
@@ -43,16 +84,26 @@ const FindContractor = () => {
         const handleFocus = () => {
             console.log('🎯 Page focused, reloading cards...');
             fetchContractorJobs();
+            loadHiredState();
+        };
+
+        // Listen for contractor hire request updates
+        const handleContractorHireRequestUpdate = () => {
+            console.log('📢 Contractor hire request update event received');
+            loadHiredState();
         };
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
         window.addEventListener('focus', handleFocus);
+        window.addEventListener('contractor-hire-request-updated', handleContractorHireRequestUpdate);
 
         // Cleanup
         return () => {
+            clearInterval(intervalId);
             clearInterval(interval);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('focus', handleFocus);
+            window.removeEventListener('contractor-hire-request-updated', handleContractorHireRequestUpdate);
         };
     }, []);
 
@@ -60,10 +111,12 @@ const FindContractor = () => {
         try {
             setLoading(true);
             
-            // Fetch from database
-            const response = await contractorAPI.browseContractorJobs();
+            // Fetch from database - pass audience: 'User' to get only User-targeted cards
+            const response = await contractorAPI.browseContractorJobs({ audience: 'User' });
             
             if (response.success && response.data.jobs) {
+                console.log('📦 Raw API response:', response.data.jobs);
+                
                 const dbJobs = response.data.jobs.map(job => ({
                     id: job._id,
                     contractorName: job.contractorName,
@@ -85,8 +138,11 @@ const FindContractor = () => {
                     createdAt: job.createdAt
                 }));
                 
+                console.log('🔄 Mapped contractor jobs:', dbJobs);
+                
                 // Merge with localStorage
                 const localCards = JSON.parse(localStorage.getItem('contractor_cards_for_user') || '[]');
+                console.log('💾 LocalStorage cards:', localCards.length);
                 
                 // Combine and remove duplicates
                 const allCards = [...dbJobs, ...localCards];
@@ -94,9 +150,13 @@ const FindContractor = () => {
                     index === self.findIndex(c => c.id === card.id)
                 );
                 
-                console.log('🔄 Loaded contractor jobs:', uniqueCards.length);
+                console.log('✅ Final unique cards:', uniqueCards.length);
+                console.log('📊 Cards data:', uniqueCards);
+                
                 setCards(uniqueCards);
                 setFilteredCards(uniqueCards);
+                
+                console.log('🎯 State updated - cards and filteredCards set');
             } else {
                 // Fallback to localStorage only
                 const localCards = JSON.parse(localStorage.getItem('contractor_cards_for_user') || '[]');
@@ -142,42 +202,26 @@ const FindContractor = () => {
         setSelectedCard(card);
     };
 
-    const handleApplyNow = (cardId) => {
+    const handleApplyNow = async (cardId) => {
         const card = cards.find(c => c.id === cardId);
         if (!card) return;
 
-        // Get user profile
-        const userProfile = JSON.parse(localStorage.getItem('user_profile') || '{}');
-        const mobileNumber = localStorage.getItem('mobile_number') || '';
-        const userPhone = userProfile.phoneNumber || mobileNumber || '';
-
-        // Create request object
-        const request = {
-            id: Date.now(),
-            contractorId: card.id,
-            contractorName: card.contractorName,
-            contractorSkill: card.primaryWorkCategory || card.labourSkill,
-            contractorPhone: card.contactNo || card.phoneNumber,
-            contractorCity: card.city,
-            userName: userProfile.firstName || 'User',
-            userPhone: userPhone,
-            userLocation: userProfile.city || 'N/A',
-            requestDate: new Date().toLocaleDateString('en-IN'),
-            requestTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-            status: 'pending'
-        };
-
-        console.log('Contractor Request:', request); // Debug
-
-        // Save request to contractor panel requests
-        const existingRequests = JSON.parse(localStorage.getItem('contractor_user_requests') || '[]');
-        existingRequests.push(request);
-        localStorage.setItem('contractor_user_requests', JSON.stringify(existingRequests));
-
-        // Update hired contractors state
-        const updatedHired = { ...hiredContractors, [cardId]: 'pending' };
-        setHiredContractors(updatedHired);
-        localStorage.setItem('hired_contractors_state', JSON.stringify(updatedHired));
+        try {
+            // Create hire request in database
+            const response = await contractorAPI.createContractorHireRequest(cardId);
+            
+            if (response.success) {
+                // Update UI state
+                const updatedHired = { ...hiredContractors, [cardId]: 'pending' };
+                setHiredContractors(updatedHired);
+                
+                alert('Request sent successfully!');
+                console.log('✅ Contractor hire request created:', response.data);
+            }
+        } catch (error) {
+            console.error('Failed to create contractor hire request:', error);
+            alert(error.response?.data?.message || 'Failed to send request. Please try again.');
+        }
     };
 
     const handleCloseModal = () => {
