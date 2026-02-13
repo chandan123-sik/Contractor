@@ -148,23 +148,38 @@ const ContractorManagement = () => {
     };
 
     const openActionModal = async (type, contractor) => {
+        console.log('🔵 Opening action modal:', type, 'for contractor:', contractor._id);
         setActionModal({ type, userId: contractor._id, data: [] });
         setLoading(true);
 
         try {
             let response;
             if (type === 'user') {
+                console.log('📡 Calling getContractorUserRequests for contractor:', contractor._id);
                 response = await contractorManagementAPI.getContractorUserRequests(contractor._id);
-                setActionModal({ type, userId: contractor._id, data: response.data.users });
+                console.log('📦 Full API Response:', JSON.stringify(response, null, 2));
+                
+                // Backend returns response.data.requests
+                const requests = response.data.requests || [];
+                console.log('✅ Setting modal data with', requests.length, 'user requests');
+                setActionModal({ type, userId: contractor._id, data: requests });
             } else if (type === 'labour') {
+                console.log('📡 Calling getContractorLabourRequests for contractor:', contractor._id);
                 response = await contractorManagementAPI.getContractorLabourRequests(contractor._id);
-                setActionModal({ type, userId: contractor._id, data: response.data.labours });
+                console.log('📦 Full API Response:', JSON.stringify(response, null, 2));
+                
+                // Backend returns response.data.requests
+                const requests = response.data.requests || [];
+                console.log('✅ Setting modal data with', requests.length, 'labour requests');
+                setActionModal({ type, userId: contractor._id, data: requests });
             } else if (type === 'feedback') {
                 response = await contractorManagementAPI.getContractorFeedbacks(contractor._id);
-                setActionModal({ type, userId: contractor._id, data: response.data.feedbacks });
+                setActionModal({ type, userId: contractor._id, data: response.data.feedbacks || [] });
             }
         } catch (error) {
-            console.error('Error fetching action data:', error);
+            console.error('❌ Error fetching action data:', error);
+            console.error('Error response:', error.response);
+            console.error('Error message:', error.message);
             toast.error('Failed to fetch data');
         } finally {
             setLoading(false);
@@ -398,6 +413,100 @@ const ContractorManagement = () => {
                                                     <span className="feedback-date">{new Date(feedback.createdAt).toLocaleDateString()}</span>
                                                 </div>
                                                 <p className="feedback-comment">{feedback.comment}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : actionModal.type === 'user' ? (
+                                    <div className="request-list">
+                                        {actionModal.data.map((request, index) => (
+                                            <div key={request._id} className="request-card">
+                                                <div className="request-header">
+                                                    <span className="request-number">Request #{index + 1}</span>
+                                                    <span className={`status-badge status-${request.status}`}>
+                                                        {request.status}
+                                                    </span>
+                                                </div>
+                                                <div className="request-details">
+                                                    <div className="detail-row">
+                                                        <strong>User:</strong> {request.requesterName}
+                                                    </div>
+                                                    <div className="detail-row">
+                                                        <strong>Phone:</strong> {request.requesterPhone}
+                                                    </div>
+                                                    <div className="detail-row">
+                                                        <strong>Location:</strong> {request.requesterLocation}
+                                                    </div>
+                                                    <div className="detail-row">
+                                                        <strong>Requested:</strong> {new Date(request.createdAt).toLocaleDateString('en-IN', {
+                                                            day: 'numeric',
+                                                            month: 'short',
+                                                            year: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </div>
+                                                    {request.respondedAt && (
+                                                        <div className="detail-row">
+                                                            <strong>Responded:</strong> {new Date(request.respondedAt).toLocaleDateString('en-IN', {
+                                                                day: 'numeric',
+                                                                month: 'short',
+                                                                year: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : actionModal.type === 'labour' ? (
+                                    <div className="request-list">
+                                        {actionModal.data.map((request, index) => (
+                                            <div key={request._id} className="request-card">
+                                                <div className="request-header">
+                                                    <span className="request-number">Application #{index + 1}</span>
+                                                    <span className={`status-badge status-${request.status}`}>
+                                                        {request.status}
+                                                    </span>
+                                                </div>
+                                                <div className="request-details">
+                                                    <div className="detail-row">
+                                                        <strong>Labour:</strong> {request.labourName}
+                                                    </div>
+                                                    <div className="detail-row">
+                                                        <strong>Skill:</strong> {request.labourSkill}
+                                                    </div>
+                                                    <div className="detail-row">
+                                                        <strong>Experience:</strong> {request.labourExperience}
+                                                    </div>
+                                                    <div className="detail-row">
+                                                        <strong>Phone:</strong> {request.labourPhone}
+                                                    </div>
+                                                    <div className="detail-row">
+                                                        <strong>City:</strong> {request.labourCity}
+                                                    </div>
+                                                    <div className="detail-row">
+                                                        <strong>Applied:</strong> {new Date(request.appliedAt).toLocaleDateString('en-IN', {
+                                                            day: 'numeric',
+                                                            month: 'short',
+                                                            year: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </div>
+                                                    {request.respondedAt && (
+                                                        <div className="detail-row">
+                                                            <strong>Responded:</strong> {new Date(request.respondedAt).toLocaleDateString('en-IN', {
+                                                                day: 'numeric',
+                                                                month: 'short',
+                                                                year: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

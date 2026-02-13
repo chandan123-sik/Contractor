@@ -2,6 +2,8 @@ import Labour from '../../labour/models/Labour.model.js';
 import User from '../../user/models/User.model.js';
 import Request from '../models/Request.model.js';
 import Feedback from '../models/Feedback.model.js';
+import HireRequest from '../../labour/models/HireRequest.model.js';
+import ContractorJob from '../../contractor/models/ContractorJob.model.js';
 
 // @desc    Get all labours
 // @route   GET /api/admin/labours
@@ -250,20 +252,67 @@ export const deleteLabour = async (req, res) => {
 // @access  Private (SUPER_ADMIN, ADMIN_LABOUR)
 export const getLabourContractorRequests = async (req, res) => {
     try {
-        const requests = await Request.find({
-            senderId: req.params.id,
-            senderType: 'Labour',
-            receiverType: 'Contractor'
+        console.log('\n🔵 ===== GET LABOUR CONTRACTOR REQUESTS =====');
+        console.log('👤 Labour ID:', req.params.id);
+
+        // First get the labour to find the user ID
+        const labour = await Labour.findById(req.params.id).populate('user');
+        
+        if (!labour) {
+            return res.status(404).json({
+                success: false,
+                message: 'Labour not found'
+            });
+        }
+
+        console.log('✅ Found labour:', labour.user?.firstName, labour.user?.lastName);
+
+        // Find all contractor jobs where this labour has applied
+        const contractorJobs = await ContractorJob.find({
+            'applications.labour': req.params.id
         })
-        .populate('receiverId', 'firstName lastName mobileNumber city')
+        .populate('contractor', 'businessName mobileNumber city')
         .sort({ createdAt: -1 });
+
+        // Extract application details for this labour
+        const requests = contractorJobs.map(job => {
+            const application = job.applications.find(
+                app => app.labour.toString() === req.params.id
+            );
+            
+            return {
+                _id: application._id,
+                jobId: job._id,
+                contractorName: job.contractorName || job.contractor?.businessName || 'N/A',
+                contractorPhone: job.phoneNumber || job.contractor?.mobileNumber || 'N/A',
+                contractorCity: job.city || job.contractor?.city || 'N/A',
+                businessType: job.businessType || 'N/A',
+                businessName: job.businessName || 'N/A',
+                labourSkill: job.labourSkill,
+                experience: job.experience || 'N/A',
+                status: application.status,
+                appliedAt: application.appliedAt,
+                respondedAt: application.respondedAt,
+                message: application.message || '',
+                createdAt: job.createdAt,
+                updatedAt: job.updatedAt
+            };
+        });
+
+        console.log('✅ Found', requests.length, 'contractor job applications');
+        console.log('===========================\n');
 
         res.status(200).json({
             success: true,
-            data: { contractors: requests }
+            data: { 
+                requests: requests,
+                total: requests.length
+            }
         });
 
     } catch (error) {
+        console.error('❌ GET LABOUR CONTRACTOR REQUESTS ERROR:', error.message);
+        console.log('===========================\n');
         res.status(500).json({
             success: false,
             message: 'Server error fetching contractor requests',
@@ -277,20 +326,43 @@ export const getLabourContractorRequests = async (req, res) => {
 // @access  Private (SUPER_ADMIN, ADMIN_LABOUR)
 export const getLabourUserRequests = async (req, res) => {
     try {
-        const requests = await Request.find({
-            senderId: req.params.id,
-            senderType: 'Labour',
-            receiverType: 'User'
+        console.log('\n🔵 ===== GET LABOUR USER REQUESTS =====');
+        console.log('👤 Labour ID:', req.params.id);
+
+        // First get the labour to find the user ID
+        const labour = await Labour.findById(req.params.id).populate('user');
+        
+        if (!labour) {
+            return res.status(404).json({
+                success: false,
+                message: 'Labour not found'
+            });
+        }
+
+        console.log('✅ Found labour:', labour.user?.firstName, labour.user?.lastName);
+        console.log('   User ID:', labour.user?._id);
+
+        // Get hire requests where this labour received requests from users
+        const userRequests = await HireRequest.find({
+            labourId: req.params.id,
+            requesterModel: 'User'
         })
-        .populate('receiverId', 'firstName lastName mobileNumber city')
         .sort({ createdAt: -1 });
+
+        console.log('✅ Found', userRequests.length, 'user requests');
+        console.log('===========================\n');
 
         res.status(200).json({
             success: true,
-            data: { users: requests }
+            data: { 
+                requests: userRequests,
+                total: userRequests.length
+            }
         });
 
     } catch (error) {
+        console.error('❌ GET LABOUR USER REQUESTS ERROR:', error.message);
+        console.log('===========================\n');
         res.status(500).json({
             success: false,
             message: 'Server error fetching user requests',

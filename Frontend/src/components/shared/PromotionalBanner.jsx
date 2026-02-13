@@ -1,16 +1,38 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { broadcastAPI } from '../../services/api';
 
-const PromotionalBanner = () => {
+const PromotionalBanner = ({ targetAudience = 'ALL' }) => {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
     const [touchStart, setTouchStart] = useState(0);
     const [touchEnd, setTouchEnd] = useState(0);
+    const [adminBroadcasts, setAdminBroadcasts] = useState([]);
+    const [loading, setLoading] = useState(true);
     const autoPlayRef = useRef(null);
     const sliderRef = useRef(null);
 
-    // Banner data - Construction materials theme with realistic images
-    const banners = [
+    // Fetch admin broadcasts
+    useEffect(() => {
+        fetchActiveBroadcasts();
+    }, [targetAudience]);
+
+    const fetchActiveBroadcasts = async () => {
+        try {
+            setLoading(true);
+            const response = await broadcastAPI.getActiveBroadcasts(targetAudience);
+            if (response.data.success && response.data.data.broadcasts.length > 0) {
+                setAdminBroadcasts(response.data.data.broadcasts);
+            }
+        } catch (error) {
+            console.error('Error fetching broadcasts:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Default banner data - Construction materials theme with realistic images
+    const defaultBanners = [
         {
             id: 1,
             title: 'Build Strong Foundations',
@@ -60,6 +82,28 @@ const PromotionalBanner = () => {
             ctaSecondary: 'View Offers'
         }
     ];
+
+    // Convert admin broadcasts to banner format
+    const adminBannersFormatted = adminBroadcasts.map((broadcast, index) => ({
+        id: `admin-${broadcast._id}`,
+        title: broadcast.title,
+        subtitle: '',
+        description: broadcast.message,
+        price: '',
+        unit: '',
+        discount: '',
+        badge: broadcast.priority === 'URGENT' ? '🚨 Urgent' : broadcast.priority === 'HIGH' ? '⚡ Important' : '📢 Announcement',
+        bgImage: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&q=80&auto=format&fit=crop',
+        bgGradient: broadcast.priority === 'URGENT' ? 'from-red-800 via-red-700 to-red-900' : 
+                     broadcast.priority === 'HIGH' ? 'from-orange-800 via-orange-700 to-orange-900' :
+                     'from-blue-800 via-blue-700 to-blue-900',
+        icon: '📢',
+        secondaryIcon: '🔔',
+        isAdminBroadcast: true
+    }));
+
+    // Combine admin broadcasts with default banners
+    const banners = adminBannersFormatted.length > 0 ? [...adminBannersFormatted, ...defaultBanners] : defaultBanners;
 
     const totalSlides = banners.length;
 
@@ -135,10 +179,10 @@ const PromotionalBanner = () => {
     const handleMouseLeave = () => startAutoPlay();
 
     return (
-        <div className="px-4 py-4 bg-gray-50">
+        <div className="w-full px-4 py-4 bg-gray-50 overflow-hidden">
             <div 
                 ref={sliderRef}
-                className="relative h-60 sm:h-64 md:h-64 rounded-2xl overflow-hidden shadow-2xl group"
+                className="relative w-full h-60 sm:h-64 md:h-64 rounded-2xl overflow-hidden shadow-2xl group"
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
                 onTouchStart={handleTouchStart}
@@ -147,13 +191,13 @@ const PromotionalBanner = () => {
             >
                 {/* Slider Container */}
                 <div 
-                    className="flex h-full transition-transform duration-600 ease-in-out"
+                    className="flex h-full w-full transition-transform duration-600 ease-in-out"
                     style={{ transform: `translateX(-${currentSlide * 100}%)` }}
                 >
                     {banners.map((banner, index) => (
                         <div
                             key={banner.id}
-                            className="min-w-full h-full flex-shrink-0"
+                            className="min-w-full w-full h-full flex-shrink-0"
                         >
                             {/* Background with realistic construction image */}
                             <div className={`relative h-full bg-gradient-to-br ${banner.bgGradient}`}>

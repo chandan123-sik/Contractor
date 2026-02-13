@@ -426,3 +426,55 @@ export const getBroadcastStats = async (req, res) => {
         });
     }
 };
+
+// @desc    Get active broadcasts for public display (banners/ads)
+// @route   GET /api/broadcasts/active
+// @access  Public
+export const getActiveBroadcasts = async (req, res) => {
+    try {
+        const { targetAudience = 'ALL' } = req.query;
+
+        console.log('🎯 Fetching active broadcasts for audience:', targetAudience);
+
+        const now = new Date();
+
+        // Find broadcasts that are:
+        // 1. Status is SENT
+        // 2. Target audience matches or is ALL
+        // 3. Not expired (expiresAt is null or in future)
+        const query = {
+            status: 'SENT',
+            $or: [
+                { targetAudience: targetAudience },
+                { targetAudience: 'ALL' }
+            ],
+            $or: [
+                { expiresAt: null },
+                { expiresAt: { $gt: now } }
+            ]
+        };
+
+        const broadcasts = await Broadcast.find(query)
+            .select('title message priority targetAudience sentAt expiresAt')
+            .sort({ priority: -1, sentAt: -1 })
+            .limit(10);
+
+        console.log('✅ Found', broadcasts.length, 'active broadcasts');
+
+        res.status(200).json({
+            success: true,
+            data: {
+                broadcasts,
+                total: broadcasts.length
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error fetching active broadcasts:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error fetching active broadcasts',
+            error: error.message
+        });
+    }
+};

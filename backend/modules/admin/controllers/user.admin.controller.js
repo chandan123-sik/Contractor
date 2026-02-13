@@ -1,6 +1,8 @@
 import User from '../../user/models/User.model.js';
 import Request from '../models/Request.model.js';
 import Feedback from '../models/Feedback.model.js';
+import ContractorHireRequest from '../../contractor/models/ContractorHireRequest.model.js';
+import HireRequest from '../../labour/models/HireRequest.model.js';
 
 // @desc    Get all users
 // @route   GET /api/admin/users
@@ -204,20 +206,29 @@ export const deleteUser = async (req, res) => {
 // @access  Private (SUPER_ADMIN, ADMIN_USER)
 export const getUserContractorRequests = async (req, res) => {
     try {
-        const requests = await Request.find({
-            senderId: req.params.id,
-            senderType: 'User',
-            receiverType: 'Contractor'
+        console.log('\n🔵 ===== GET USER CONTRACTOR REQUESTS =====');
+        console.log('👤 User ID:', req.params.id);
+
+        // Get contractor hire requests sent by this user
+        const contractorRequests = await ContractorHireRequest.find({
+            requesterId: req.params.id
         })
-        .populate('receiverId', 'firstName lastName mobileNumber city')
         .sort({ createdAt: -1 });
+
+        console.log('✅ Found', contractorRequests.length, 'contractor requests');
+        console.log('===========================\n');
 
         res.status(200).json({
             success: true,
-            data: { contractors: requests }
+            data: { 
+                requests: contractorRequests,
+                total: contractorRequests.length
+            }
         });
 
     } catch (error) {
+        console.error('❌ GET USER CONTRACTOR REQUESTS ERROR:', error.message);
+        console.log('===========================\n');
         res.status(500).json({
             success: false,
             message: 'Server error fetching contractor requests',
@@ -231,20 +242,30 @@ export const getUserContractorRequests = async (req, res) => {
 // @access  Private (SUPER_ADMIN, ADMIN_USER)
 export const getUserLabourRequests = async (req, res) => {
     try {
-        const requests = await Request.find({
-            senderId: req.params.id,
-            senderType: 'User',
-            receiverType: 'Labour'
+        console.log('\n🔵 ===== GET USER LABOUR REQUESTS =====');
+        console.log('👤 User ID:', req.params.id);
+
+        // Get labour hire requests sent by this user
+        const labourRequests = await HireRequest.find({
+            requesterId: req.params.id,
+            requesterModel: 'User'
         })
-        .populate('receiverId', 'firstName lastName mobileNumber city')
         .sort({ createdAt: -1 });
+
+        console.log('✅ Found', labourRequests.length, 'labour requests');
+        console.log('===========================\n');
 
         res.status(200).json({
             success: true,
-            data: { labours: requests }
+            data: { 
+                requests: labourRequests,
+                total: labourRequests.length
+            }
         });
 
     } catch (error) {
+        console.error('❌ GET USER LABOUR REQUESTS ERROR:', error.message);
+        console.log('===========================\n');
         res.status(500).json({
             success: false,
             message: 'Server error fetching labour requests',

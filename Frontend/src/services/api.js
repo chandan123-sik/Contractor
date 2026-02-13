@@ -16,6 +16,13 @@ export const categoryAPI = {
     getAll: () => axios.get(`${API_BASE_URL}/categories`)
 };
 
+// Public API for broadcasts (no auth required)
+export const broadcastAPI = {
+    getActiveBroadcasts: (targetAudience) => axios.get(`${API_BASE_URL}/admin/broadcasts/active`, {
+        params: { targetAudience }
+    })
+};
+
 // Add token to requests
 api.interceptors.request.use(
     (config) => {

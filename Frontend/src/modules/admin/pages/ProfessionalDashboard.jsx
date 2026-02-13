@@ -169,14 +169,53 @@ export function DashboardHome() {
                             {interactions.length > 0 ? (
                                 interactions.map((interaction) => (
                                     <tr key={interaction._id}>
-                                        <td>{interaction.senderType} ({interaction.senderId?.firstName || 'N/A'})</td>
-                                        <td>{interaction.receiverType} ({interaction.receiverId?.firstName || 'N/A'})</td>
-                                        <td>{interaction.requestType}</td>
-                                        <td>{interaction.requestContext}</td>
+                                        <td>
+                                            <div style={{ fontSize: '0.85rem' }}>
+                                                <div style={{ fontWeight: 600 }}>{interaction.senderType}</div>
+                                                <div style={{ color: '#6b7280', fontSize: '0.75rem' }}>
+                                                    {interaction.senderId?.firstName || 'N/A'} {interaction.senderId?.lastName || ''}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div style={{ fontSize: '0.85rem' }}>
+                                                <div style={{ fontWeight: 600 }}>{interaction.receiverType}</div>
+                                                <div style={{ color: '#6b7280', fontSize: '0.75rem' }}>
+                                                    {interaction.receiverId?.firstName || 'N/A'} {interaction.receiverId?.lastName || ''}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span style={{ 
+                                                padding: '4px 8px', 
+                                                borderRadius: '6px', 
+                                                fontSize: '0.75rem',
+                                                fontWeight: 600,
+                                                background: interaction.requestType === 'LABOUR_HIRE' ? '#eff6ff' :
+                                                           interaction.requestType === 'CONTRACTOR_HIRE' ? '#ecfdf5' :
+                                                           '#fff7ed',
+                                                color: interaction.requestType === 'LABOUR_HIRE' ? '#3b82f6' :
+                                                       interaction.requestType === 'CONTRACTOR_HIRE' ? '#10b981' :
+                                                       '#f97316'
+                                            }}>
+                                                {interaction.requestType.replace('_', ' ')}
+                                            </span>
+                                        </td>
+                                        <td style={{ maxWidth: '200px' }}>
+                                            <div style={{ 
+                                                fontSize: '0.8rem', 
+                                                color: '#4b5563',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap'
+                                            }}>
+                                                {interaction.requestContext}
+                                            </div>
+                                        </td>
                                         <td>
                                             <span className={`status-badge ${
                                                 interaction.status === 'ACCEPTED' ? 'status-completed' :
-                                                interaction.status === 'REJECTED' ? 'status-pending' :
+                                                interaction.status === 'REJECTED' ? 'status-cancelled' :
                                                 'status-pending'
                                             }`}>
                                                 {interaction.status}
@@ -197,12 +236,26 @@ export function DashboardHome() {
 
                 <div className="right-panel">
                     <div className="right-panel-item" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <div style={{ background: '#1a233a', padding: '10px', borderRadius: '10px' }}>
-                            <BarChart3 color="#fff" size={24} />
+                        <div style={{ background: '#3b82f6', padding: '10px', borderRadius: '10px' }}>
+                            <CheckCircle color="#fff" size={24} />
                         </div>
                         <div>
-                            <h3 style={{ margin: 0, fontSize: '0.9rem' }}>Total Audio Logs:</h3>
-                            <p style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem' }}>5,123 hours</p>
+                            <h3 style={{ margin: 0, fontSize: '0.9rem' }}>Completed Requests:</h3>
+                            <p style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem', color: '#10b981' }}>
+                                {analytics?.completedRequests || 0}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="right-panel-item" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <div style={{ background: '#f97316', padding: '10px', borderRadius: '10px' }}>
+                            <AlertCircle color="#fff" size={24} />
+                        </div>
+                        <div>
+                            <h3 style={{ margin: 0, fontSize: '0.9rem' }}>Pending Requests:</h3>
+                            <p style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem', color: '#f97316' }}>
+                                {analytics?.activeRequests || 0}
+                            </p>
                         </div>
                     </div>
 
@@ -210,10 +263,14 @@ export function DashboardHome() {
                         <h3 style={{ marginBottom: '16px' }}>Verification Queue</h3>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#eee' }}></div>
+                                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <HardHat size={20} color="#3b82f6" />
+                                </div>
                                 <div>
-                                    <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>New Labour (ID: 112)</div>
-                                    <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>New Contractor (ID: 115)</div>
+                                    <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Pending Verifications</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                                        {analytics?.verificationQueue || 0} items in queue
+                                    </div>
                                 </div>
                             </div>
                             <button className="crud-btn btn-add" style={{ padding: '6px 12px', margin: 0 }}>Verify</button>
@@ -223,18 +280,61 @@ export function DashboardHome() {
                     <div className="right-panel-item">
                         <h3>Dispute Center</h3>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-                            <span style={{ fontSize: '0.9rem' }}>Open Cases: 5</span>
+                            <span style={{ fontSize: '0.9rem' }}>Open Cases: {analytics?.disputes?.openCases || 0}</span>
                             <button className="crud-btn btn-edit" style={{ background: '#3b82f6', color: 'white' }}>Review Disputes</button>
                         </div>
                     </div>
 
                     <div className="right-panel-item">
+                        <h3>Platform Activity</h3>
+                        <div style={{ marginTop: '12px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>Today's Requests</span>
+                                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                                    {analytics?.todayRequests || 0}
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>This Week</span>
+                                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                                    {analytics?.weekRequests || 0}
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>Success Rate</span>
+                                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#10b981' }}>
+                                    {analytics?.successRate || 0}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="right-panel-item">
                         <h3>Revenue Tracking</h3>
-                        <p style={{ fontSize: '1.5rem', fontWeight: 700, margin: '10px 0' }}>₹1,50,000</p>
-                        <div style={{ height: '100px', display: 'flex', alignItems: 'flex-end', gap: '8px', marginTop: '16px' }}>
-                            {[10, 20, 15, 40, 70].map((h, i) => (
-                                <div key={i} style={{ flex: 1, height: `${h}%`, background: '#3b82f6', borderRadius: '4px 4px 0 0' }}></div>
-                            ))}
+                        <p style={{ fontSize: '1.5rem', fontWeight: 700, margin: '10px 0' }}>
+                            ₹{analytics?.revenue?.total?.toLocaleString() || '0'}
+                        </p>
+                        <div style={{ height: '100px', display: 'flex', alignItems: 'flex-end', gap: '8px', marginTop: '16px', position: 'relative' }}>
+                            {(() => {
+                                const data = analytics?.revenue?.weeklyData || [10, 20, 15, 40, 70];
+                                const maxValue = Math.max(...data);
+                                return data.map((value, i) => {
+                                    const heightPercent = maxValue > 0 ? (value / maxValue) * 100 : 0;
+                                    return (
+                                        <div 
+                                            key={i} 
+                                            style={{ 
+                                                flex: 1, 
+                                                height: `${heightPercent}%`, 
+                                                background: '#3b82f6', 
+                                                borderRadius: '4px 4px 0 0',
+                                                minHeight: '5px',
+                                                transition: 'height 0.3s ease'
+                                            }}
+                                        ></div>
+                                    );
+                                });
+                            })()}
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#6b7280', marginTop: '4px' }}>
                             <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span>
@@ -243,7 +343,7 @@ export function DashboardHome() {
 
                     <div className="right-panel-item">
                         <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Bell size={18} color="#f97316" /> Broadcast Message</h3>
-                        <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '10px 0' }}>Send to All Labours</p>
+                        <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '10px 0' }}>Send to All Users</p>
                         <button className="crud-btn" style={{ width: '100%', border: '1px solid #ddd', background: 'none' }}>Draft Message</button>
                     </div>
                 </div>

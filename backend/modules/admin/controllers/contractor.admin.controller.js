@@ -2,6 +2,9 @@ import Contractor from '../../contractor/models/Contractor.model.js';
 import User from '../../user/models/User.model.js';
 import Request from '../models/Request.model.js';
 import Feedback from '../models/Feedback.model.js';
+import ContractorHireRequest from '../../contractor/models/ContractorHireRequest.model.js';
+import ContractorJob from '../../contractor/models/ContractorJob.model.js';
+import Labour from '../../labour/models/Labour.model.js';
 
 // @desc    Get all contractors
 // @route   GET /api/admin/contractors
@@ -256,20 +259,42 @@ export const deleteContractor = async (req, res) => {
 // @access  Private (SUPER_ADMIN, ADMIN_CONTRACTOR)
 export const getContractorUserRequests = async (req, res) => {
     try {
-        const requests = await Request.find({
-            senderId: req.params.id,
-            senderType: 'Contractor',
-            receiverType: 'User'
+        console.log('\n🔵 ===== GET CONTRACTOR USER REQUESTS =====');
+        console.log('👤 Contractor ID:', req.params.id);
+
+        // First get the contractor to verify it exists
+        const contractor = await Contractor.findById(req.params.id).populate('user');
+        
+        if (!contractor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Contractor not found'
+            });
+        }
+
+        console.log('✅ Found contractor:', contractor.user?.firstName, contractor.user?.lastName);
+        console.log('   Business:', contractor.businessName);
+
+        // Get contractor hire requests sent by users to this contractor
+        const userRequests = await ContractorHireRequest.find({
+            contractorId: req.params.id
         })
-        .populate('receiverId', 'firstName lastName mobileNumber city')
         .sort({ createdAt: -1 });
+
+        console.log('✅ Found', userRequests.length, 'user requests');
+        console.log('===========================\n');
 
         res.status(200).json({
             success: true,
-            data: { users: requests }
+            data: { 
+                requests: userRequests,
+                total: userRequests.length
+            }
         });
 
     } catch (error) {
+        console.error('❌ GET CONTRACTOR USER REQUESTS ERROR:', error.message);
+        console.log('===========================\n');
         res.status(500).json({
             success: false,
             message: 'Server error fetching user requests',
@@ -283,20 +308,73 @@ export const getContractorUserRequests = async (req, res) => {
 // @access  Private (SUPER_ADMIN, ADMIN_CONTRACTOR)
 export const getContractorLabourRequests = async (req, res) => {
     try {
-        const requests = await Request.find({
-            senderId: req.params.id,
-            senderType: 'Contractor',
-            receiverType: 'Labour'
+        console.log('\n🔵 ===== GET CONTRACTOR LABOUR REQUESTS =====');
+        console.log('👤 Contractor ID:', req.params.id);
+
+        // First get the contractor to verify it exists
+        const contractor = await Contractor.findById(req.params.id).populate('user');
+        
+        if (!contractor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Contractor not found'
+            });
+        }
+
+        console.log('✅ Found contractor:', contractor.user?.firstName, contractor.user?.lastName);
+        console.log('   Business:', contractor.businessName);
+
+        // Find all contractor jobs posted by this contractor
+        const contractorJobs = await ContractorJob.find({
+            contractor: req.params.id,
+            'applications.0': { $exists: true } // Only jobs with at least one application
         })
-        .populate('receiverId', 'firstName lastName mobileNumber city')
+        .populate('applications.labour', 'skillType experience')
         .sort({ createdAt: -1 });
+
+        // Extract all labour applications from all jobs
+        const labourRequests = [];
+        for (const job of contractorJobs) {
+            for (const application of job.applications) {
+                // Get labour details
+                const labour = await Labour.findById(application.labour).populate('user', 'firstName lastName mobileNumber city');
+                
+                if (labour) {
+                    labourRequests.push({
+                        _id: application._id,
+                        jobId: job._id,
+                        labourId: labour._id,
+                        labourName: `${labour.user?.firstName || ''} ${labour.user?.lastName || ''}`.trim() || 'N/A',
+                        labourPhone: labour.user?.mobileNumber || 'N/A',
+                        labourCity: labour.user?.city || 'N/A',
+                        labourSkill: labour.skillType || 'N/A',
+                        labourExperience: labour.experience || 'N/A',
+                        jobSkillRequired: job.labourSkill,
+                        status: application.status,
+                        appliedAt: application.appliedAt,
+                        respondedAt: application.respondedAt,
+                        message: application.message || '',
+                        createdAt: job.createdAt,
+                        updatedAt: job.updatedAt
+                    });
+                }
+            }
+        }
+
+        console.log('✅ Found', labourRequests.length, 'labour applications');
+        console.log('===========================\n');
 
         res.status(200).json({
             success: true,
-            data: { labours: requests }
+            data: { 
+                requests: labourRequests,
+                total: labourRequests.length
+            }
         });
 
     } catch (error) {
+        console.error('❌ GET CONTRACTOR LABOUR REQUESTS ERROR:', error.message);
+        console.log('===========================\n');
         res.status(500).json({
             success: false,
             message: 'Server error fetching labour requests',
