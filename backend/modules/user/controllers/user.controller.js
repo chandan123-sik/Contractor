@@ -15,7 +15,7 @@ export const getProfile = async (req, res, next) => {
 
 export const updateProfile = async (req, res, next) => {
     try {
-        const allowedUpdates = ['firstName', 'middleName', 'lastName', 'city', 'state', 'address', 'profilePhoto'];
+        const allowedUpdates = ['firstName', 'middleName', 'lastName', 'city', 'state', 'address', 'profilePhoto', 'userType', 'gender', 'dob', 'aadharNumber'];
         const updates = {};
 
         Object.keys(req.body).forEach(key => {
@@ -55,6 +55,49 @@ export const getUserVerificationStatus = async (req, res, next) => {
                 isVerified: req.user.isVerified || false,
                 verificationRequest: verificationRequest || null
             }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+// @desc    Submit feedback
+// @route   POST /api/users/feedback
+// @access  Private
+export const submitFeedback = async (req, res, next) => {
+    try {
+        const Feedback = (await import('../../admin/models/Feedback.model.js')).default;
+        const { rating, comment } = req.body;
+
+        if (!rating || !comment) {
+            return res.status(400).json({
+                success: false,
+                message: 'Rating and comment are required'
+            });
+        }
+
+        if (rating < 1 || rating > 5) {
+            return res.status(400).json({
+                success: false,
+                message: 'Rating must be between 1 and 5'
+            });
+        }
+
+        const feedback = await Feedback.create({
+            entityType: 'user',
+            entityId: req.user._id,
+            entityModel: 'User',
+            rating,
+            comment,
+            givenBy: req.user._id,
+            givenByModel: 'User'
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Feedback submitted successfully',
+            data: { feedback }
         });
     } catch (error) {
         next(error);

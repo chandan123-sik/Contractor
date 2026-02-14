@@ -1,5 +1,6 @@
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
+import ProtectedRoute from '../components/ProtectedRoute';
 
 // Auth Pages
 import GetStarted from '../modules/auth/pages/GetStarted';
@@ -54,7 +55,6 @@ import LabourFindContractor from '../modules/labour/pages/FindContractor';
 import LabourRequests from '../modules/labour/pages/Requests';
 import LabourUserRequest from '../modules/labour/pages/UserRequest';
 import LabourContractorRequest from '../modules/labour/pages/ContractorRequest';
-import LabourRequestHistory from '../modules/labour/pages/RequestHistory';
 import LabourSettings from '../modules/labour/pages/LabourSettings';
 import LabourPersonalDetails from '../modules/labour/pages/LabourPersonalDetails';
 import LabourWorkDetails from '../modules/labour/pages/LabourWorkDetails';
@@ -102,66 +102,65 @@ const AppRoutes = () => {
             <Route path="/otp-verify" element={<OTPVerification />} />
             <Route path="/complete-profile" element={<CompleteProfile />} />
 
-            {/* User Module Routes */}
-            <Route path="/user/home" element={<UserHome />} />
-            <Route path="/user/hire-workers" element={<HireWorkers />} />
-            <Route path="/user/find-contractor" element={<FindContractor />} />
-            <Route path="/user/requests" element={<Requests />} />
-            <Route path="/user/contractor-request" element={<ContractorRequest />} />
-            <Route path="/user/workers-request" element={<WorkersRequest />} />
-            <Route path="/user/settings" element={<Settings />} />
-            <Route path="/user/personal-details" element={<PersonalDetails />} />
-            <Route path="/user/my-projects" element={<MyProjects />} />
-            <Route path="/user/post-job" element={<PostJob />} />
-            <Route path="/user/legal" element={<Legal />} />
-            <Route path="/user/contact-us" element={<ContactUs />} />
-            <Route path="/user/about-us" element={<AboutUs />} />
-            <Route path="/user/subscription" element={<Subscription />} />
-            <Route path="/user/notifications" element={<Notifications />} />
-            <Route path="/user/history" element={<UserHistory />} />
+            {/* User Module Routes - Protected */}
+            <Route path="/user/home" element={<ProtectedRoute><UserHome /></ProtectedRoute>} />
+            <Route path="/user/hire-workers" element={<ProtectedRoute><HireWorkers /></ProtectedRoute>} />
+            <Route path="/user/find-contractor" element={<ProtectedRoute><FindContractor /></ProtectedRoute>} />
+            <Route path="/user/requests" element={<ProtectedRoute><Requests /></ProtectedRoute>} />
+            <Route path="/user/contractor-request" element={<ProtectedRoute><ContractorRequest /></ProtectedRoute>} />
+            <Route path="/user/workers-request" element={<ProtectedRoute><WorkersRequest /></ProtectedRoute>} />
+            <Route path="/user/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/user/personal-details" element={<ProtectedRoute><PersonalDetails /></ProtectedRoute>} />
+            <Route path="/user/my-projects" element={<ProtectedRoute><MyProjects /></ProtectedRoute>} />
+            <Route path="/user/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
+            <Route path="/user/legal" element={<ProtectedRoute><Legal /></ProtectedRoute>} />
+            <Route path="/user/contact-us" element={<ProtectedRoute><ContactUs /></ProtectedRoute>} />
+            <Route path="/user/about-us" element={<ProtectedRoute><AboutUs /></ProtectedRoute>} />
+            <Route path="/user/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
+            <Route path="/user/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+            <Route path="/user/history" element={<ProtectedRoute><UserHistory /></ProtectedRoute>} />
 
-            {/* Contractor Module Routes */}
-            <Route path="/contractor/home" element={<ContractorHome />} />
-            <Route path="/contractor/business-details" element={<ContractorBusinessDetails />} />
-            <Route path="/contractor/hire-workers" element={<ContractorHireWorkers />} />
-            <Route path="/contractor/find-user" element={<ContractorFindUser />} />
-            <Route path="/contractor/requests" element={<ContractorRequests />} />
-            <Route path="/contractor/user-request" element={<ContractorUserRequest />} />
-            <Route path="/contractor/workers-request" element={<ContractorWorkersRequest />} />
-            <Route path="/contractor/settings" element={<ContractorSettings />} />
-            <Route path="/contractor/personal-details" element={<ContractorPersonalDetails />} />
-            <Route path="/contractor/my-projects" element={<ContractorMyProjects />} />
-            <Route path="/contractor/my-project-for-user" element={<ContractorMyProjectForUser />} />
-            <Route path="/contractor/post-job" element={<ContractorPostJob />} />
-            <Route path="/contractor/legal" element={<ContractorLegal />} />
-            <Route path="/contractor/about-us" element={<ContractorAboutUs />} />
-            <Route path="/contractor/contact-us" element={<ContractorContactUs />} />
-            <Route path="/contractor/notifications" element={<ContractorNotifications />} />
-            <Route path="/contractor/subscription" element={<ContractorSubscription />} />
-            <Route path="/contractor/history" element={<ContractorHistory />} />
+            {/* Contractor Module Routes - Protected */}
+            <Route path="/contractor/home" element={<ProtectedRoute><ContractorHome /></ProtectedRoute>} />
+            <Route path="/contractor/business-details" element={<ProtectedRoute><ContractorBusinessDetails /></ProtectedRoute>} />
+            <Route path="/contractor/hire-workers" element={<ProtectedRoute><ContractorHireWorkers /></ProtectedRoute>} />
+            <Route path="/contractor/find-user" element={<ProtectedRoute><ContractorFindUser /></ProtectedRoute>} />
+            <Route path="/contractor/requests" element={<ProtectedRoute><ContractorRequests /></ProtectedRoute>} />
+            <Route path="/contractor/user-request" element={<ProtectedRoute><ContractorUserRequest /></ProtectedRoute>} />
+            <Route path="/contractor/workers-request" element={<ProtectedRoute><ContractorWorkersRequest /></ProtectedRoute>} />
+            <Route path="/contractor/settings" element={<ProtectedRoute><ContractorSettings /></ProtectedRoute>} />
+            <Route path="/contractor/personal-details" element={<ProtectedRoute><ContractorPersonalDetails /></ProtectedRoute>} />
+            <Route path="/contractor/my-projects" element={<ProtectedRoute><ContractorMyProjects /></ProtectedRoute>} />
+            <Route path="/contractor/my-project-for-user" element={<ProtectedRoute><ContractorMyProjectForUser /></ProtectedRoute>} />
+            <Route path="/contractor/post-job" element={<ProtectedRoute><ContractorPostJob /></ProtectedRoute>} />
+            <Route path="/contractor/legal" element={<ProtectedRoute><ContractorLegal /></ProtectedRoute>} />
+            <Route path="/contractor/about-us" element={<ProtectedRoute><ContractorAboutUs /></ProtectedRoute>} />
+            <Route path="/contractor/contact-us" element={<ProtectedRoute><ContractorContactUs /></ProtectedRoute>} />
+            <Route path="/contractor/notifications" element={<ProtectedRoute><ContractorNotifications /></ProtectedRoute>} />
+            <Route path="/contractor/subscription" element={<ProtectedRoute><ContractorSubscription /></ProtectedRoute>} />
+            <Route path="/contractor/history" element={<ProtectedRoute><ContractorHistory /></ProtectedRoute>} />
 
-            {/* Labour Module Routes */}
-            <Route path="/labour/home" element={<LabourDashboard />} />
-            <Route path="/labour/details" element={<LabourDetails />} />
-            <Route path="/labour/hire-workers" element={<LabourDashboard />} />
-            <Route path="/labour/find-user" element={<LabourFindUser />} />
-            <Route path="/labour/find-contractor" element={<LabourFindContractor />} />
-            <Route path="/labour/requests" element={<LabourRequests />} />
-            <Route path="/labour/user-request" element={<LabourUserRequest />} />
-            <Route path="/labour/contractor-request" element={<LabourContractorRequest />} />
-            <Route path="/labour/request-history" element={<LabourRequestHistory />} />
-            <Route path="/labour/settings" element={<LabourSettings />} />
-            <Route path="/labour/personal-details" element={<LabourPersonalDetails />} />
-            <Route path="/labour/work-details" element={<LabourWorkDetails />} />
-            <Route path="/labour/legal-details" element={<LabourLegalDetails />} />
-            <Route path="/labour/payment-details" element={<LabourPaymentDetails />} />
-            <Route path="/labour/contact-us" element={<LabourContactUs />} />
-            <Route path="/labour/about-us" element={<LabourAboutUs />} />
-            <Route path="/labour/notifications" element={<LabourNotifications />} />
-            <Route path="/labour/subscription" element={<LabourSubscription />} />
-            <Route path="/labour/create-card" element={<CreateLabourCard />} />
-            <Route path="/labour/my-card" element={<LabourMyCard />} />
-            <Route path="/labour/history" element={<History />} />
+            {/* Labour Module Routes - Protected */}
+            <Route path="/labour/home" element={<ProtectedRoute><LabourDashboard /></ProtectedRoute>} />
+            <Route path="/labour/details" element={<ProtectedRoute><LabourDetails /></ProtectedRoute>} />
+            <Route path="/labour/hire-workers" element={<ProtectedRoute><LabourDashboard /></ProtectedRoute>} />
+            <Route path="/labour/find-user" element={<ProtectedRoute><LabourFindUser /></ProtectedRoute>} />
+            <Route path="/labour/find-contractor" element={<ProtectedRoute><LabourFindContractor /></ProtectedRoute>} />
+            <Route path="/labour/requests" element={<ProtectedRoute><LabourRequests /></ProtectedRoute>} />
+            <Route path="/labour/user-request" element={<ProtectedRoute><LabourUserRequest /></ProtectedRoute>} />
+            <Route path="/labour/contractor-request" element={<ProtectedRoute><LabourContractorRequest /></ProtectedRoute>} />
+            <Route path="/labour/settings" element={<ProtectedRoute><LabourSettings /></ProtectedRoute>} />
+            <Route path="/labour/personal-details" element={<ProtectedRoute><LabourPersonalDetails /></ProtectedRoute>} />
+            <Route path="/labour/work-details" element={<ProtectedRoute><LabourWorkDetails /></ProtectedRoute>} />
+            <Route path="/labour/legal-details" element={<ProtectedRoute><LabourLegalDetails /></ProtectedRoute>} />
+            <Route path="/labour/payment-details" element={<ProtectedRoute><LabourPaymentDetails /></ProtectedRoute>} />
+            <Route path="/labour/contact-us" element={<ProtectedRoute><LabourContactUs /></ProtectedRoute>} />
+            <Route path="/labour/about-us" element={<ProtectedRoute><LabourAboutUs /></ProtectedRoute>} />
+            <Route path="/labour/notifications" element={<ProtectedRoute><LabourNotifications /></ProtectedRoute>} />
+            <Route path="/labour/subscription" element={<ProtectedRoute><LabourSubscription /></ProtectedRoute>} />
+            <Route path="/labour/create-card" element={<ProtectedRoute><CreateLabourCard /></ProtectedRoute>} />
+            <Route path="/labour/my-card" element={<ProtectedRoute><LabourMyCard /></ProtectedRoute>} />
+            <Route path="/labour/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
 
             {/* Admin Module Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />

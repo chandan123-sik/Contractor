@@ -19,56 +19,26 @@ const FindContractor = () => {
 
     // Load contractor cards from database and localStorage
     useEffect(() => {
-        fetchContractorJobs();
-
-        // Load hired contractors state from database
-        const loadHiredState = async () => {
-            try {
-                const response = await contractorAPI.getSentContractorHireRequests();
-                
-                if (response.success) {
-                    console.log('📊 Sent contractor hire requests:', response.data.hireRequests);
-                    
-                    // Create state map from requests
-                    const uiStateMap = {};
-                    response.data.hireRequests.forEach(req => {
-                        const contractorId = req.contractorId; // Already a string from backend
-                        
-                        console.log(`Mapping contractorId: ${contractorId} → status: ${req.status}`);
-                        
-                        // Map status to UI states
-                        if (req.status === 'accepted') {
-                            uiStateMap[contractorId] = 'approved';
-                        } else if (req.status === 'declined') {
-                            uiStateMap[contractorId] = 'declined';
-                        } else {
-                            uiStateMap[contractorId] = 'pending';
-                        }
-                    });
-                    
-                    console.log('✅ Final contractor UI state map:', uiStateMap);
-                    setHiredContractors(uiStateMap);
-                }
-            } catch (error) {
-                console.error('Failed to load contractor hired state:', error);
-                setHiredContractors({});
-            }
-        };
+        // Clean up old localStorage dummy data on mount
+        localStorage.removeItem('contractor_cards_for_user');
         
+        fetchContractorJobs();
         loadHiredState();
 
-        // Auto-refresh every 5 seconds when page is visible
+        // Auto-refresh every 3 seconds when page is visible
         const intervalId = setInterval(() => {
             if (!document.hidden) {
                 console.log('🔄 Auto-refreshing contractor hire request status...');
                 loadHiredState();
             }
-        }, 5000);
+        }, 3000);
 
-        // Poll for updates every 5 seconds
-        const interval = setInterval(() => {
-            console.log('⏰ Polling for card updates...');
-            fetchContractorJobs();
+        // Poll for card updates every 5 seconds
+        const cardInterval = setInterval(() => {
+            if (!document.hidden) {
+                console.log('⏰ Polling for card updates...');
+                fetchContractorJobs();
+            }
         }, 5000);
 
         // Update when page becomes visible
@@ -100,12 +70,46 @@ const FindContractor = () => {
         // Cleanup
         return () => {
             clearInterval(intervalId);
-            clearInterval(interval);
+            clearInterval(cardInterval);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('focus', handleFocus);
             window.removeEventListener('contractor-hire-request-updated', handleContractorHireRequestUpdate);
         };
     }, []);
+
+    // Separate function to load hired state
+    const loadHiredState = async () => {
+        try {
+            const response = await contractorAPI.getSentContractorHireRequests();
+            
+            if (response.success) {
+                console.log('📊 Sent contractor hire requests:', response.data.hireRequests);
+                
+                // Create state map from requests
+                const uiStateMap = {};
+                response.data.hireRequests.forEach(req => {
+                    const contractorId = req.contractorId; // Already a string from backend
+                    
+                    console.log(`Mapping contractorId: ${contractorId} → status: ${req.status}`);
+                    
+                    // Map status to UI states
+                    if (req.status === 'accepted') {
+                        uiStateMap[contractorId] = 'approved';
+                    } else if (req.status === 'declined') {
+                        uiStateMap[contractorId] = 'declined';
+                    } else {
+                        uiStateMap[contractorId] = 'pending';
+                    }
+                });
+                
+                console.log('✅ Final contractor UI state map:', uiStateMap);
+                setHiredContractors(uiStateMap);
+            }
+        } catch (error) {
+            console.error('Failed to load contractor hired state:', error);
+            setHiredContractors({});
+        }
+    };
 
     const fetchContractorJobs = async () => {
         try {
@@ -150,25 +154,23 @@ const FindContractor = () => {
                     index === self.findIndex(c => c.id === card.id)
                 );
                 
-                console.log('✅ Final unique cards:', uniqueCards.length);
-                console.log('📊 Cards data:', uniqueCards);
+                console.log('✅ Final cards from database:', dbJobs.length);
+                console.log('📊 Cards data:', dbJobs);
                 
-                setCards(uniqueCards);
-                setFilteredCards(uniqueCards);
+                setCards(dbJobs);
+                setFilteredCards(dbJobs);
                 
                 console.log('🎯 State updated - cards and filteredCards set');
             } else {
-                // Fallback to localStorage only
-                const localCards = JSON.parse(localStorage.getItem('contractor_cards_for_user') || '[]');
-                setCards(localCards);
-                setFilteredCards(localCards);
+                // No cards available
+                setCards([]);
+                setFilteredCards([]);
             }
         } catch (error) {
             console.error('Error fetching contractor jobs:', error);
-            // Fallback to localStorage
-            const localCards = JSON.parse(localStorage.getItem('contractor_cards_for_user') || '[]');
-            setCards(localCards);
-            setFilteredCards(localCards);
+            // Show empty state on error
+            setCards([]);
+            setFilteredCards([]);
         } finally {
             setLoading(false);
         }

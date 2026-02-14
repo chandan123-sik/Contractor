@@ -1,6 +1,6 @@
 import express from 'express';
 import { createJob, getUserJobs, getJobById, updateJob, deleteJob, getJobApplications, getContractorApplications, getMyApplications, getApplicationHistory, updateApplicationStatus } from '../controllers/job.controller.js';
-import { getUserVerificationStatus } from '../controllers/user.controller.js';
+import { getUserVerificationStatus, submitFeedback } from '../controllers/user.controller.js';
 import { protect } from '../../../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -22,5 +22,8 @@ router.put('/jobs/:id/applications/:applicationId', updateApplicationStatus);
 
 // Verification route
 router.get('/verification-status', getUserVerificationStatus);
+
+// Feedback route
+router.post('/feedback', submitFeedback);
 
 export default router;

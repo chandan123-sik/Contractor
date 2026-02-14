@@ -16,6 +16,14 @@ export const categoryAPI = {
     getAll: () => axios.get(`${API_BASE_URL}/categories`)
 };
 
+// Public CMS API (no auth required)
+export const cmsAPI = {
+    getAboutUs: () => axios.get(`${API_BASE_URL}/admin/cms/aboutUs`),
+    getContactUs: () => axios.get(`${API_BASE_URL}/admin/cms/contactUs`),
+    getTerms: () => axios.get(`${API_BASE_URL}/admin/cms/terms`),
+    getPrivacy: () => axios.get(`${API_BASE_URL}/admin/cms/privacy`)
+};
+
 // Public API for broadcasts (no auth required)
 export const broadcastAPI = {
     getActiveBroadcasts: (targetAudience) => axios.get(`${API_BASE_URL}/admin/broadcasts/active`, {
@@ -85,9 +93,20 @@ export const authAPI = {
 
     // Logout
     logout: async () => {
-        const response = await api.post('/auth/logout');
-        localStorage.clear();
-        return response.data;
+        try {
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                await api.post('/auth/logout');
+            }
+        } catch (error) {
+            console.error('Logout API error:', error);
+            // Continue with logout even if API fails
+        } finally {
+            // Clear all localStorage data
+            localStorage.clear();
+            // Use window.location for complete page reload and URL change
+            window.location.href = '/get-started';
+        }
     }
 };
 

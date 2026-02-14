@@ -23,18 +23,27 @@ export const createContractorProfile = async (req, res, next) => {
             mobileNumber
         } = req.body;
 
-        // Update user details
+        // Update User model with contractor's personal details
         const user = await User.findById(req.user._id);
         if (user) {
+            // Update all fields
             if (firstName) user.firstName = firstName;
             if (middleName) user.middleName = middleName;
             if (lastName) user.lastName = lastName;
             if (gender) user.gender = gender;
+            if (dob) user.dob = dob;
             if (city) user.city = city;
             if (state) user.state = state;
+            if (address) user.address = address;
+            if (mobileNumber) user.mobileNumber = mobileNumber;
             if (!user.userType) user.userType = 'Contractor';
+            
             await user.save();
-            console.log('✅ User details updated');
+            console.log('✅ User details updated:', {
+                firstName: user.firstName,
+                lastName: user.lastName,
+                userType: user.userType
+            });
         }
 
         // Check if contractor profile already exists
@@ -69,7 +78,7 @@ export const createContractorProfile = async (req, res, next) => {
         res.status(201).json({
             success: true,
             message: 'Contractor profile created successfully',
-            data: { contractor, user }
+            data: { contractor }
         });
     } catch (error) {
         console.error('❌ CREATE CONTRACTOR PROFILE ERROR:', error.message);
@@ -303,14 +312,24 @@ export const getContractorJobs = async (req, res, next) => {
         console.log('\n🔵 ===== GET CONTRACTOR JOBS =====');
         console.log('👤 User ID:', req.user._id);
         
-        const { page = 1, limit = 20 } = req.query;
+        const { page = 1, limit = 20, targetAudience } = req.query;
+        console.log('🎯 Target Audience Filter:', targetAudience);
 
-        const jobs = await ContractorJob.find({ user: req.user._id })
+        // Build query
+        const query = { user: req.user._id };
+        
+        // Filter by targetAudience if provided
+        if (targetAudience) {
+            query.targetAudience = targetAudience;
+            console.log('✅ Filtering by targetAudience:', targetAudience);
+        }
+
+        const jobs = await ContractorJob.find(query)
             .sort({ createdAt: -1 })
             .limit(limit * 1)
             .skip((page - 1) * limit);
 
-        const total = await ContractorJob.countDocuments({ user: req.user._id });
+        const total = await ContractorJob.countDocuments(query);
 
         console.log('✅ Found', jobs.length, 'contractor jobs');
         console.log('===========================\n');
@@ -531,36 +550,30 @@ export const createContractorHireRequest = async (req, res) => {
         const userId = req.user._id;
 
         console.log('\n🟢 ===== CREATE CONTRACTOR HIRE REQUEST =====');
-        console.log('📦 contractorId received:', contractorId);
+        console.log('📦 contractorJobId received:', contractorId);
         console.log('👤 userId:', userId);
 
-        // First, try to find as ContractorJob ID
-        let contractor = null;
-        let contractorJob = await ContractorJob.findById(contractorId).populate('contractor');
+        // contractorId is actually the ContractorJob ID from frontend
+        const contractorJob = await ContractorJob.findById(contractorId).populate('contractor');
         
-        if (contractorJob) {
-            console.log('✅ Found ContractorJob, getting contractor from it');
-            contractor = contractorJob.contractor;
-        } else {
-            // Fallback: try as Contractor ID directly
-            console.log('⚠️ Not a ContractorJob ID, trying as Contractor ID');
-            contractor = await Contractor.findById(contractorId);
-        }
-
-        if (!contractor) {
-            console.log('❌ Contractor not found');
+        if (!contractorJob) {
+            console.log('❌ ContractorJob not found');
             return res.status(404).json({
                 success: false,
-                message: 'Contractor not found'
+                message: 'Contractor job not found'
             });
         }
 
+        const contractor = contractorJob.contractor;
+
         // Populate contractor user details if not already populated
+        let contractorWithUser = contractor;
         if (!contractor.user || !contractor.user.firstName) {
-            contractor = await Contractor.findById(contractor._id).populate('user');
+            contractorWithUser = await Contractor.findById(contractor._id).populate('user');
         }
 
-        console.log('✅ Contractor found:', contractor._id);
+        console.log('✅ ContractorJob found:', contractorJob._id);
+        console.log('✅ Contractor found:', contractorWithUser._id);
 
         // Get requester (user) details
         const requester = await User.findById(userId);
@@ -574,28 +587,29 @@ export const createContractorHireRequest = async (req, res) => {
 
         console.log('✅ Requester found:', requester._id);
 
-        // Check if request already exists (use contractor._id for checking)
+        // Check if request already exists for this specific ContractorJob
         const existingRequest = await ContractorHireRequest.findOne({
-            contractorId: contractor._id,
+            contractorJobId: contractorJob._id,
             requesterId: userId,
             status: 'pending'
         });
 
         if (existingRequest) {
-            console.log('⚠️ Request already exists');
+            console.log('⚠️ Request already exists for this job');
             return res.status(400).json({
                 success: false,
-                message: 'Hire request already exists'
+                message: 'Hire request already exists for this contractor job'
             });
         }
 
-        // Create hire request (use contractor._id)
+        // Create hire request with both contractor ID and contractorJob ID
         const hireRequest = await ContractorHireRequest.create({
-            contractorId: contractor._id,
-            contractorName: `${contractor.user.firstName} ${contractor.user.lastName}`,
-            contractorPhone: contractor.user.mobileNumber,
-            contractorBusiness: contractor.businessName || 'N/A',
-            contractorCity: contractor.user.city || 'N/A',
+            contractorId: contractorWithUser._id,
+            contractorJobId: contractorJob._id,
+            contractorName: `${contractorWithUser.user.firstName} ${contractorWithUser.user.lastName}`,
+            contractorPhone: contractorWithUser.user.mobileNumber,
+            contractorBusiness: contractorWithUser.businessName || 'N/A',
+            contractorCity: contractorWithUser.user.city || 'N/A',
             requesterId: userId,
             requesterName: `${requester.firstName} ${requester.lastName}`,
             requesterPhone: requester.mobileNumber,
@@ -672,32 +686,23 @@ export const getSentContractorHireRequests = async (req, res) => {
         console.log('👤 userId:', userId);
 
         const hireRequests = await ContractorHireRequest.find({ requesterId: userId })
-            .select('contractorId status createdAt updatedAt')
+            .select('contractorId contractorJobId status createdAt updatedAt')
             .sort({ createdAt: -1 });
 
         console.log('📊 Found', hireRequests.length, 'hire requests');
 
-        // For each hire request, find the ContractorJob that belongs to that contractor
-        const formattedRequests = await Promise.all(hireRequests.map(async (req) => {
-            // Find the ContractorJob for this contractor
-            const contractorJob = await ContractorJob.findOne({ 
-                contractor: req.contractorId,
-                isActive: true 
-            }).sort({ createdAt: -1 });
-
-            // If we found a job, use its ID; otherwise use the contractor ID as fallback
-            const idToReturn = contractorJob ? contractorJob._id.toString() : req.contractorId.toString();
-
-            console.log(`Mapping: Contractor ${req.contractorId} → ContractorJob ${idToReturn}`);
+        // Return contractorJobId for frontend matching
+        const formattedRequests = hireRequests.map((req) => {
+            console.log(`Request: ContractorJob ${req.contractorJobId} → status: ${req.status}`);
 
             return {
                 _id: req._id,
-                contractorId: idToReturn, // Return ContractorJob ID for frontend matching
+                contractorId: req.contractorJobId.toString(), // Return ContractorJob ID for frontend matching
                 status: req.status,
                 createdAt: req.createdAt,
                 updatedAt: req.updatedAt
             };
-        }));
+        });
 
         console.log('✅ Formatted requests:', formattedRequests.length);
         console.log('===========================\n');
@@ -912,16 +917,22 @@ export const getContractorJobApplications = async (req, res, next) => {
         jobs.forEach(job => {
             job.applications.forEach(app => {
                 if (app.status === 'Pending' && app.labour) {
+                    // Fetch data from Labour model directly, not from User model
+                    const labourFirstName = app.labour.firstName || app.labour.user?.firstName || '';
+                    const labourLastName = app.labour.lastName || app.labour.user?.lastName || '';
+                    const labourCity = app.labour.city || app.labour.user?.city || 'Not specified';
+                    const labourPhone = app.labour.user?.mobileNumber || '5555555555';
+                    
                     applications.push({
                         _id: app._id,
                         jobId: job._id,
                         jobTitle: `${job.labourSkill} - ${job.city}`,
                         labourId: app.labour._id,
-                        labourName: `${app.labour.user.firstName} ${app.labour.user.lastName}`,
-                        phoneNumber: app.labour.user.mobileNumber,
-                        location: app.labour.user.city || 'Not specified',
-                        skillType: app.labour.skillType,
-                        experience: app.labour.experience,
+                        labourName: `${labourFirstName} ${labourLastName}`.trim() || 'Labour',
+                        phoneNumber: labourPhone,
+                        location: labourCity,
+                        skillType: app.labour.skillType || 'Not specified',
+                        experience: app.labour.experience || 'Not specified',
                         message: app.message,
                         appliedAt: app.appliedAt,
                         status: app.status
@@ -1065,6 +1076,15 @@ export const getContractorApplicationHistory = async (req, res, next) => {
         console.log('\n🔵 ===== GET CONTRACTOR APPLICATION HISTORY =====');
         console.log('User ID:', req.user._id);
 
+        // Find contractor profile
+        const contractor = await Contractor.findOne({ user: req.user._id });
+        if (!contractor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Contractor profile not found'
+            });
+        }
+
         // Find all jobs posted by this contractor
         const jobs = await ContractorJob.find({ user: req.user._id, isActive: true })
             .populate({
@@ -1074,7 +1094,7 @@ export const getContractorApplicationHistory = async (req, res, next) => {
 
         console.log('✅ Found', jobs.length, 'jobs');
 
-        // Extract all accepted/rejected applications
+        // Extract all accepted/rejected applications from workers
         const history = [];
         
         jobs.forEach(job => {
@@ -1092,18 +1112,24 @@ export const getContractorApplicationHistory = async (req, res, next) => {
                         minute: '2-digit' 
                     });
 
+                    // Fetch data from Labour model directly, not from User model
+                    const labourFirstName = app.labour.firstName || app.labour.user?.firstName || '';
+                    const labourLastName = app.labour.lastName || app.labour.user?.lastName || '';
+                    const labourCity = app.labour.city || app.labour.user?.city || 'Not specified';
+                    const labourPhone = app.labour.user?.mobileNumber || '5555555555';
+
                     history.push({
                         id: app._id.toString(),
                         _id: app._id,
                         jobId: job._id,
                         jobTitle: `${job.labourSkill} - ${job.city}`,
                         labourId: app.labour._id,
-                        workerName: `${app.labour.user.firstName} ${app.labour.user.lastName}`,
-                        phoneNumber: app.labour.user.mobileNumber,
-                        location: app.labour.user.city || 'Not specified',
-                        skillType: app.labour.skillType,
-                        category: app.labour.skillType,
-                        experience: app.labour.experience,
+                        workerName: `${labourFirstName} ${labourLastName}`.trim() || 'Labour',
+                        phoneNumber: labourPhone,
+                        location: labourCity,
+                        skillType: app.labour.skillType || 'Not specified',
+                        category: app.labour.skillType || 'Not specified',
+                        experience: app.labour.experience || 'Not specified',
                         message: app.message,
                         appliedAt: app.appliedAt,
                         date: formattedDate,
@@ -1115,10 +1141,47 @@ export const getContractorApplicationHistory = async (req, res, next) => {
             });
         });
 
+        // Get all accepted/declined user hire requests for this contractor
+        const userHireRequests = await ContractorHireRequest.find({
+            contractorId: contractor._id,
+            status: { $in: ['accepted', 'declined'] }
+        }).sort({ updatedAt: -1 });
+
+        console.log('✅ Found', userHireRequests.length, 'user hire requests');
+
+        // Add user hire requests to history
+        userHireRequests.forEach(req => {
+            const requestDate = new Date(req.createdAt);
+            const formattedDate = requestDate.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            });
+            const formattedTime = requestDate.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+
+            history.push({
+                id: req._id.toString(),
+                _id: req._id,
+                requestId: req._id,
+                userName: req.requesterName,
+                workerName: req.requesterName, // For consistent UI
+                phoneNumber: req.requesterPhone,
+                location: req.requesterLocation,
+                appliedAt: req.createdAt,
+                date: formattedDate,
+                time: formattedTime,
+                status: req.status,
+                type: 'user'
+            });
+        });
+
         // Sort by most recent first
         history.sort((a, b) => new Date(b.appliedAt) - new Date(a.appliedAt));
 
-        console.log('✅ Found', history.length, 'history items');
+        console.log('✅ Total history items:', history.length);
         console.log('===========================\n');
 
         res.status(200).json({
@@ -1131,6 +1194,59 @@ export const getContractorApplicationHistory = async (req, res, next) => {
     } catch (error) {
         console.error('❌ GET CONTRACTOR APPLICATION HISTORY ERROR:', error.message);
         console.log('===========================\n');
+        next(error);
+    }
+};
+
+
+// @desc    Submit feedback
+// @route   POST /api/contractor/feedback
+// @access  Private
+export const submitFeedback = async (req, res, next) => {
+    try {
+        const Feedback = (await import('../../admin/models/Feedback.model.js')).default;
+        const { rating, comment } = req.body;
+
+        if (!rating || !comment) {
+            return res.status(400).json({
+                success: false,
+                message: 'Rating and comment are required'
+            });
+        }
+
+        if (rating < 1 || rating > 5) {
+            return res.status(400).json({
+                success: false,
+                message: 'Rating must be between 1 and 5'
+            });
+        }
+
+        // Find contractor profile for this user
+        const contractor = await Contractor.findOne({ userId: req.user._id });
+        
+        if (!contractor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Contractor profile not found'
+            });
+        }
+
+        const feedback = await Feedback.create({
+            entityType: 'contractor',
+            entityId: contractor._id,
+            entityModel: 'Contractor',
+            rating,
+            comment,
+            givenBy: req.user._id,
+            givenByModel: 'User'
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Feedback submitted successfully',
+            data: { feedback }
+        });
+    } catch (error) {
         next(error);
     }
 };

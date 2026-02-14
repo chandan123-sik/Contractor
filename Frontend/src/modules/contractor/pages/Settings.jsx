@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
+import toast from 'react-hot-toast';
 import ContractorBottomNav from '../components/ContractorBottomNav';
 import ContractorPageHeader from '../components/ContractorPageHeader';
 import SettingsMenu from '../components/SettingsMenu';
+import { authAPI } from '../../../services/api';
 
 const Settings = () => {
     const navigate = useNavigate();
@@ -11,14 +13,13 @@ const Settings = () => {
     const [rating, setRating] = useState(0);
     const [feedback, setFeedback] = useState('');
 
-    const handleMenuClick = (path) => {
+    const handleMenuClick = async (path) => {
         if (path === '/contractor/feedback') {
             setShowFeedbackModal(true);
-        } else if (path === '/mobile-login') {
-            // Clear all localStorage data on logout
-            localStorage.clear();
-            // Use replace to prevent going back to settings
-            navigate('/mobile-login', { replace: true });
+        } else if (path === '/logout') {
+            // Call backend logout API, clear localStorage, and redirect
+            await authAPI.logout();
+            // No need to navigate - authAPI.logout() handles redirect
         } else {
             navigate(path);
         }
@@ -30,10 +31,43 @@ const Settings = () => {
         setFeedback('');
     };
 
-    const handleSubmitFeedback = () => {
-        // Will be implemented later
-        console.log('Feedback submitted:', { rating, feedback });
-        handleCloseFeedback();
+    const handleSubmitFeedback = async () => {
+        if (!rating) {
+            toast.error('Please select a rating');
+            return;
+        }
+
+        if (!feedback.trim()) {
+            toast.error('Please enter your feedback');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch('http://localhost:5000/api/contractor/feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    rating,
+                    comment: feedback
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                toast.success('Feedback submitted successfully!');
+                handleCloseFeedback();
+            } else {
+                toast.error(data.message || 'Failed to submit feedback');
+            }
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+            toast.error('Failed to submit feedback. Please try again.');
+        }
     };
 
     return (

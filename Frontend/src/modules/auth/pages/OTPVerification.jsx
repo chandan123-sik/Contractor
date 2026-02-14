@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 const OTPVerification = () => {
     const navigate = useNavigate();
@@ -28,6 +29,27 @@ const OTPVerification = () => {
 
     const handleEnter = async () => {
         if (otp.length === 4) {
+            // Check if OTP is correct (default: 1234)
+            if (otp !== '1234') {
+                toast.error('❌ Invalid OTP! Please enter 1234', {
+                    duration: 3000,
+                    position: 'top-center',
+                    style: {
+                        background: '#ef4444',
+                        color: '#fff',
+                        fontWeight: 'bold',
+                    }
+                });
+                setOtp(''); // Clear OTP
+                return;
+            }
+
+            // Show success message
+            toast.success('✅ OTP Verified Successfully!', {
+                duration: 2000,
+                position: 'top-center',
+            });
+
             try {
                 // Call login API
                 const response = await fetch('http://localhost:5000/api/auth/login', {
@@ -43,27 +65,65 @@ const OTPVerification = () => {
                 const data = await response.json();
 
                 if (data.success) {
-                    // Store tokens
+                    // Store tokens and user info
                     localStorage.setItem('access_token', data.data.accessToken);
                     localStorage.setItem('refresh_token', data.data.refreshToken);
                     localStorage.setItem('mobile_number', phoneNumber);
                     localStorage.setItem('user_id', data.data.user._id);
-                    localStorage.setItem('user_type', data.data.user.userType);
+                    
+                    // Store complete user object for reference
+                    localStorage.setItem('user', JSON.stringify(data.data.user));
+                    
+                    const userType = data.data.user.userType;
+                    const firstName = data.data.user.firstName;
+                    
+                    console.log('✅ Login successful:', data.data.user);
+                    console.log('User Type:', userType);
+                    console.log('First Name:', firstName);
 
-                    console.log('Login successful:', data.data.user);
+                    // Check if user has completed profile
+                    // New user: userType is null OR firstName is null
+                    // Existing user: both userType and firstName exist
+                    if (userType && firstName) {
+                        // Existing user with complete profile - redirect to their panel
+                        localStorage.setItem('user_type', userType);
+                        
+                        toast.success(`Welcome back, ${firstName}!`, {
+                            duration: 2000,
+                            position: 'top-center',
+                        });
 
-                    // Always go to complete profile page after OTP verification
-                    // User will fill their details and choose user type there
-                    navigate('/complete-profile');
+                        // Redirect based on user type
+                        if (userType === 'User') {
+                            navigate('/user/home');
+                        } else if (userType === 'Contractor') {
+                            navigate('/contractor/home');
+                        } else if (userType === 'Labour') {
+                            navigate('/labour/home');
+                        } else {
+                            // Fallback to complete profile
+                            console.log('Unknown user type - redirecting to complete profile');
+                            navigate('/complete-profile');
+                        }
+                    } else {
+                        // New user or incomplete profile - go to complete profile
+                        console.log('🆕 New user detected - redirecting to complete profile');
+                        console.log('   userType:', userType, '| firstName:', firstName);
+                        
+                        toast.success('Welcome! Please complete your profile', {
+                            duration: 2000,
+                            position: 'top-center',
+                        });
+                        
+                        navigate('/complete-profile');
+                    }
                 } else {
                     console.error('Login failed:', data.message);
-                    navigate('/complete-profile');
+                    toast.error(data.message || 'Login failed. Please try again.');
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                // Fallback to old flow
-                localStorage.setItem('mobile_number', phoneNumber);
-                navigate('/complete-profile');
+                toast.error('Connection error. Please try again.');
             }
         }
     };
@@ -85,6 +145,9 @@ const OTPVerification = () => {
                     </h1>
                     <p className="text-gray-500 text-sm">
                         We sent it to the number +91 {phoneNumber}
+                    </p>
+                    <p className="text-blue-600 text-sm mt-2 font-medium">
+                        💡 For testing, use OTP: 1234
                     </p>
                 </div>
 

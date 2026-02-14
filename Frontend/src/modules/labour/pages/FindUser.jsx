@@ -157,31 +157,68 @@ const FindUser = () => {
     };
 
     const handleApplyNow = async (jobId) => {
-        // Get labour profile data
-        const labourProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
-        
-        if (!labourProfile.firstName || !labourProfile.lastName) {
-            toast.error('Please complete your profile first', {
-                duration: 3000,
-                position: 'top-center',
-            });
-            return;
-        }
-        
-        // Find the job
-        const job = jobs.find(j => j.id === jobId);
-        if (!job) return;
-        
-        // Get mobile number
-        const mobileNumber = labourProfile.mobileNumber || localStorage.getItem('mobile_number') || 'Not specified';
-        
         try {
+            console.log('🔵 Applying to job:', jobId);
+            
+            // Fetch fresh profile from database
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                toast.error('Please login first');
+                navigate('/mobile-input');
+                return;
+            }
+
+            // Get labour profile from database
+            const profileResponse = await fetch('http://localhost:5000/api/labour/profile', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            const profileData = await profileResponse.json();
+            
+            if (!profileData.success || !profileData.data.labour) {
+                toast.error('Please complete your profile first', {
+                    duration: 3000,
+                    position: 'top-center',
+                });
+                navigate('/labour/details');
+                return;
+            }
+
+            const labour = profileData.data.labour;
+            const user = profileData.data.user;
+            
+            // Check if profile is complete
+            const firstName = labour.firstName || user?.firstName;
+            const lastName = labour.lastName || user?.lastName;
+            const city = labour.city || user?.city;
+            const mobileNumber = user?.mobileNumber || localStorage.getItem('mobile_number');
+            
+            if (!firstName || !lastName) {
+                toast.error('Please complete your profile first', {
+                    duration: 3000,
+                    position: 'top-center',
+                });
+                navigate('/labour/details');
+                return;
+            }
+            
+            console.log('✅ Profile verified:', { firstName, lastName, city });
+            
+            // Find the job
+            const job = jobs.find(j => j.id === jobId);
+            if (!job) {
+                toast.error('Job not found');
+                return;
+            }
+            
             // Submit application to database
             const response = await jobAPI.applyToJob(jobId, {
                 applicantType: 'Labour',
-                applicantName: `${labourProfile.firstName} ${labourProfile.lastName}`,
-                phoneNumber: mobileNumber,
-                location: labourProfile.city || 'Not specified',
+                applicantName: `${firstName} ${lastName}`,
+                phoneNumber: mobileNumber || 'Not specified',
+                location: city || 'Not specified',
                 message: `I am interested in this ${job.category} job.`
             });
 
@@ -192,10 +229,6 @@ const FindUser = () => {
                     [jobId]: { status: 'Pending', jobId: jobId }
                 };
                 setAppliedJobs(updatedAppliedJobs);
-                
-                // Also save to localStorage as backup
-                const appliedJobIds = Object.keys(updatedAppliedJobs);
-                localStorage.setItem('labour_applied_jobs', JSON.stringify(appliedJobIds));
                 
                 toast.success('Application sent successfully!', {
                     duration: 3000,

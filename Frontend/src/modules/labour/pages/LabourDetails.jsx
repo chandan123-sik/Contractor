@@ -103,60 +103,41 @@ const LabourDetails = () => {
         }
 
         try {
-            // Get user profile from localStorage
-            const userProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
-            const mobileNumber = localStorage.getItem('mobile_number');
-            
-            if (!mobileNumber) {
-                toast.error('Mobile number not found. Please login again.');
-                navigate('/auth/mobile');
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                toast.error('Please login first');
+                navigate('/mobile-input');
                 return;
             }
 
-            // Prepare labour data for backend
-            const labourData = {
-                mobileNumber,
-                firstName: userProfile.firstName || '',
-                lastName: userProfile.lastName || '',
-                gender: userProfile.gender || '',
-                city: userProfile.city || '',
-                state: userProfile.state || '',
-                skillType: formData.skillType,
-                experience: formData.experience || '',
-                workPhotos: formData.workPhotos || [],
-                previousWorkLocation: formData.previousWorkLocation || ''
-            };
-
-            // Save to backend
-            const response = await fetch('http://localhost:5000/api/labour/create-profile', {
-                method: 'POST',
+            // Update work details in database
+            const response = await fetch('http://localhost:5000/api/labour/work-details', {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(labourData)
+                body: JSON.stringify({
+                    skillType: formData.skillType,
+                    experience: formData.experience || '',
+                    workPhotos: formData.workPhotos || [],
+                    previousWorkLocation: formData.previousWorkLocation || '',
+                    availabilityStatus: 'Available',
+                    availability: formData.availability || 'Full Time'
+                })
             });
 
             const data = await response.json();
 
             if (data.success) {
-                // Save to localStorage for offline access
-                const existingProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
-                localStorage.setItem('labour_profile', JSON.stringify({
-                    ...existingProfile,
-                    ...formData
-                }));
-
-                // Dispatch event to update header
-                window.dispatchEvent(new Event('profileUpdated'));
-
+                console.log('✅ Work details saved to database');
                 toast.success('Profile completed successfully!');
                 navigate('/labour/find-user');
             } else {
-                toast.error(data.message || 'Failed to save profile');
+                toast.error(data.message || 'Failed to save work details');
             }
         } catch (error) {
-            console.error('Error saving labour profile:', error);
+            console.error('Error saving labour work details:', error);
             toast.error('Failed to save profile. Please try again.');
         }
     };

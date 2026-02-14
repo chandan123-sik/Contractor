@@ -18,32 +18,10 @@ const HireWorkers = () => {
 
     const cities = ['Indore', 'Bhopal', 'Dewas', 'Ujjain', 'Jabalpur', 'Gwalior', 'Ratlam'];
 
-    // Dummy cards - reduced to 10
-    const dummyCards = [
-        // Electrician
-        { id: 'e1', fullName: 'Rajesh Kumar', primarySkill: 'Electrician', rating: 4, gender: 'Male', city: 'Indore', mobileNumber: '9876543210', experience: '5', availability: 'Full Time', availabilityStatus: 'Available', address: 'Vijay Nagar, Indore', skills: 'Wiring, Panel Installation' },
-        { id: 'e2', fullName: 'Amit Sharma', primarySkill: 'Electrician', rating: 5, gender: 'Male', city: 'Bhopal', mobileNumber: '9876543211', experience: '7', availability: 'Part Time', availabilityStatus: 'Available', address: 'MP Nagar, Bhopal', skills: 'Electrical Repairs, Maintenance' },
-        
-        // Plumber
-        { id: 'p1', fullName: 'Rahul Verma', primarySkill: 'Plumber', rating: 4, gender: 'Male', city: 'Indore', mobileNumber: '9876543213', experience: '6', availability: 'Full Time', availabilityStatus: 'Available', address: 'Palasia, Indore', skills: 'Pipe Fitting, Leak Repair' },
-        { id: 'p2', fullName: 'Mohan Singh', primarySkill: 'Plumber', rating: 5, gender: 'Male', city: 'Dewas', mobileNumber: '9876543214', experience: '8', availability: 'Full Time', availabilityStatus: 'Busy', address: 'Civil Lines, Dewas', skills: 'Bathroom Fitting, Water Tank' },
-        
-        // Carpenter
-        { id: 'c1', fullName: 'Ramesh Yadav', primarySkill: 'Carpenter', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543216', experience: '10', availability: 'Full Time', availabilityStatus: 'Available', address: 'Rau, Indore', skills: 'Furniture Making, Door Fitting' },
-        { id: 'c2', fullName: 'Dinesh Kumar', primarySkill: 'Carpenter', rating: 4, gender: 'Male', city: 'Jabalpur', mobileNumber: '9876543217', experience: '6', availability: 'Full Time', availabilityStatus: 'Available', address: 'Napier Town, Jabalpur', skills: 'Wood Work, Cabinet Making' },
-        
-        // Painter
-        { id: 'pa1', fullName: 'Anil Mishra', primarySkill: 'Painter', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543219', experience: '7', availability: 'Full Time', availabilityStatus: 'Available', address: 'Bhawarkua, Indore', skills: 'Wall Painting, Texture Work' },
-        { id: 'pa2', fullName: 'Sanjay Tiwari', primarySkill: 'Painter', rating: 4, gender: 'Male', city: 'Bhopal', mobileNumber: '9876543220', experience: '5', availability: 'Full Time', availabilityStatus: 'Busy', address: 'Kolar Road, Bhopal', skills: 'Interior Painting, Exterior Work' },
-        
-        // Mason
-        { id: 'ma1', fullName: 'Kalyan Singh', primarySkill: 'Mason', rating: 5, gender: 'Male', city: 'Indore', mobileNumber: '9876543243', experience: '15', availability: 'Full Time', availabilityStatus: 'Available', address: 'Limbodi, Indore', skills: 'Construction, Masonry, Plastering' },
-        
-        // Cleaner
-        { id: 'cl1', fullName: 'Sunita Devi', primarySkill: 'Cleaner', rating: 5, gender: 'Female', city: 'Indore', mobileNumber: '9876543237', experience: '6', availability: 'Full Time', availabilityStatus: 'Available', address: 'Rajendra Nagar, Indore', skills: 'House Cleaning, Office Cleaning' }
-    ];
-
     useEffect(() => {
+        // Clean up old localStorage dummy data on mount
+        localStorage.removeItem('labour_cards');
+        
         fetchLabourCards();
 
         // Check if category was passed from home page
@@ -124,64 +102,44 @@ const HireWorkers = () => {
             const userId = localStorage.getItem('user_id') || '';
             const userType = localStorage.getItem('user_type') || '';
             
-            // Try to fetch from database first
-            try {
-                const response = await labourAPI.browseLabourCards();
-                
-                if (response.success && response.data.labours) {
-                    // Transform API data
-                    let dbCards = response.data.labours.map(labour => ({
-                        id: labour._id,
-                        fullName: labour.labourCardDetails?.fullName || '',
-                        primarySkill: labour.skillType,
-                        rating: labour.rating || 0,
-                        gender: labour.labourCardDetails?.gender || '',
-                        mobileNumber: labour.labourCardDetails?.mobileNumber || '',
-                        city: labour.labourCardDetails?.city || '',
-                        address: labour.labourCardDetails?.address || '',
-                        skills: labour.labourCardDetails?.skills || labour.skillType,
-                        experience: labour.experience || '',
-                        previousWorkLocation: labour.previousWorkLocation || '',
-                        availability: labour.availability || 'Full Time',
-                        availabilityStatus: labour.availabilityStatus || 'Available',
-                        createdAt: labour.createdAt,
-                        userId: labour.user // Store user ID for filtering
-                    }));
-                    
-                    // Filter out logged-in labour's own card if they're a Labour user
-                    if (userType === 'Labour' && userId) {
-                        dbCards = dbCards.filter(card => card.userId !== userId);
-                    }
-                    
-                    // Also load from localStorage
-                    const localCards = JSON.parse(localStorage.getItem('labour_cards') || '[]');
-                    
-                    // Merge with dummy cards
-                    const allCards = [...dbCards, ...localCards, ...dummyCards];
-                    
-                    // Remove duplicates based on id
-                    const uniqueCards = allCards.filter((card, index, self) =>
-                        index === self.findIndex((c) => c.id === card.id)
-                    );
-                    
-                    setLabourCards(uniqueCards);
-                    setFilteredCards(uniqueCards);
-                    return;
-                }
-            } catch (apiError) {
-                console.log('API fetch failed, loading from localStorage:', apiError.message);
-            }
+            // Always fetch from database - no localStorage or dummy cards
+            const response = await labourAPI.browseLabourCards();
             
-            // Fallback to localStorage + dummy cards
-            const localCards = JSON.parse(localStorage.getItem('labour_cards') || '[]');
-            const allCards = [...localCards, ...dummyCards];
-            setLabourCards(allCards);
-            setFilteredCards(allCards);
+            if (response.success && response.data.labours) {
+                // Transform API data
+                let dbCards = response.data.labours.map(labour => ({
+                    id: labour._id,
+                    fullName: labour.labourCardDetails?.fullName || '',
+                    primarySkill: labour.skillType,
+                    rating: labour.rating || 0,
+                    gender: labour.labourCardDetails?.gender || '',
+                    mobileNumber: labour.labourCardDetails?.mobileNumber || '',
+                    city: labour.labourCardDetails?.city || '',
+                    address: labour.labourCardDetails?.address || '',
+                    skills: labour.labourCardDetails?.skills || labour.skillType,
+                    experience: labour.experience || '',
+                    previousWorkLocation: labour.previousWorkLocation || '',
+                    availability: labour.availability || 'Full Time',
+                    availabilityStatus: labour.availabilityStatus || 'Available',
+                    createdAt: labour.createdAt,
+                    userId: labour.user // Store user ID for filtering
+                }));
+                
+                // Filter out logged-in labour's own card if they're a Labour user
+                if (userType === 'Labour' && userId) {
+                    dbCards = dbCards.filter(card => card.userId !== userId);
+                }
+                
+                setLabourCards(dbCards);
+                setFilteredCards(dbCards);
+            } else {
+                setLabourCards([]);
+                setFilteredCards([]);
+            }
         } catch (error) {
             console.error('Failed to fetch labour cards:', error);
-            // Use dummy cards as last resort
-            setLabourCards(dummyCards);
-            setFilteredCards(dummyCards);
+            setLabourCards([]);
+            setFilteredCards([]);
         }
     };
 

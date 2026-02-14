@@ -19,7 +19,8 @@ import {
     getContractorJobApplications,
     getLabourApplications,
     updateContractorJobApplicationStatus,
-    getContractorApplicationHistory
+    getContractorApplicationHistory,
+    submitFeedback
 } from '../controllers/contractor.controller.js';
 import { protect } from '../../../middleware/auth.middleware.js';
 
@@ -57,5 +58,8 @@ router.delete('/hire-request/:id', deleteContractorHireRequest); // Delete reque
 
 // Verification route
 router.get('/verification-status', getContractorVerificationStatus);
+
+// Feedback route
+router.post('/feedback', submitFeedback);
 
 export default router;

@@ -22,19 +22,7 @@ const MyProjects = () => {
         try {
             setLoading(true);
             
-            // Check if user has access token
-            const token = localStorage.getItem('access_token');
-            
-            if (!token) {
-                // No token - load from localStorage (fallback for mock auth)
-                console.log('No access token found, loading from localStorage');
-                const savedJobs = JSON.parse(localStorage.getItem('user_jobs') || '[]');
-                setJobs(savedJobs);
-                setLoading(false);
-                return;
-            }
-            
-            // Has token - fetch from API
+            // Always fetch from API - no localStorage
             const response = await jobAPI.getUserJobs();
             
             if (response.success && response.data.jobs) {
@@ -56,25 +44,12 @@ const MyProjects = () => {
                 }));
                 
                 setJobs(transformedJobs);
+            } else {
+                setJobs([]);
             }
         } catch (error) {
             console.error('Failed to fetch jobs:', error);
-            
-            // Check if it's an authentication error
-            if (error.response?.status === 401) {
-                console.log('Authentication error - loading from localStorage as fallback');
-                // Load from localStorage as fallback
-                const savedJobs = JSON.parse(localStorage.getItem('user_jobs') || '[]');
-                setJobs(savedJobs);
-                return;
-            }
-            
-            toast.error('Failed to load jobs', {
-                duration: 3000,
-                position: 'top-center',
-            });
-            
-            // Set empty jobs array so page doesn't break
+            toast.error('Failed to load jobs');
             setJobs([]);
         } finally {
             setLoading(false);

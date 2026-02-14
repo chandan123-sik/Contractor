@@ -11,35 +11,66 @@ export const protectAdmin = async (req, res, next) => {
         }
 
         if (!token) {
+            console.log('❌ Admin Auth: No token provided');
             return res.status(401).json({
                 success: false,
-                message: 'Not authorized, no token provided'
+                message: 'TOKEN_MISSING',
+                error: 'No authentication token provided'
             });
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        // Verify token with detailed error logging
+        let decoded;
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET);
+            console.log('✅ Admin Auth: Token verified successfully for admin ID:', decoded.id);
+        } catch (jwtError) {
+            console.log('❌ Admin Auth: JWT verification failed:', jwtError.message);
+            
+            if (jwtError.name === 'TokenExpiredError') {
+                return res.status(401).json({
+                    success: false,
+                    message: 'TOKEN_EXPIRED',
+                    error: 'Authentication token has expired'
+                });
+            }
+            
+            return res.status(401).json({
+                success: false,
+                message: 'TOKEN_INVALID',
+                error: 'Invalid authentication token'
+            });
+        }
+
+        // Find admin in database
         req.admin = await Admin.findById(decoded.id).select('-password -__v');
 
         if (!req.admin) {
+            console.log('❌ Admin Auth: Admin not found in database for ID:', decoded.id);
             return res.status(401).json({
                 success: false,
-                message: 'Admin not found'
+                message: 'ADMIN_NOT_FOUND',
+                error: 'Admin account not found'
             });
         }
 
         if (!req.admin.isActive) {
+            console.log('❌ Admin Auth: Admin account is deactivated:', decoded.id);
             return res.status(403).json({
                 success: false,
-                message: 'Admin account is deactivated'
+                message: 'ACCOUNT_DEACTIVATED',
+                error: 'Admin account is deactivated'
             });
         }
 
+        console.log('✅ Admin Auth: Access granted for admin:', req.admin.username);
         next();
     } catch (error) {
-        return res.status(401).json({
+        console.log('❌ Admin Auth: Unexpected error:', error.message);
+        return res.status(500).json({
             success: false,
-            message: 'Not authorized, token failed',
-            error: error.message
+            message: 'AUTH_ERROR',
+            error: 'Authentication error occurred'
         });
     }
 };

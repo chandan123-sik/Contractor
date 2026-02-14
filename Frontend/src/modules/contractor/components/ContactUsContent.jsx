@@ -1,95 +1,57 @@
 import { useState, useEffect } from 'react';
-import { Mail, Phone, Clock } from 'lucide-react';
-import ContactInfoItem from '../../user/components/ContactInfoItem';
 
 const ContactUsContent = () => {
-    const [contactData, setContactData] = useState({
-        email: 'support@yourapp.com',
-        phone: '+91 9XXXXXXXXX',
-        workingHours: ['Monday - Saturday: 10:00 AM - 6:00 PM', 'Sunday: Closed']
-    });
+    const [contactData, setContactData] = useState('');
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const savedCms = localStorage.getItem('cmsContent');
-        if (savedCms) {
-            const cms = JSON.parse(savedCms);
-            setContactData({
-                email: cms.contactUs.email || contactData.email,
-                phone: cms.contactUs.phone || contactData.phone,
-                workingHours: [cms.contactUs.workingHours || contactData.workingHours[0], 'Sunday: Closed']
-            });
-        }
+        fetchContactContent();
     }, []);
 
-    const contactInfo = [
-        {
-            icon: Mail,
-            title: 'Support Email',
-            details: contactData.email,
-            bgColor: 'bg-blue-50',
-            iconColor: 'text-blue-600'
-        },
-        {
-            icon: Phone,
-            title: 'Support Phone',
-            details: contactData.phone,
-            bgColor: 'bg-green-50',
-            iconColor: 'text-green-600'
-        },
-        {
-            icon: Clock,
-            title: 'Working Hours',
-            details: contactData.workingHours,
-            bgColor: 'bg-purple-50',
-            iconColor: 'text-purple-600'
+    const fetchContactContent = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch('http://localhost:5000/api/admin/cms/contactUs');
+            const data = await response.json();
+            
+            if (data.success && data.data.content) {
+                setContactData(data.data.content);
+            }
+        } catch (error) {
+            console.error('Error fetching Contact Us content:', error);
+        } finally {
+            setLoading(false);
         }
-    ];
+    };
 
     return (
         <div className="p-4 pb-8 space-y-6">
-            {/* Contact Details */}
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Get Support</h2>
-                <p className="text-gray-600 mb-6">
-                    Need help with your account, projects, or payments? We're here to assist you. Reach out to us through any of the following channels:
-                </p>
-
-                <div className="space-y-4">
-                    {contactInfo.map((info, index) => (
-                        <ContactInfoItem key={index} {...info} />
-                    ))}
+            {loading ? (
+                <div className="flex justify-center items-center py-20">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
                 </div>
-            </div>
+            ) : contactData ? (
+                <>
+                    {/* Contact Details */}
+                    <div className="bg-white rounded-xl p-6 shadow-sm">
+                        <h2 className="text-lg font-bold text-gray-900 mb-4">Get Support</h2>
+                        <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                            {contactData}
+                        </div>
+                    </div>
 
-            {/* Help Topics */}
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">We Can Help You With</h2>
-                <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
-                        <p className="text-gray-700">Technical or usage issues</p>
+                    {/* Additional Info */}
+                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                        <p className="text-sm text-blue-700 text-center">
+                            We typically respond within 24-48 hours during working days.
+                        </p>
                     </div>
-                    <div className="flex items-start gap-3">
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
-                        <p className="text-gray-700">Account, projects, or payment queries</p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
-                        <p className="text-gray-700">Suggestions and feedback</p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
-                        <p className="text-gray-700">Business profile assistance</p>
-                    </div>
+                </>
+            ) : (
+                <div className="bg-white rounded-xl p-6 shadow-sm text-center">
+                    <p className="text-gray-500">No contact information available</p>
                 </div>
-            </div>
-
-            {/* Additional Info */}
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-                <p className="text-sm text-blue-700 text-center">
-                    We typically respond within 24-48 hours during working days.
-                </p>
-            </div>
+            )}
         </div>
     );
 };

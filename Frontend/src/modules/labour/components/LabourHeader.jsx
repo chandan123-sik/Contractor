@@ -10,37 +10,66 @@ const LabourHeader = () => {
     const [notificationCount, setNotificationCount] = useState(0);
 
     useEffect(() => {
-        // Function to update labour name from localStorage
-        const updateLabourName = () => {
+        // Fetch labour profile from database
+        const fetchLabourProfile = async () => {
             try {
-                const profile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
-                console.log('Labour profile in header:', profile);
-                if (profile.firstName) {
-                    setLabourName(profile.firstName);
+                const token = localStorage.getItem('access_token');
+                if (!token) {
+                    console.log('No access token found');
+                    setLabourName('Labour');
+                    return;
+                }
+
+                const response = await fetch('http://localhost:5000/api/labour/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                console.log('✅ Labour profile fetched:', data);
+
+                if (data.success && data.data) {
+                    const labour = data.data.labour;
+                    const user = data.data.user;
+                    
+                    // Get firstName from labour or user
+                    const firstName = labour.firstName || user?.firstName;
+                    
+                    if (firstName) {
+                        setLabourName(firstName);
+                        console.log('✅ Name set:', firstName);
+                    } else {
+                        // Fallback to mobile number
+                        const mobileNumber = localStorage.getItem('mobile_number');
+                        setLabourName(mobileNumber ? `Labour ${mobileNumber.slice(-4)}` : 'Labour');
+                        console.log('⚠️ No firstName found, using fallback');
+                    }
                 } else {
-                    setLabourName('');
+                    setLabourName('Labour');
                 }
             } catch (error) {
-                console.error('Error reading labour profile:', error);
-                setLabourName('');
+                console.error('❌ Error fetching labour profile:', error);
+                setLabourName('Labour');
             }
         };
 
-        // Initial load
-        updateLabourName();
+        // Fetch from database
+        fetchLabourProfile();
 
-        // Listen for storage changes
-        window.addEventListener('storage', updateLabourName);
-        
-        // Listen for custom profile update event
-        window.addEventListener('profileUpdated', updateLabourName);
+        // Listen for profile update events
+        const handleProfileUpdate = () => {
+            console.log('📢 Profile update event received');
+            fetchLabourProfile();
+        };
+
+        window.addEventListener('profileUpdated', handleProfileUpdate);
 
         // Cleanup
         return () => {
-            window.removeEventListener('storage', updateLabourName);
-            window.removeEventListener('profileUpdated', updateLabourName);
+            window.removeEventListener('profileUpdated', handleProfileUpdate);
         };
-    }, [location]);
+    }, []); // Empty dependency array - only run once on mount
 
     useEffect(() => {
         // Fetch notification count

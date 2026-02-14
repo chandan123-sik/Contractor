@@ -7,6 +7,11 @@ const contractorHireRequestSchema = new mongoose.Schema({
         ref: 'Contractor',
         required: true
     },
+    contractorJobId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ContractorJob',
+        required: true
+    },
     contractorName: {
         type: String,
         required: true
@@ -67,6 +72,7 @@ const contractorHireRequestSchema = new mongoose.Schema({
 
 // Indexes for faster queries
 contractorHireRequestSchema.index({ contractorId: 1, status: 1 });
+contractorHireRequestSchema.index({ contractorJobId: 1, status: 1 });
 contractorHireRequestSchema.index({ requesterId: 1 });
 contractorHireRequestSchema.index({ status: 1, createdAt: -1 });
 

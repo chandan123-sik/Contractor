@@ -29,11 +29,23 @@ export const getAllContractors = async (req, res) => {
         }
 
         const contractors = await Contractor.find(query)
-            .populate('user', 'firstName lastName mobileNumber city state gender')
+            .populate('user', 'firstName middleName lastName mobileNumber city state gender dob address')
             .select('-__v')
             .limit(limit * 1)
             .skip((page - 1) * limit)
             .sort({ createdAt: -1 });
+
+        console.log('✅ Found', contractors.length, 'contractors');
+        if (contractors.length > 0) {
+            console.log('📋 Sample contractor:', {
+                id: contractors[0]._id,
+                user: contractors[0].user ? {
+                    firstName: contractors[0].user.firstName,
+                    lastName: contractors[0].user.lastName,
+                    mobileNumber: contractors[0].user.mobileNumber
+                } : 'No user populated'
+            });
+        }
 
         const total = await Contractor.countDocuments(query);
 

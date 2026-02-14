@@ -10,36 +10,77 @@ const UserHeader = () => {
     const [notificationCount, setNotificationCount] = useState(0);
 
     useEffect(() => {
-        // Function to update user name from localStorage
-        const updateUserName = () => {
+        // Load name from localStorage immediately for instant display
+        const loadNameFromStorage = () => {
             try {
                 const profile = JSON.parse(localStorage.getItem('user_profile') || '{}');
                 if (profile.firstName) {
                     setUserName(profile.firstName);
-                } else {
-                    setUserName('');
+                    return true;
                 }
             } catch (error) {
-                console.error('Error reading user profile:', error);
-                setUserName('');
+                console.error('Error reading user profile from localStorage:', error);
+            }
+            return false;
+        };
+
+        // Load from localStorage first
+        loadNameFromStorage();
+
+        // Fetch user profile from API to sync
+        const fetchUserProfile = async () => {
+            try {
+                const token = localStorage.getItem('access_token');
+                if (!token) return;
+
+                const response = await fetch('http://localhost:5000/api/users/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success && data.data.user) {
+                    const user = data.data.user;
+                    if (user.firstName) {
+                        setUserName(user.firstName);
+                        
+                        // Update localStorage for next time
+                        try {
+                            const existingProfile = JSON.parse(localStorage.getItem('user_profile') || '{}');
+                            existingProfile.firstName = user.firstName;
+                            localStorage.setItem('user_profile', JSON.stringify(existingProfile));
+                        } catch (error) {
+                            console.error('Error updating localStorage:', error);
+                        }
+                    } else {
+                        // If no firstName, show mobile number or "User"
+                        const mobileNumber = localStorage.getItem('mobile_number');
+                        setUserName(mobileNumber ? `User ${mobileNumber.slice(-4)}` : 'User');
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching user profile:', error);
+                // Keep the localStorage name if API fails
             }
         };
 
-        // Initial load
-        updateUserName();
+        // Fetch from API (will update if different)
+        fetchUserProfile();
 
-        // Listen for storage changes
-        window.addEventListener('storage', updateUserName);
-        
         // Listen for custom profile update event
-        window.addEventListener('profileUpdated', updateUserName);
+        const handleProfileUpdate = () => {
+            loadNameFromStorage();
+            fetchUserProfile();
+        };
+
+        window.addEventListener('profileUpdated', handleProfileUpdate);
 
         // Cleanup
         return () => {
-            window.removeEventListener('storage', updateUserName);
-            window.removeEventListener('profileUpdated', updateUserName);
+            window.removeEventListener('profileUpdated', handleProfileUpdate);
         };
-    }, [location]);
+    }, []); // Empty dependency array - only run once on mount
 
     useEffect(() => {
         // Fetch notification count

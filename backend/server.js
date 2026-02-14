@@ -1,5 +1,17 @@
-import express from 'express';
 import dotenv from 'dotenv';
+
+// Load environment variables FIRST before any other imports
+dotenv.config();
+
+// Verify critical environment variables are loaded
+console.log('\n🔧 Environment Variables Status:');
+console.log('   JWT_SECRET loaded:', !!process.env.JWT_SECRET);
+console.log('   JWT_EXPIRE:', process.env.JWT_EXPIRE);
+console.log('   MONGODB_URI loaded:', !!process.env.MONGODB_URI);
+console.log('   PORT:', process.env.PORT);
+console.log('');
+
+import express from 'express';
 import cors from 'cors';
 import connectDB from './config/database.js';
 import errorHandler from './middleware/errorHandler.js';
@@ -14,9 +26,6 @@ import userJobRoutes from './modules/user/routes/user.routes.js';
 import labourRoutes from './modules/labour/routes/labour.routes.js';
 import contractorRoutes from './modules/contractor/routes/contractor.routes.js';
 import adminRoutes from './modules/admin/routes/admin.routes.js';
-
-// Load environment variables
-dotenv.config();
 
 // Connect to MongoDB
 connectDB();

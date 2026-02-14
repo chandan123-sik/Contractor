@@ -14,50 +14,44 @@ const MyProjects = () => {
     const loadCards = async () => {
         try {
             setLoading(true);
-            console.log('🔄 [MyProjects] Loading contractor cards...');
-            const token = localStorage.getItem('access_token');
+            console.log('🔄 [MyProjects] Loading contractor cards for Labour...');
             
-            if (token) {
-                const response = await contractorAPI.getContractorJobs();
-                console.log('📦 [MyProjects] API Response:', response);
+            // Fetch jobs with targetAudience='Labour' filter
+            const response = await contractorAPI.getContractorJobs({ targetAudience: 'Labour' });
+            console.log('📦 [MyProjects] API Response:', response);
+            
+            if (response && response.success && response.data && response.data.jobs) {
+                console.log('✅ [MyProjects] Jobs found:', response.data.jobs.length);
                 
-                if (response && response.success && response.data && response.data.jobs) {
-                    console.log('✅ [MyProjects] Jobs found:', response.data.jobs.length);
-                    
-                    const formattedCards = response.data.jobs.map(job => ({
-                        id: job._id,
-                        contractorName: job.contractorName || 'N/A',
-                        phoneNumber: job.phoneNumber || 'N/A',
-                        city: job.city || 'N/A',
-                        address: job.address || 'N/A',
-                        businessType: job.businessType || 'Individual',
-                        businessName: job.businessName || '',
-                        labourSkill: job.labourSkill || 'Other',
-                        experience: job.experience || '0',
-                        workDuration: job.workDuration || 'Contract',
-                        budgetType: job.budgetType || 'Fixed Amount',
-                        budgetAmount: job.budgetAmount || '0',
-                        profileStatus: job.profileStatus || 'Active',
-                        rating: job.rating || 0,
-                        availabilityStatus: job.profileStatus === 'Active' ? 'Available' : 'Closed',
-                        createdAt: job.createdAt
-                    }));
-                    
-                    console.log('✅ [MyProjects] Formatted cards:', formattedCards);
-                    setCards(formattedCards);
-                } else {
-                    console.log('⚠️ [MyProjects] No jobs in response');
-                    setCards([]);
-                }
+                const formattedCards = response.data.jobs.map(job => ({
+                    id: job._id,
+                    contractorName: job.contractorName || 'N/A',
+                    phoneNumber: job.phoneNumber || 'N/A',
+                    city: job.city || 'N/A',
+                    address: job.address || 'N/A',
+                    businessType: job.businessType || 'Individual',
+                    businessName: job.businessName || '',
+                    labourSkill: job.labourSkill || 'Other',
+                    experience: job.experience || '0',
+                    workDuration: job.workDuration || 'Contract',
+                    budgetType: job.budgetType || 'Fixed Amount',
+                    budgetAmount: job.budgetAmount || '0',
+                    profileStatus: job.profileStatus || 'Active',
+                    rating: job.rating || 0,
+                    availabilityStatus: job.profileStatus === 'Active' ? 'Available' : 'Closed',
+                    targetAudience: job.targetAudience || 'Labour',
+                    createdAt: job.createdAt
+                }));
+                
+                console.log('✅ [MyProjects] Formatted cards (Labour only):', formattedCards);
+                setCards(formattedCards);
             } else {
-                console.log('⚠️ [MyProjects] No token, using localStorage');
-                const savedCards = JSON.parse(localStorage.getItem('contractor_cards_for_labour') || '[]');
-                setCards(savedCards);
+                console.log('⚠️ [MyProjects] No jobs in response');
+                setCards([]);
             }
         } catch (error) {
             console.error('❌ [MyProjects] Error loading cards:', error);
-            const savedCards = JSON.parse(localStorage.getItem('contractor_cards_for_labour') || '[]');
-            setCards(savedCards);
+            setCards([]);
         } finally {
             setLoading(false);
         }
@@ -85,34 +79,16 @@ const MyProjects = () => {
 
     const handleToggleAvailability = async (cardId) => {
         try {
-            const token = localStorage.getItem('access_token');
+            // Always update in database - no localStorage
+            const currentCard = cards.find(c => c.id === cardId);
+            const newStatus = currentCard.profileStatus === 'Active' ? 'Closed' : 'Active';
             
-            if (token) {
-                // Update in database
-                const currentCard = cards.find(c => c.id === cardId);
-                const newStatus = currentCard.profileStatus === 'Active' ? 'Closed' : 'Active';
-                
-                await contractorAPI.updateContractorJob(cardId, {
-                    profileStatus: newStatus
-                });
-                
-                // Reload cards
-                await loadCards();
-            } else {
-                // Update in localStorage
-                const updatedCards = cards.map(card => {
-                    if (card.id === cardId) {
-                        return {
-                            ...card,
-                            availabilityStatus: card.availabilityStatus === 'Available' ? 'Busy' : 'Available'
-                        };
-                    }
-                    return card;
-                });
-                
-                setCards(updatedCards);
-                localStorage.setItem('contractor_cards_for_labour', JSON.stringify(updatedCards));
-            }
+            await contractorAPI.updateContractorJob(cardId, {
+                profileStatus: newStatus
+            });
+            
+            // Reload cards from database
+            await loadCards();
         } catch (error) {
             console.error('Error toggling availability:', error);
         }

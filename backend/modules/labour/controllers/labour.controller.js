@@ -12,13 +12,26 @@ export const createLabourProfile = async (req, res) => {
         console.log('📦 Request Body:', JSON.stringify(req.body, null, 2));
         console.log('👤 User from token:', req.user ? req.user._id : 'No token');
 
+        // Extract data from request body FIRST
+        const {
+            mobileNumber,
+            firstName,
+            middleName,
+            lastName,
+            gender,
+            city,
+            state,
+            skillType,
+            experience,
+            workPhotos,
+            previousWorkLocation
+        } = req.body;
+
         // Get userId from token if available, otherwise from mobileNumber
         let userId = req.user?._id;
         
         if (!userId) {
             // If no token, find user by mobile number
-            const { mobileNumber } = req.body;
-            
             if (!mobileNumber) {
                 console.log('❌ No userId or mobileNumber provided');
                 return res.status(400).json({
@@ -40,34 +53,39 @@ export const createLabourProfile = async (req, res) => {
             console.log('✅ Found user by mobile:', userId);
         }
 
+        // Update User model with personal details
+        const user = await User.findById(userId);
+        if (user) {
+            // Update User model fields
+            if (firstName) user.firstName = firstName;
+            if (middleName) user.middleName = middleName;
+            if (lastName) user.lastName = lastName;
+            if (gender) user.gender = gender;
+            if (city) user.city = city;
+            if (state) user.state = state;
+            if (!user.userType) user.userType = 'Labour';
+            
+            await user.save();
+            console.log('✅ User model updated with personal details:', {
+                firstName: user.firstName,
+                lastName: user.lastName,
+                city: user.city,
+                userType: user.userType
+            });
+        }
+
         // Check if labour profile already exists
         const existingLabour = await Labour.findOne({ user: userId });
         if (existingLabour) {
-            console.log('⚠️ Labour profile already exists');
-            
-            // Update existing profile instead of returning error
-            const {
-                firstName,
-                lastName,
-                gender,
-                city,
-                state,
-                skillType,
-                experience,
-                workPhotos,
-                previousWorkLocation
-            } = req.body;
+            console.log('⚠️ Labour profile already exists, updating...');
 
-            // Update User model
-            await User.findByIdAndUpdate(userId, {
-                firstName,
-                lastName,
-                gender,
-                city,
-                state
-            });
-
-            // Update Labour model
+            // Update Labour model with all fields
+            if (firstName) existingLabour.firstName = firstName;
+            if (middleName) existingLabour.middleName = middleName;
+            if (lastName) existingLabour.lastName = lastName;
+            if (gender) existingLabour.gender = gender;
+            if (city) existingLabour.city = city;
+            if (state) existingLabour.state = state;
             if (skillType) existingLabour.skillType = skillType;
             if (experience) existingLabour.experience = experience;
             if (workPhotos) existingLabour.workPhotos = workPhotos;
@@ -84,31 +102,15 @@ export const createLabourProfile = async (req, res) => {
             });
         }
 
-        // Extract data from request body
-        const {
-            firstName,
-            lastName,
-            gender,
-            city,
-            state,
-            skillType,
-            experience,
-            workPhotos,
-            previousWorkLocation
-        } = req.body;
-
-        // Update User model with basic info
-        await User.findByIdAndUpdate(userId, {
-            firstName,
-            lastName,
-            gender,
-            city,
-            state
-        });
-
-        // Create labour profile
+        // Create labour profile with all personal details
         const labour = await Labour.create({
             user: userId,
+            firstName: firstName || '',
+            middleName: middleName || '',
+            lastName: lastName || '',
+            gender: gender || '',
+            city: city || '',
+            state: state || '',
             skillType: skillType || 'Other',
             experience: experience || '',
             workPhotos: workPhotos || [],
@@ -125,6 +127,7 @@ export const createLabourProfile = async (req, res) => {
         });
     } catch (error) {
         console.error('❌ CREATE LABOUR PROFILE ERROR:', error.message);
+        console.error('Stack trace:', error.stack);
         console.log('===========================\n');
         res.status(500).json({
             success: false,
@@ -256,7 +259,7 @@ export const getLabourProfile = async (req, res) => {
     try {
         const userId = req.user._id;
 
-        const labour = await Labour.findOne({ user: userId }).populate('user', 'firstName lastName mobileNumber city profilePhoto');
+        const labour = await Labour.findOne({ user: userId }).populate('user', 'firstName lastName middleName mobileNumber city state gender profilePhoto');
         
         if (!labour) {
             return res.status(404).json({
@@ -267,7 +270,10 @@ export const getLabourProfile = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            data: { labour }
+            data: { 
+                labour,
+                user: labour.user // Include user data separately for easier access
+            }
         });
     } catch (error) {
         console.error('Get labour profile error:', error);
@@ -771,6 +777,59 @@ export const getLabourApplicationHistory = async (req, res, next) => {
     } catch (error) {
         console.error('❌ GET LABOUR APPLICATION HISTORY ERROR:', error.message);
         console.log('===========================\n');
+        next(error);
+    }
+};
+
+
+// @desc    Submit feedback
+// @route   POST /api/labour/feedback
+// @access  Private
+export const submitFeedback = async (req, res, next) => {
+    try {
+        const Feedback = (await import('../../admin/models/Feedback.model.js')).default;
+        const { rating, comment } = req.body;
+
+        if (!rating || !comment) {
+            return res.status(400).json({
+                success: false,
+                message: 'Rating and comment are required'
+            });
+        }
+
+        if (rating < 1 || rating > 5) {
+            return res.status(400).json({
+                success: false,
+                message: 'Rating must be between 1 and 5'
+            });
+        }
+
+        // Find labour profile for this user
+        const labour = await Labour.findOne({ userId: req.user._id });
+        
+        if (!labour) {
+            return res.status(404).json({
+                success: false,
+                message: 'Labour profile not found'
+            });
+        }
+
+        const feedback = await Feedback.create({
+            entityType: 'labour',
+            entityId: labour._id,
+            entityModel: 'Labour',
+            rating,
+            comment,
+            givenBy: req.user._id,
+            givenByModel: 'User'
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Feedback submitted successfully',
+            data: { feedback }
+        });
+    } catch (error) {
         next(error);
     }
 };

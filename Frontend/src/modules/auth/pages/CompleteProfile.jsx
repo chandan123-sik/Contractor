@@ -194,10 +194,17 @@ const CompleteProfile = () => {
             const mobileNumber = localStorage.getItem('mobile_number') || '';
             const token = localStorage.getItem('access_token');
 
+            if (!token) {
+                toast.error('Authentication token missing. Please login again.');
+                navigate('/mobile-input');
+                return;
+            }
+
             localStorage.setItem('user_type', formData.userType);
 
-            if (token) {
-                // Update profile via API
+            // Handle different user types separately
+            if (formData.userType === 'User') {
+                // Only for User type - update User database
                 const response = await fetch('http://localhost:5000/api/users/profile', {
                     method: 'PUT',
                     headers: {
@@ -222,21 +229,21 @@ const CompleteProfile = () => {
                 const data = await response.json();
 
                 if (data.success) {
-                    console.log('Profile updated successfully:', data.data.user);
+                    console.log('User profile updated successfully:', data.data.user);
                     toast.success('Profile updated successfully!');
                 } else {
                     toast.error(data.message || 'Failed to update profile');
                     return;
                 }
-            }
 
-            // Also save to localStorage for offline access
-            if (formData.userType === 'User') {
+                // Save to localStorage for offline access
                 const userProfile = { ...formData, phoneNumber: mobileNumber };
                 localStorage.setItem('user_profile', JSON.stringify(userProfile));
                 console.log('User profile saved:', userProfile);
                 navigate('/user/home', { state: { profile: userProfile } });
+                
             } else if (formData.userType === 'Contractor') {
+                // For Contractor - only create contractor profile, NOT user profile
                 // Save to localStorage
                 const existingProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
                 const contractorProfile = { 
@@ -247,7 +254,7 @@ const CompleteProfile = () => {
                 localStorage.setItem('contractor_profile', JSON.stringify(contractorProfile));
                 console.log('Contractor profile saved to localStorage:', contractorProfile);
                 
-                // Also create contractor profile in database
+                // Create contractor profile in database (this will also update User model)
                 try {
                     const contractorResponse = await fetch('http://localhost:5000/api/contractor/profile', {
                         method: 'POST',
@@ -256,14 +263,14 @@ const CompleteProfile = () => {
                             'Authorization': `Bearer ${token}`
                         },
                         body: JSON.stringify({
-                            firstName: formData.firstName,
-                            middleName: formData.middleName,
-                            lastName: formData.lastName,
+                            firstName: formData.firstName.trim(),
+                            middleName: formData.middleName.trim(),
+                            lastName: formData.lastName.trim(),
                             gender: formData.gender,
                             dob: formData.dob,
-                            city: formData.city,
-                            state: formData.state,
-                            address: formData.address,
+                            city: formData.city.trim(),
+                            state: formData.state.trim(),
+                            address: formData.address.trim(),
                             mobileNumber: mobileNumber
                         })
                     });
@@ -272,40 +279,22 @@ const CompleteProfile = () => {
                     if (contractorData.success) {
                         console.log('Contractor profile saved to database:', contractorData.data);
                         toast.success('Contractor profile created!');
+                    } else {
+                        toast.error(contractorData.message || 'Failed to create contractor profile');
+                        return;
                     }
                 } catch (error) {
                     console.error('Error creating contractor profile:', error);
-                    // Continue anyway - data is in localStorage
+                    toast.error('Failed to create contractor profile');
+                    return;
                 }
                 
                 navigate('/contractor/business-details');
+                
             } else if (formData.userType === 'Labour') {
-                // Save to localStorage
-                const existingProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
-                const labourProfile = {
-                    ...existingProfile,
-                    name: `${formData.firstName} ${formData.lastName}`.trim(),
-                    photo: formData.profileImage,
-                    gender: formData.gender,
-                    dob: formData.dob,
-                    firstName: formData.firstName,
-                    middleName: formData.middleName,
-                    lastName: formData.lastName,
-                    city: formData.city,
-                    state: formData.state,
-                    address: formData.address,
-                    aadharNumber: formData.aadharNumber,
-                    mobileNumber: mobileNumber
-                };
-                localStorage.setItem('labour_profile', JSON.stringify(labourProfile));
-                console.log('Labour profile saved:', labourProfile);
+                // For Labour - create labour profile in database
+                console.log('Creating Labour profile...');
                 
-                // Dispatch event to update header
-                window.dispatchEvent(new Event('profileUpdated'));
-                
-                console.log('Labour profile saved to localStorage:', labourProfile);
-                
-                // Also create labour profile in database
                 try {
                     const labourResponse = await fetch('http://localhost:5000/api/labour/create-profile', {
                         method: 'POST',
@@ -315,26 +304,31 @@ const CompleteProfile = () => {
                         },
                         body: JSON.stringify({
                             mobileNumber: mobileNumber,
-                            firstName: formData.firstName,
-                            middleName: formData.middleName,
-                            lastName: formData.lastName,
+                            firstName: formData.firstName.trim(),
+                            middleName: formData.middleName.trim(),
+                            lastName: formData.lastName.trim(),
                             gender: formData.gender,
-                            city: formData.city,
-                            state: formData.state
+                            city: formData.city.trim(),
+                            state: formData.state.trim()
                         })
                     });
                     
                     const labourData = await labourResponse.json();
                     if (labourData.success) {
-                        console.log('Labour profile saved to database:', labourData.data);
-                        toast.success('Labour profile created!');
+                        console.log('✅ Labour profile created in database:', labourData.data);
+                        toast.success('Profile created successfully!');
+                        
+                        // Navigate to labour details page
+                        navigate('/labour/details');
+                    } else {
+                        toast.error(labourData.message || 'Failed to create labour profile');
+                        return;
                     }
                 } catch (error) {
                     console.error('Error creating labour profile:', error);
-                    // Continue anyway - data is in localStorage
+                    toast.error('Failed to create labour profile');
+                    return;
                 }
-                
-                navigate('/labour/details');
             }
         } catch (error) {
             console.error('Error updating profile:', error);

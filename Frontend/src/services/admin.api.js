@@ -28,13 +28,40 @@ adminApi.interceptors.request.use(
 adminApi.interceptors.response.use(
     (response) => response,
     (error) => {
+        // Only logout on specific token-related errors
         if (error.response?.status === 401) {
-            // Token expired or invalid
-            localStorage.removeItem('adminToken');
-            localStorage.removeItem('adminAuth');
-            localStorage.removeItem('adminRole');
-            window.location.href = '/admin/login';
+            const errorMessage = error.response?.data?.message || '';
+            
+            console.log('🔴 Admin API 401 Error:', errorMessage);
+            
+            // Only logout on these specific error codes from backend
+            const logoutErrors = ['TOKEN_MISSING', 'TOKEN_EXPIRED', 'TOKEN_INVALID', 'ADMIN_NOT_FOUND'];
+            
+            if (logoutErrors.includes(errorMessage)) {
+                console.log('🚪 Logging out due to:', errorMessage);
+                
+                // Clear all admin data
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminAuth');
+                localStorage.removeItem('adminRole');
+                localStorage.removeItem('adminUsername');
+                localStorage.removeItem('adminProfile');
+                
+                // Only redirect if not already on login page
+                if (!window.location.pathname.includes('/admin/login')) {
+                    window.location.href = '/admin/login';
+                }
+            } else {
+                // Log but don't logout for other 401 errors (like permission issues)
+                console.warn('⚠️ 401 error but not a token issue:', errorMessage);
+            }
         }
+        
+        // For network errors (no response), don't logout
+        if (!error.response) {
+            console.warn('⚠️ Network error - keeping session active');
+        }
+        
         return Promise.reject(error);
     }
 );
@@ -60,8 +87,14 @@ export const adminAuthAPI = {
     },
 
     verifyToken: async () => {
-        const response = await adminApi.get('/auth/verify-token');
-        return response.data;
+        try {
+            const response = await adminApi.get('/auth/verify-token');
+            return response.data;
+        } catch (error) {
+            // Don't throw error, just return invalid status
+            console.warn('⚠️ Token verification failed:', error.message);
+            return { success: false, valid: false };
+        }
     },
 
     getProfile: async () => {

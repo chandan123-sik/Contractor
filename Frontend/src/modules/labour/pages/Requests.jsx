@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, Users, ChevronRight, History } from 'lucide-react';
+import { Briefcase, Users, ChevronRight } from 'lucide-react';
 import LabourBottomNav from '../components/LabourBottomNav';
 import LabourHeader from '../components/LabourHeader';
 
@@ -32,30 +32,13 @@ const Requests = () => {
                 {/* Contractor Request Card */}
                 <button
                     onClick={() => navigate('/labour/contractor-request')}
-                    className="w-full bg-white rounded-2xl p-6 mb-4 flex items-center justify-between hover:shadow-md transition-all"
+                    className="w-full bg-white rounded-2xl p-6 flex items-center justify-between hover:shadow-md transition-all"
                 >
                     <div className="flex items-center gap-4">
                         <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center">
                             <Users className="w-8 h-8 text-green-500" />
                         </div>
                         <span className="text-lg font-semibold text-gray-900">Contractor Request</span>
-                    </div>
-                    <ChevronRight className="w-6 h-6 text-gray-400" />
-                </button>
-
-                {/* Request History Card */}
-                <button
-                    onClick={() => navigate('/labour/request-history')}
-                    className="w-full bg-white rounded-2xl p-6 flex items-center justify-between hover:shadow-md transition-all"
-                >
-                    <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center">
-                            <History className="w-8 h-8 text-purple-500" />
-                        </div>
-                        <div className="text-left">
-                            <span className="text-lg font-semibold text-gray-900 block">Request History</span>
-                            <span className="text-sm text-gray-500">View accepted & declined</span>
-                        </div>
                     </div>
                     <ChevronRight className="w-6 h-6 text-gray-400" />
                 </button>

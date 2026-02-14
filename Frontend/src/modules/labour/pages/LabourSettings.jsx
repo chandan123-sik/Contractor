@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, User, Briefcase, Shield, Phone, Info, LogOut, MessageSquare, X } from 'lucide-react';
 import LabourBottomNav from '../components/LabourBottomNav';
 import toast from 'react-hot-toast';
+import { authAPI } from '../../../services/api';
 
 const LabourSettings = () => {
     const navigate = useNavigate();
@@ -10,11 +11,10 @@ const LabourSettings = () => {
     const [rating, setRating] = useState(0);
     const [feedback, setFeedback] = useState('');
 
-    const handleLogout = () => {
-        // Clear all localStorage data
-        localStorage.clear();
-        // Use replace to prevent going back to settings
-        navigate('/mobile-login', { replace: true });
+    const handleLogout = async () => {
+        // Call backend logout API, clear localStorage, and redirect
+        await authAPI.logout();
+        // No need to navigate - authAPI.logout() handles redirect
     };
 
     const handleMenuClick = (path) => {
@@ -31,10 +31,43 @@ const LabourSettings = () => {
         setFeedback('');
     };
 
-    const handleSubmitFeedback = () => {
-        // Will be implemented later
-        console.log('Feedback submitted:', { rating, feedback });
-        handleCloseFeedback();
+    const handleSubmitFeedback = async () => {
+        if (!rating) {
+            toast.error('Please select a rating');
+            return;
+        }
+
+        if (!feedback.trim()) {
+            toast.error('Please enter your feedback');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch('http://localhost:5000/api/labour/feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    rating,
+                    comment: feedback
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                toast.success('Feedback submitted successfully!');
+                handleCloseFeedback();
+            } else {
+                toast.error(data.message || 'Failed to submit feedback');
+            }
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+            toast.error('Failed to submit feedback. Please try again.');
+        }
     };
 
     const menuItems = [

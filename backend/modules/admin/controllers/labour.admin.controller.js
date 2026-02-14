@@ -34,7 +34,7 @@ export const getAllLabours = async (req, res) => {
         console.log('Query:', JSON.stringify(query));
 
         const labours = await Labour.find(query)
-            .populate('user', 'firstName lastName mobileNumber city state gender')
+            .populate('user', 'mobileNumber')
             .select('-__v')
             .limit(limit * 1)
             .skip((page - 1) * limit)
@@ -75,7 +75,7 @@ export const getAllLabours = async (req, res) => {
 export const getLabourById = async (req, res) => {
     try {
         const labour = await Labour.findById(req.params.id)
-            .populate('user', 'firstName lastName mobileNumber city state gender aadharNumber profilePhoto')
+            .populate('user', 'mobileNumber aadharNumber profilePhoto')
             .select('-__v');
 
         if (!labour) {
@@ -110,26 +110,18 @@ export const createLabour = async (req, res) => {
         let user = await User.findOne({ mobileNumber });
         
         if (!user) {
-            // Create new user
+            // Create new user with only mobileNumber and userType
             user = await User.create({
                 mobileNumber,
-                firstName,
-                lastName,
-                gender,
-                city,
-                state,
                 userType: 'Labour',
                 isActive: true
             });
         } else {
-            // Update user details
-            if (firstName) user.firstName = firstName;
-            if (lastName) user.lastName = lastName;
-            if (gender) user.gender = gender;
-            if (city) user.city = city;
-            if (state) user.state = state;
-            if (!user.userType) user.userType = 'Labour';
-            await user.save();
+            // Only set userType if not already set
+            if (!user.userType) {
+                user.userType = 'Labour';
+                await user.save();
+            }
         }
 
         // Check if labour profile already exists for this user
@@ -141,16 +133,21 @@ export const createLabour = async (req, res) => {
             });
         }
 
-        // Create labour profile
+        // Create labour profile with all personal details
         const labour = await Labour.create({
             user: user._id,
+            firstName: firstName || '',
+            lastName: lastName || '',
+            gender: gender || '',
+            city: city || '',
+            state: state || '',
             skillType: skillType || 'Other',
             experience: experience || '',
             isActive: true
         });
 
         // Populate user data before sending response
-        await labour.populate('user', 'firstName lastName mobileNumber city state gender');
+        await labour.populate('user', 'mobileNumber');
 
         res.status(201).json({
             success: true,
@@ -183,24 +180,19 @@ export const updateLabour = async (req, res) => {
             });
         }
 
-        // Update labour fields
+        // Update labour fields directly (not user fields)
+        if (firstName !== undefined) labour.firstName = firstName;
+        if (lastName !== undefined) labour.lastName = lastName;
+        if (gender !== undefined) labour.gender = gender;
+        if (city !== undefined) labour.city = city;
+        if (state !== undefined) labour.state = state;
         if (skillType !== undefined) labour.skillType = skillType;
         if (trade !== undefined) labour.skillType = trade; // trade maps to skillType
         if (experience !== undefined) labour.experience = experience;
         if (isActive !== undefined) labour.isActive = isActive;
 
-        // Update user fields if user exists
-        if (labour.user) {
-            if (firstName !== undefined) labour.user.firstName = firstName;
-            if (lastName !== undefined) labour.user.lastName = lastName;
-            if (gender !== undefined) labour.user.gender = gender;
-            if (city !== undefined) labour.user.city = city;
-            if (state !== undefined) labour.user.state = state;
-            await labour.user.save();
-        }
-
         await labour.save();
-        await labour.populate('user', 'firstName lastName mobileNumber city state gender');
+        await labour.populate('user', 'mobileNumber');
 
         res.status(200).json({
             success: true,

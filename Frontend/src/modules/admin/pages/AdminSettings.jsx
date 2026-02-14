@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Save, User, FileText, Mail, Phone, Lock, MapPin, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Save, User, FileText, Mail, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { adminAuthAPI, cmsAPI } from '../../../services/admin.api';
 import './AdminDashboard.css';
@@ -105,10 +105,31 @@ const AdminSettings = () => {
         try {
             setLoading(true);
             
-            // Update each CMS content item
-            const updates = Object.entries(cmsContent).map(([key, value]) => 
-                cmsAPI.update(key, { value })
-            );
+            // Only update fields that have content (not empty)
+            const updates = [];
+            
+            if (cmsContent.aboutUs && cmsContent.aboutUs.trim()) {
+                updates.push(cmsAPI.update('aboutUs', { value: cmsContent.aboutUs }));
+            }
+            
+            if (cmsContent.contactUs && cmsContent.contactUs.trim()) {
+                updates.push(cmsAPI.update('contactUs', { value: cmsContent.contactUs }));
+            }
+            
+            if (cmsContent.termsAndConditions && cmsContent.termsAndConditions.trim()) {
+                updates.push(cmsAPI.update('terms', { value: cmsContent.termsAndConditions }));
+            }
+            
+            if (cmsContent.privacyPolicy && cmsContent.privacyPolicy.trim()) {
+                updates.push(cmsAPI.update('privacy', { value: cmsContent.privacyPolicy }));
+            }
+
+            // Check if there's at least one field to update
+            if (updates.length === 0) {
+                toast.error('Please enter content in at least one field');
+                setLoading(false);
+                return;
+            }
 
             await Promise.all(updates);
             toast.success('Content updated successfully!');

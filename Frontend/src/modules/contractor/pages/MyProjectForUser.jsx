@@ -47,8 +47,8 @@ const MyProjectForUser = () => {
             console.log('Token exists:', !!token);
             
             if (token) {
-                console.log('📡 Fetching from API...');
-                const response = await contractorAPI.getContractorJobs();
+                console.log('📡 Fetching from API with targetAudience=User...');
+                const response = await contractorAPI.getContractorJobs({ targetAudience: 'User' });
                 console.log('📦 Full API Response:', JSON.stringify(response, null, 2));
                 
                 if (response && response.success && response.data && response.data.jobs) {

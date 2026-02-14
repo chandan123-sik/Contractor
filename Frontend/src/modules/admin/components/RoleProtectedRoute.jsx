@@ -3,26 +3,23 @@ import { Navigate, useLocation } from 'react-router-dom';
 
 const RoleProtectedRoute = ({ children, allowedRoles }) => {
     const isAuthenticated = localStorage.getItem('adminAuth') === 'true';
+    const adminToken = localStorage.getItem('adminToken');
     const userRole = localStorage.getItem('adminRole');
     const location = useLocation();
 
-    if (!isAuthenticated) {
+    // Validate token exists and is not empty
+    if (!isAuthenticated || !adminToken || adminToken === 'null' || adminToken === 'undefined') {
+        console.log('🚫 RoleProtectedRoute: No valid authentication found');
         return <Navigate to="/admin/login" state={{ from: location }} replace />;
     }
 
+    // Validate role if required
     if (allowedRoles && !allowedRoles.includes(userRole)) {
-        // Redirect to unauthorized page or dashboard if role is not allowed
-        // Ideally, this should go to a "403 Unauthorized" page, 
-        // but for now, let's redirect to the main dashboard or show an alert/message.
-        // However, if the user is ALREADY at the dashboard and receives this, it might cause a loop 
-        // if the dashboard itself is protected (which it acts as a layout).
-
-        // Strategy: 
-        // If the user tries to access a specific module (e.g., /users), and they are not allowed,
-        // redirect them to their allowed dashboard home.
+        console.log('🚫 RoleProtectedRoute: Role not allowed:', userRole);
         return <Navigate to="/admin/dashboard/home" replace />;
     }
 
+    console.log('✅ RoleProtectedRoute: Access granted for role:', userRole);
     return children;
 };
 

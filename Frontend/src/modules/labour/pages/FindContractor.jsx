@@ -22,6 +22,9 @@ const FindContractor = () => {
     const cities = ['Indore', 'Bhopal', 'Dewas', 'Ujjain', 'Jabalpur', 'Gwalior', 'Ratlam'];
 
     useEffect(() => {
+        // Clean up old localStorage dummy data on mount
+        localStorage.removeItem('contractor_cards_for_labour');
+        
         fetchContractorJobs();
         fetchApplicationStatus();
 
@@ -89,30 +92,19 @@ const FindContractor = () => {
                     createdAt: job.createdAt
                 }));
                 
-                // Merge with localStorage
-                const localCards = JSON.parse(localStorage.getItem('contractor_cards_for_labour') || '[]');
-                
-                // Combine and remove duplicates
-                const allCards = [...dbJobs, ...localCards];
-                const uniqueCards = allCards.filter((card, index, self) =>
-                    index === self.findIndex(c => c.id === card.id)
-                );
-                
-                console.log('Loaded contractor jobs:', uniqueCards.length);
-                setCards(uniqueCards);
-                setFilteredCards(uniqueCards);
+                console.log('Loaded contractor jobs from database:', dbJobs.length);
+                setCards(dbJobs);
+                setFilteredCards(dbJobs);
             } else {
-                // Fallback to localStorage only
-                const localCards = JSON.parse(localStorage.getItem('contractor_cards_for_labour') || '[]');
-                setCards(localCards);
-                setFilteredCards(localCards);
+                // No cards available
+                setCards([]);
+                setFilteredCards([]);
             }
         } catch (error) {
             console.error('Error fetching contractor jobs:', error);
-            // Fallback to localStorage
-            const localCards = JSON.parse(localStorage.getItem('contractor_cards_for_labour') || '[]');
-            setCards(localCards);
-            setFilteredCards(localCards);
+            // Show empty state on error
+            setCards([]);
+            setFilteredCards([]);
         } finally {
             setLoading(false);
         }

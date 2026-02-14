@@ -14,8 +14,10 @@ export const getDashboardAnalytics = async (req, res) => {
     try {
         console.log('📊 Fetching dashboard analytics...');
 
-        // Get counts - Count all users from users collection
-        const totalUsers = await User.countDocuments();
+        // Get counts - Only count actual users (not Labour or Contractor)
+        const totalUsers = await User.countDocuments({ 
+            userType: { $in: ['User', null] }
+        });
         const totalLabours = await Labour.countDocuments();
         const totalContractors = await Contractor.countDocuments();
         

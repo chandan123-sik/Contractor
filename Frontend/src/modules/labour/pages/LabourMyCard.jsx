@@ -17,67 +17,58 @@ const LabourMyCard = () => {
     const fetchLabourCard = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('access_token');
             
-            if (token) {
-                // Fetch from database
-                const response = await labourAPI.getLabourProfile();
-                if (response.success && response.data.labour) {
-                    const labour = response.data.labour;
-                    
-                    // Check if labour has multiple cards in labourCards array
-                    if (labour.labourCards && labour.labourCards.length > 0) {
-                        // Transform multiple cards
-                        const transformedCards = labour.labourCards.map(card => ({
-                            id: card._id,
-                            fullName: card.fullName || 'N/A',
-                            primarySkill: card.primarySkill || card.skills || 'N/A',
-                            rating: card.rating || 0,
-                            gender: card.gender || 'N/A',
-                            mobileNumber: card.mobileNumber || 'N/A',
-                            city: card.city || 'N/A',
-                            address: card.address || 'N/A',
-                            skills: card.skills || card.primarySkill || 'N/A',
-                            experience: card.experience || '0',
-                            previousWorkLocation: card.previousWorkLocation || 'N/A',
-                            availability: card.availability || 'Full Time',
-                            availabilityStatus: card.availabilityStatus || 'Available'
-                        }));
-                        setCards(transformedCards);
-                    } else if (labour.hasLabourCard && labour.labourCardDetails) {
-                        // Fallback to old single card format
-                        const transformedCard = {
-                            id: labour._id,
-                            fullName: labour.labourCardDetails?.fullName || 'N/A',
-                            primarySkill: labour.skillType || 'N/A',
-                            rating: labour.rating || 0,
-                            gender: labour.labourCardDetails?.gender || 'N/A',
-                            mobileNumber: labour.labourCardDetails?.mobileNumber || 'N/A',
-                            city: labour.labourCardDetails?.city || 'N/A',
-                            address: labour.labourCardDetails?.address || 'N/A',
-                            skills: labour.labourCardDetails?.skills || 'N/A',
-                            experience: labour.experience || '0',
-                            previousWorkLocation: labour.previousWorkLocation || 'N/A',
-                            availability: labour.availability || 'Available',
-                            availabilityStatus: labour.availabilityStatus || 'Available'
-                        };
-                        setCards([transformedCard]);
-                    } else {
-                        setCards([]);
-                    }
+            // Always fetch from database - no localStorage fallback
+            const response = await labourAPI.getLabourProfile();
+            if (response.success && response.data.labour) {
+                const labour = response.data.labour;
+                
+                // Check if labour has multiple cards in labourCards array
+                if (labour.labourCards && labour.labourCards.length > 0) {
+                    // Transform multiple cards
+                    const transformedCards = labour.labourCards.map(card => ({
+                        id: card._id,
+                        fullName: card.fullName || 'N/A',
+                        primarySkill: card.primarySkill || card.skills || 'N/A',
+                        rating: card.rating || 0,
+                        gender: card.gender || 'N/A',
+                        mobileNumber: card.mobileNumber || 'N/A',
+                        city: card.city || 'N/A',
+                        address: card.address || 'N/A',
+                        skills: card.skills || card.primarySkill || 'N/A',
+                        experience: card.experience || '0',
+                        previousWorkLocation: card.previousWorkLocation || 'N/A',
+                        availability: card.availability || 'Full Time',
+                        availabilityStatus: card.availabilityStatus || 'Available'
+                    }));
+                    setCards(transformedCards);
+                } else if (labour.hasLabourCard && labour.labourCardDetails) {
+                    // Fallback to old single card format
+                    const transformedCard = {
+                        id: labour._id,
+                        fullName: labour.labourCardDetails?.fullName || 'N/A',
+                        primarySkill: labour.skillType || 'N/A',
+                        rating: labour.rating || 0,
+                        gender: labour.labourCardDetails?.gender || 'N/A',
+                        mobileNumber: labour.labourCardDetails?.mobileNumber || 'N/A',
+                        city: labour.labourCardDetails?.city || 'N/A',
+                        address: labour.labourCardDetails?.address || 'N/A',
+                        skills: labour.labourCardDetails?.skills || 'N/A',
+                        experience: labour.experience || '0',
+                        previousWorkLocation: labour.previousWorkLocation || 'N/A',
+                        availability: labour.availability || 'Available',
+                        availabilityStatus: labour.availabilityStatus || 'Available'
+                    };
+                    setCards([transformedCard]);
                 } else {
                     setCards([]);
                 }
             } else {
-                // Fallback to localStorage
-                const savedCards = JSON.parse(localStorage.getItem('labour_cards') || '[]');
-                setCards(savedCards);
+                setCards([]);
             }
         } catch (error) {
             console.error('Error fetching labour card:', error);
-            // Fallback to localStorage on error
-            const savedCards = JSON.parse(localStorage.getItem('labour_cards') || '[]');
-            setCards(savedCards);
+            setCards([]);
         } finally {
             setLoading(false);
         }

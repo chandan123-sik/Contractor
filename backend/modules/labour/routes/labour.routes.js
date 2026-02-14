@@ -12,7 +12,8 @@ import {
     getSentHireRequests,
     updateHireRequestStatus,
     deleteHireRequest,
-    getLabourApplicationHistory
+    getLabourApplicationHistory,
+    submitFeedback
 } from '../controllers/labour.controller.js';
 import { protect } from '../../../middleware/auth.middleware.js';
 
@@ -39,6 +40,9 @@ router.delete('/hire-request/:id', deleteHireRequest); // Delete request
 
 // Application History
 router.get('/application-history', getLabourApplicationHistory); // Get labour's application history
+
+// Feedback route
+router.post('/feedback', submitFeedback);
 
 // Dynamic routes (must be last)
 router.get('/:id', getLabourById);

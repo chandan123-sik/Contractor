@@ -12,7 +12,10 @@ export const getAllUsers = async (req, res) => {
         console.log('\n🔵 ===== GET ALL USERS =====');
         const { page = 1, limit = 10, status, search } = req.query;
 
-        const query = {}; // Remove userType filter to show all users from users collection
+        // Only fetch users with userType='User' or null (not Labour or Contractor)
+        const query = { 
+            userType: { $in: ['User', null] }
+        };
 
         if (status) {
             query.isActive = status === 'Active';

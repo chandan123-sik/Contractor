@@ -8,6 +8,30 @@ const labourSchema = new mongoose.Schema({
         unique: true,
         index: true
     },
+    firstName: {
+        type: String,
+        trim: true
+    },
+    middleName: {
+        type: String,
+        trim: true
+    },
+    lastName: {
+        type: String,
+        trim: true
+    },
+    gender: {
+        type: String,
+        enum: ['Male', 'Female', 'Other']
+    },
+    city: {
+        type: String,
+        trim: true
+    },
+    state: {
+        type: String,
+        trim: true
+    },
     skillType: {
         type: String,
         trim: true,

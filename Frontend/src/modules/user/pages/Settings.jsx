@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Hammer, Shield, Phone, HelpCircle, LogOut, MessageSquare, X, History } from 'lucide-react';
+import toast from 'react-hot-toast';
 import UserBottomNav from '../components/UserBottomNav';
 import PageHeader from '../components/PageHeader';
 import SettingsMenuItem from '../components/SettingsMenuItem';
+import { authAPI } from '../../../services/api';
 
 const Settings = () => {
     const navigate = useNavigate();
@@ -19,17 +21,16 @@ const Settings = () => {
         { icon: Phone, label: 'Contact us', path: '/user/contact-us', color: 'text-gray-700' },
         { icon: HelpCircle, label: 'About us', path: '/user/about-us', color: 'text-gray-700' },
         { icon: MessageSquare, label: 'Feedback and Reports', action: 'feedback', color: 'text-gray-700' },
-        { icon: LogOut, label: 'Log out', path: '/mobile-login', color: 'text-red-500' }
+        { icon: LogOut, label: 'Log out', action: 'logout', color: 'text-red-500' }
     ];
 
-    const handleMenuClick = (item) => {
+    const handleMenuClick = async (item) => {
         if (item.action === 'feedback') {
             setShowFeedbackModal(true);
-        } else if (item.path === '/mobile-login') {
-            // Clear all localStorage data on logout
-            localStorage.clear();
-            // Use replace to prevent going back to settings
-            navigate('/mobile-login', { replace: true });
+        } else if (item.action === 'logout') {
+            // Call backend logout API, clear localStorage, and redirect
+            await authAPI.logout();
+            // No need to navigate - authAPI.logout() handles redirect
         } else if (item.path) {
             navigate(item.path);
         }
@@ -41,10 +42,43 @@ const Settings = () => {
         setFeedback('');
     };
 
-    const handleSubmitFeedback = () => {
-        // Will be implemented later
-        console.log('Feedback submitted:', { rating, feedback });
-        handleCloseFeedback();
+    const handleSubmitFeedback = async () => {
+        if (!rating) {
+            toast.error('Please select a rating');
+            return;
+        }
+
+        if (!feedback.trim()) {
+            toast.error('Please enter your feedback');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch('http://localhost:5000/api/users/feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    rating,
+                    comment: feedback
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                toast.success('Feedback submitted successfully!');
+                handleCloseFeedback();
+            } else {
+                toast.error(data.message || 'Failed to submit feedback');
+            }
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+            toast.error('Failed to submit feedback. Please try again.');
+        }
     };
 
     return (

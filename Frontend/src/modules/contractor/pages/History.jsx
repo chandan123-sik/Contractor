@@ -1,16 +1,23 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Phone, Calendar, Clock, X, Users } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { MapPin, Phone, Calendar, Clock, Bell, Crown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import ContractorBottomNav from '../components/ContractorBottomNav';
-import ContractorPageHeader from '../components/ContractorPageHeader';
 import { contractorAPI } from '../../../services/api';
 
 const History = () => {
+    const navigate = useNavigate();
     const [history, setHistory] = useState([]);
-    const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'accepted', 'declined'
+    const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'worker', 'user'
     const [loading, setLoading] = useState(true);
+    const [userName, setUserName] = useState('User');
 
     useEffect(() => {
+        // Get user name from localStorage
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (user.firstName) {
+            setUserName(user.firstName);
+        }
+
         loadHistory();
 
         // Auto-refresh every 10 seconds
@@ -35,69 +42,98 @@ const History = () => {
             }
         } catch (error) {
             console.error('❌ Failed to load history:', error);
-            // Fallback to localStorage
-            const savedHistory = JSON.parse(localStorage.getItem('contractor_request_history') || '[]');
-            const sortedHistory = savedHistory.sort((a, b) => b.id - a.id);
-            setHistory(sortedHistory);
+            setHistory([]);
         } finally {
             setLoading(false);
         }
     };
 
-    // Get filtered history based on status filter
+    // Get filtered history based on type filter
     const getFilteredHistory = () => {
-        if (statusFilter === 'all') {
+        if (typeFilter === 'all') {
             return history;
         }
-        return history.filter(req => req.status === statusFilter);
+        return history.filter(req => req.type === typeFilter);
     };
 
     const filteredHistory = getFilteredHistory();
+    
+    // Get counts for each type
+    const allCount = history.length;
+    const userCount = history.filter(req => req.type === 'user').length;
+    const workerCount = history.filter(req => req.type === 'worker').length;
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
-            <ContractorPageHeader title="Request History" backPath="/contractor/settings" />
+            {/* Header with User Info */}
+            <div className="bg-white px-4 py-4 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <img 
+                            src="/src/assets/Majdoor Sathi.png" 
+                            alt="Logo" 
+                            className="w-10 h-10 object-contain"
+                            onError={(e) => {
+                                e.target.style.display = 'none';
+                            }}
+                        />
+                        <div>
+                            <p className="text-sm text-gray-500">Hey, Welcome 👋</p>
+                            <p className="font-bold text-gray-900">{userName}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={() => navigate('/contractor/notifications')}
+                            className="p-2 bg-blue-500 rounded-full hover:bg-blue-600 transition-colors"
+                        >
+                            <Bell className="w-5 h-5 text-white" />
+                        </button>
+                        <button 
+                            onClick={() => navigate('/contractor/subscription')}
+                            className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
+                        >
+                            <Crown className="w-5 h-5 text-gray-600" />
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <div className="p-4">
-                {/* Header with count */}
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-gray-900">Worker Applications</h2>
-                    <span className="bg-yellow-400 text-gray-900 font-bold px-3 py-1 rounded-full text-sm">
-                        {filteredHistory.length}
-                    </span>
-                </div>
+                {/* Title */}
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Request History</h2>
 
-                {/* Status Filter Buttons */}
+                {/* Type Filter Tabs */}
                 <div className="flex gap-2 mb-4">
                     <button
-                        onClick={() => setStatusFilter('all')}
-                        className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                            statusFilter === 'all'
-                                ? 'bg-gray-800 text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        onClick={() => setTypeFilter('all')}
+                        className={`flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all ${
+                            typeFilter === 'all'
+                                ? 'bg-yellow-400 text-gray-900 shadow-md'
+                                : 'bg-white text-gray-600 hover:bg-gray-50'
                         }`}
                     >
-                        All
+                        All ({allCount})
                     </button>
                     <button
-                        onClick={() => setStatusFilter('accepted')}
-                        className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                            statusFilter === 'accepted'
-                                ? 'bg-green-500 text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        onClick={() => setTypeFilter('user')}
+                        className={`flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all ${
+                            typeFilter === 'user'
+                                ? 'bg-yellow-400 text-gray-900 shadow-md'
+                                : 'bg-white text-gray-600 hover:bg-gray-50'
                         }`}
                     >
-                        Accepted
+                        Contractors ({userCount})
                     </button>
                     <button
-                        onClick={() => setStatusFilter('declined')}
-                        className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                            statusFilter === 'declined'
-                                ? 'bg-red-500 text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        onClick={() => setTypeFilter('worker')}
+                        className={`flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all ${
+                            typeFilter === 'worker'
+                                ? 'bg-yellow-400 text-gray-900 shadow-md'
+                                : 'bg-white text-gray-600 hover:bg-gray-50'
                         }`}
                     >
-                        Declined
+                        Workers ({workerCount})
                     </button>
                 </div>
 
@@ -107,70 +143,83 @@ const History = () => {
                     </div>
                 ) : filteredHistory.length === 0 ? (
                     <div className="flex flex-col items-center justify-center min-h-[60vh]">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Users className="w-8 h-8 text-gray-400" />
-                        </div>
-                        <p className="text-gray-500 text-center">No history found</p>
+                        <div className="text-6xl mb-4">📭</div>
+                        <p className="text-gray-500 text-center font-medium">No history found</p>
                         <p className="text-gray-400 text-sm text-center mt-2">
-                            {statusFilter === 'all' 
-                                ? 'No worker applications yet'
-                                : `No ${statusFilter} worker applications`
+                            {typeFilter === 'all' 
+                                ? 'No requests yet'
+                                : `No ${typeFilter === 'user' ? 'contractor' : 'worker'} requests`
                             }
                         </p>
                     </div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                         {filteredHistory.map((request, index) => (
                             <div 
                                 key={request.id} 
-                                className={`premium-card card-fade-in border-2 ${
-                                    request.status === 'accepted' 
-                                        ? 'border-green-500' 
-                                        : 'border-red-500'
-                                }`}
+                                className="bg-white rounded-2xl shadow-sm p-4 hover:shadow-md transition-shadow"
                                 style={{ animationDelay: `${index * 0.05}s` }}
                             >
-                                {/* Worker Info Header */}
-                                <div className="flex items-start gap-3 mb-4">
-                                    <div className="w-14 h-14 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center shadow-md">
-                                        <span className="text-2xl font-bold text-white">
+                                {/* Header with Avatar, Name, and Status */}
+                                <div className="flex items-start justify-between mb-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg ${
+                                            request.type === 'user' 
+                                                ? 'bg-blue-500' 
+                                                : 'bg-green-500'
+                                        }`}>
                                             {request.workerName.charAt(0).toUpperCase()}
-                                        </span>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900">{request.workerName}</h3>
+                                            <div className="flex items-center gap-1 text-sm text-gray-500">
+                                                <MapPin className="w-3.5 h-3.5" />
+                                                <span>{request.location}</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex-1">
-                                        <h3 className="font-bold text-lg text-gray-900">{request.workerName}</h3>
-                                        <p className="text-sm text-gray-600">Applied for: {request.jobTitle}</p>
-                                    </div>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${
                                         request.status === 'accepted'
                                             ? 'bg-green-100 text-green-700'
                                             : 'bg-red-100 text-red-700'
                                     }`}>
+                                        {request.status === 'accepted' ? '✓' : '✕'}
                                         {request.status === 'accepted' ? 'Accepted' : 'Declined'}
                                     </span>
                                 </div>
 
-                                {/* Request Details */}
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-gray-700">
-                                        <MapPin className="w-4 h-4 text-gray-500" />
-                                        <span className="text-sm">{request.location}</span>
+                                {/* Contact Info */}
+                                <div className="flex items-center gap-2 text-gray-600 text-sm mb-3">
+                                    <Phone className="w-4 h-4" />
+                                    <span>{request.phoneNumber}</span>
+                                </div>
+
+                                {/* Date and Time */}
+                                <div className="flex items-center gap-4 text-gray-500 text-xs mb-3">
+                                    <div className="flex items-center gap-1">
+                                        <Calendar className="w-3.5 h-3.5" />
+                                        <span>{request.date}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-gray-700">
-                                        <Phone className="w-4 h-4 text-gray-500" />
-                                        <span className="text-sm font-medium">{request.phoneNumber}</span>
-                                    </div>
-                                    <div className="flex items-center gap-4 text-gray-600 text-xs">
-                                        <div className="flex items-center gap-1">
-                                            <Calendar className="w-4 h-4" />
-                                            <span>{request.date}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <Clock className="w-4 h-4" />
-                                            <span>{request.time}</span>
-                                        </div>
+                                    <div className="flex items-center gap-1">
+                                        <Clock className="w-3.5 h-3.5" />
+                                        <span>{request.time}</span>
                                     </div>
                                 </div>
+
+                                {/* Applied For Section */}
+                                {request.type === 'worker' && request.jobTitle && (
+                                    <div className="bg-gray-50 rounded-lg p-3">
+                                        <p className="text-xs text-gray-500 mb-1">Applied for</p>
+                                        <p className="font-semibold text-gray-900">{request.jobTitle}</p>
+                                    </div>
+                                )}
+                                
+                                {request.type === 'user' && (
+                                    <div className="bg-gray-50 rounded-lg p-3">
+                                        <p className="text-xs text-gray-500 mb-1">Request Type</p>
+                                        <p className="font-semibold text-gray-900">Contractor Hire Request</p>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>

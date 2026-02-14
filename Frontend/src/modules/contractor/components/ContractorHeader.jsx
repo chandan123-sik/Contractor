@@ -10,36 +10,99 @@ const ContractorHeader = () => {
     const [notificationCount, setNotificationCount] = useState(0);
 
     useEffect(() => {
-        // Function to update contractor name from localStorage
-        const updateContractorName = () => {
+        // Load name from localStorage immediately for instant display
+        const loadNameFromStorage = () => {
             try {
                 const profile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
                 if (profile.firstName) {
                     setContractorName(profile.firstName);
-                } else {
-                    setContractorName('');
+                    return true;
                 }
             } catch (error) {
-                console.error('Error reading contractor profile:', error);
-                setContractorName('');
+                console.error('Error reading contractor profile from localStorage:', error);
+            }
+            return false;
+        };
+
+        // Load from localStorage first
+        const hasLocalName = loadNameFromStorage();
+
+        // Fetch contractor profile from API to sync
+        const fetchContractorProfile = async () => {
+            try {
+                const token = localStorage.getItem('access_token');
+                if (!token) {
+                    console.log('No access token found');
+                    return;
+                }
+
+                const response = await fetch('http://localhost:5000/api/contractor/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                console.log('Contractor profile API response:', data);
+
+                if (data.success && data.data.contractor) {
+                    const contractor = data.data.contractor;
+                    console.log('Contractor object:', contractor);
+                    
+                    let firstName = null;
+                    
+                    // Check for firstName in different possible locations
+                    if (contractor.firstName) {
+                        firstName = contractor.firstName;
+                        console.log('Found firstName directly:', firstName);
+                    } else if (contractor.user && contractor.user.firstName) {
+                        firstName = contractor.user.firstName;
+                        console.log('Found firstName in user:', firstName);
+                    } else if (contractor.userId && contractor.userId.firstName) {
+                        firstName = contractor.userId.firstName;
+                        console.log('Found firstName in userId:', firstName);
+                    }
+
+                    if (firstName) {
+                        setContractorName(firstName);
+                        
+                        // Update localStorage for next time
+                        try {
+                            const existingProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
+                            existingProfile.firstName = firstName;
+                            localStorage.setItem('contractor_profile', JSON.stringify(existingProfile));
+                        } catch (error) {
+                            console.error('Error updating localStorage:', error);
+                        }
+                    } else {
+                        // If no firstName, show mobile number or "Contractor"
+                        const mobileNumber = localStorage.getItem('mobile_number');
+                        setContractorName(mobileNumber ? `Contractor ${mobileNumber.slice(-4)}` : 'Contractor');
+                        console.log('No firstName found in contractor profile');
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching contractor profile:', error);
+                // Keep the localStorage name if API fails
             }
         };
 
-        // Initial load
-        updateContractorName();
+        // Fetch from API (will update if different)
+        fetchContractorProfile();
 
-        // Listen for storage changes
-        window.addEventListener('storage', updateContractorName);
-        
         // Listen for custom profile update event
-        window.addEventListener('profileUpdated', updateContractorName);
+        const handleProfileUpdate = () => {
+            loadNameFromStorage();
+            fetchContractorProfile();
+        };
+
+        window.addEventListener('profileUpdated', handleProfileUpdate);
 
         // Cleanup
         return () => {
-            window.removeEventListener('storage', updateContractorName);
-            window.removeEventListener('profileUpdated', updateContractorName);
+            window.removeEventListener('profileUpdated', handleProfileUpdate);
         };
-    }, [location]);
+    }, []); // Empty dependency array - only run once on mount
 
     useEffect(() => {
         // Fetch notification count
