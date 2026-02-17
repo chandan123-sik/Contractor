@@ -42,6 +42,16 @@ const ContractorRequest = () => {
                     location: app.location,
                     message: app.message,
                     appliedAt: app.appliedAt,
+                    date: new Date(app.appliedAt).toLocaleDateString('en-IN', { 
+                        day: '2-digit', 
+                        month: 'short', 
+                        year: 'numeric' 
+                    }),
+                    time: new Date(app.appliedAt).toLocaleTimeString('en-IN', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: true
+                    }),
                     status: app.status
                 }));
                 

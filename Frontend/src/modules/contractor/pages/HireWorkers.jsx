@@ -400,27 +400,40 @@ const HireWorkers = () => {
                                     >
                                         View Details
                                     </button>
-                                    <button
-                                        onClick={() => handleHireWorker(card)}
-                                        disabled={hiredWorkers[card.id]}
-                                        className={`flex-1 font-bold py-3 rounded-lg transition-all ${
-                                            hiredWorkers[card.id] === 'approved'
-                                                ? 'bg-green-500 text-white cursor-default shadow-lg'
-                                                : hiredWorkers[card.id] === 'declined'
-                                                ? 'bg-gray-400 text-white cursor-not-allowed'
+                                    {hiredWorkers[card.id] === 'approved' ? (
+                                        <>
+                                            <button
+                                                disabled
+                                                className="flex-1 bg-green-500 text-white cursor-default shadow-lg font-bold py-3 rounded-lg"
+                                            >
+                                                ✓ Approved
+                                            </button>
+                                            <button
+                                                onClick={() => alert('Chat feature coming soon!')}
+                                                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-all active:scale-95"
+                                            >
+                                                Chat
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleHireWorker(card)}
+                                            disabled={hiredWorkers[card.id]}
+                                            className={`flex-1 font-bold py-3 rounded-lg transition-all ${
+                                                hiredWorkers[card.id] === 'declined'
+                                                    ? 'bg-gray-400 text-white cursor-not-allowed'
+                                                    : hiredWorkers[card.id] === 'pending'
+                                                    ? 'bg-orange-500 text-white cursor-not-allowed'
+                                                    : 'btn-primary hover:bg-yellow-500 active:scale-95'
+                                            }`}
+                                        >
+                                            {hiredWorkers[card.id] === 'declined'
+                                                ? '✗ Declined'
                                                 : hiredWorkers[card.id] === 'pending'
-                                                ? 'bg-orange-500 text-white cursor-not-allowed'
-                                                : 'btn-primary hover:bg-yellow-500 active:scale-95'
-                                        }`}
-                                    >
-                                        {hiredWorkers[card.id] === 'approved'
-                                            ? '✓ Approved'
-                                            : hiredWorkers[card.id] === 'declined'
-                                            ? '✗ Declined'
-                                            : hiredWorkers[card.id] === 'pending'
-                                            ? '⏳ Request Sent'
-                                            : 'Hire Worker'}
-                                    </button>
+                                                ? '⏳ Request Sent'
+                                                : 'Hire Worker'}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ))}

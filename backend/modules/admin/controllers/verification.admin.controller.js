@@ -241,14 +241,14 @@ export const uploadVerificationDocument = async (req, res) => {
             });
         }
 
-        const result = await uploadToCloudinary(req.file.path, 'verification-documents');
+        // Upload file to Cloudinary
+        const cloudinaryUrl = await uploadToCloudinary(req.file.path, 'rajghar/verification-documents');
 
         res.status(200).json({
             success: true,
             message: 'Document uploaded successfully',
             data: {
-                url: result.secure_url,
-                publicId: result.public_id
+                url: cloudinaryUrl
             }
         });
 
@@ -322,6 +322,27 @@ export const submitVerificationRequest = async (req, res) => {
             });
         }
 
+        // Handle Aadhaar images upload to Cloudinary
+        let uploadedAadhaarFront = aadhaarFrontUrl;
+        let uploadedAadhaarBack = aadhaarBackUrl;
+
+        try {
+            if (aadhaarFrontUrl && aadhaarFrontUrl.startsWith('data:image')) {
+                uploadedAadhaarFront = await uploadToCloudinary(aadhaarFrontUrl, 'rajghar/aadhaar-documents');
+            }
+            
+            if (aadhaarBackUrl && aadhaarBackUrl.startsWith('data:image')) {
+                uploadedAadhaarBack = await uploadToCloudinary(aadhaarBackUrl, 'rajghar/aadhaar-documents');
+            }
+        } catch (error) {
+            console.error('Aadhaar upload error:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to upload Aadhaar documents',
+                error: error.message
+            });
+        }
+
         const verificationRequest = await VerificationRequest.create({
             entityType,
             entityId,
@@ -329,8 +350,8 @@ export const submitVerificationRequest = async (req, res) => {
             name,
             phone,
             aadhaarNumber,
-            aadhaarFrontUrl,
-            aadhaarBackUrl,
+            aadhaarFrontUrl: uploadedAadhaarFront,
+            aadhaarBackUrl: uploadedAadhaarBack,
             trade,
             company
         });

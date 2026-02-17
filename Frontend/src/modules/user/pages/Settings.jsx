@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Hammer, Shield, Phone, HelpCircle, LogOut, MessageSquare, X, History } from 'lucide-react';
+import { User, Hammer, Shield, Phone, HelpCircle, LogOut, MessageSquare, X, History, MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import UserBottomNav from '../components/UserBottomNav';
 import PageHeader from '../components/PageHeader';
@@ -18,6 +18,7 @@ const Settings = () => {
         { icon: Hammer, label: 'My Projects', path: '/user/my-projects', color: 'text-gray-700' },
         { icon: History, label: 'History', path: '/user/history', color: 'text-gray-700' },
         { icon: Shield, label: 'Legal', path: '/user/legal', color: 'text-gray-700' },
+        { icon: MessageCircle, label: 'Chat', path: '/user/chat', color: 'text-gray-700' },
         { icon: Phone, label: 'Contact us', path: '/user/contact-us', color: 'text-gray-700' },
         { icon: HelpCircle, label: 'About us', path: '/user/about-us', color: 'text-gray-700' },
         { icon: MessageSquare, label: 'Feedback and Reports', action: 'feedback', color: 'text-gray-700' },

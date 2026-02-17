@@ -4,6 +4,7 @@ import ProfilePhotoUpload from '../../user/components/ProfilePhotoUpload';
 import FormInput from '../../user/components/FormInput';
 import FormSelect from '../../user/components/FormSelect';
 import FormTextarea from '../../user/components/FormTextarea';
+import { userAPI } from '../../../services/api';
 
 const PersonalDetailsForm = ({ onSave }) => {
     const [formData, setFormData] = useState({
@@ -41,16 +42,77 @@ const PersonalDetailsForm = ({ onSave }) => {
         setFormData(prev => ({ ...prev, profileImage: imageData }));
     };
 
-    const handleSaveChanges = () => {
-        const contractorProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
-        const updatedProfile = {
-            ...contractorProfile,
-            ...formData
-        };
-        localStorage.setItem('contractor_profile', JSON.stringify(updatedProfile));
+    const handleSaveChanges = async () => {
+        try {
+            // Validate required fields
+            if (!formData.firstName.trim()) {
+                toast.error('First name is required');
+                return;
+            }
 
-        toast.success('Personal details updated successfully');
-        if (onSave) onSave();
+            // Check if user has access token
+            const token = localStorage.getItem('access_token');
+            
+            if (!token) {
+                // No token - save to localStorage (fallback)
+                console.log('No access token found, saving to localStorage');
+                const contractorProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
+                const updatedProfile = {
+                    ...contractorProfile,
+                    ...formData
+                };
+                localStorage.setItem('contractor_profile', JSON.stringify(updatedProfile));
+                toast.success('Personal details updated successfully');
+                if (onSave) onSave();
+                return;
+            }
+
+            // Has token - save to backend with Cloudinary
+            console.log('📤 Updating contractor profile with backend API...');
+            
+            const updateData = {
+                firstName: formData.firstName,
+                middleName: formData.middleName,
+                lastName: formData.lastName,
+                gender: formData.gender,
+                state: formData.state,
+                city: formData.city,
+                address: formData.address
+            };
+
+            // Add profile photo if it's base64 (new upload)
+            if (formData.profileImage && formData.profileImage.startsWith('data:image')) {
+                console.log('📸 Profile photo detected (base64), will upload to Cloudinary');
+                updateData.profilePhoto = formData.profileImage;
+            }
+
+            const response = await userAPI.updateProfile(updateData);
+            
+            console.log('✅ Profile updated:', response);
+
+            // Update localStorage with response data
+            if (response.success && response.data.user) {
+                const updatedUser = response.data.user;
+                const contractorProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
+                localStorage.setItem('contractor_profile', JSON.stringify({
+                    ...contractorProfile,
+                    firstName: updatedUser.firstName,
+                    middleName: updatedUser.middleName,
+                    lastName: updatedUser.lastName,
+                    gender: updatedUser.gender,
+                    state: updatedUser.state,
+                    city: updatedUser.city,
+                    address: updatedUser.address,
+                    profileImage: updatedUser.profilePhoto || formData.profileImage
+                }));
+            }
+
+            toast.success('Personal details updated successfully');
+            if (onSave) onSave();
+        } catch (error) {
+            console.error('❌ Error updating profile:', error);
+            toast.error(error.response?.data?.message || 'Failed to update profile');
+        }
     };
 
     const genderOptions = [

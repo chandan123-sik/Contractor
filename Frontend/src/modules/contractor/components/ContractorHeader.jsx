@@ -1,9 +1,9 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Crown, Bell } from 'lucide-react';
 import logo from '../../../assets/Majdoor Sathi.png';
 
-const ContractorHeader = () => {
+const ContractorHeader = memo(() => {
     const navigate = useNavigate();
     const location = useLocation();
     const [contractorName, setContractorName] = useState('');
@@ -188,6 +188,8 @@ const ContractorHeader = () => {
             </div>
         </div>
     );
-};
+});
+
+ContractorHeader.displayName = 'ContractorHeader';
 
 export default ContractorHeader;

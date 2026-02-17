@@ -2,6 +2,7 @@ import Labour from '../models/Labour.model.js';
 import HireRequest from '../models/HireRequest.model.js';
 import User from '../../user/models/User.model.js';
 import Contractor from '../../contractor/models/Contractor.model.js';
+import { uploadToCloudinary, uploadMultipleToCloudinary, deleteFromCloudinary } from '../../../utils/cloudinary.utils.js';
 
 // @desc    Create labour profile during registration
 // @route   POST /api/labour/create-profile
@@ -74,6 +75,23 @@ export const createLabourProfile = async (req, res) => {
             });
         }
 
+        // Handle work photos upload to Cloudinary
+        let uploadedWorkPhotos = [];
+        if (workPhotos && Array.isArray(workPhotos) && workPhotos.length > 0) {
+            try {
+                const base64Images = workPhotos.filter(photo => 
+                    typeof photo === 'string' && photo.startsWith('data:image')
+                );
+                
+                if (base64Images.length > 0) {
+                    uploadedWorkPhotos = await uploadMultipleToCloudinary(base64Images, 'rajghar/work-photos');
+                }
+            } catch (error) {
+                console.error('Work photos upload error:', error);
+                // Continue with profile creation even if photo upload fails
+            }
+        }
+
         // Check if labour profile already exists
         const existingLabour = await Labour.findOne({ user: userId });
         if (existingLabour) {
@@ -88,7 +106,7 @@ export const createLabourProfile = async (req, res) => {
             if (state) existingLabour.state = state;
             if (skillType) existingLabour.skillType = skillType;
             if (experience) existingLabour.experience = experience;
-            if (workPhotos) existingLabour.workPhotos = workPhotos;
+            if (uploadedWorkPhotos.length > 0) existingLabour.workPhotos = uploadedWorkPhotos;
             if (previousWorkLocation) existingLabour.previousWorkLocation = previousWorkLocation;
             await existingLabour.save();
 
@@ -113,7 +131,7 @@ export const createLabourProfile = async (req, res) => {
             state: state || '',
             skillType: skillType || 'Other',
             experience: experience || '',
-            workPhotos: workPhotos || [],
+            workPhotos: uploadedWorkPhotos,
             previousWorkLocation: previousWorkLocation || ''
         });
 
@@ -153,11 +171,41 @@ export const updateWorkDetails = async (req, res) => {
             });
         }
 
-        // Update fields
+        // Handle work photos upload to Cloudinary
+        if (workPhotos && Array.isArray(workPhotos) && workPhotos.length > 0) {
+            try {
+                // Filter only base64 images (new uploads)
+                const base64Images = workPhotos.filter(photo => 
+                    typeof photo === 'string' && photo.startsWith('data:image')
+                );
+                
+                // Keep existing Cloudinary URLs
+                const existingUrls = workPhotos.filter(photo => 
+                    typeof photo === 'string' && photo.includes('cloudinary.com')
+                );
+
+                // Upload new images to Cloudinary
+                let newUrls = [];
+                if (base64Images.length > 0) {
+                    newUrls = await uploadMultipleToCloudinary(base64Images, 'rajghar/work-photos');
+                }
+
+                // Combine existing and new URLs
+                labour.workPhotos = [...existingUrls, ...newUrls];
+            } catch (error) {
+                console.error('Work photos upload error:', error);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Failed to upload work photos',
+                    error: error.message
+                });
+            }
+        }
+
+        // Update other fields
         if (skillType) labour.skillType = skillType;
         if (experience) labour.experience = experience;
         if (previousWorkLocation) labour.previousWorkLocation = previousWorkLocation;
-        if (workPhotos) labour.workPhotos = workPhotos;
         if (availabilityStatus) labour.availabilityStatus = availabilityStatus;
         if (availability) labour.availability = availability;
 
@@ -204,6 +252,29 @@ export const createLabourCard = async (req, res) => {
                 success: false,
                 message: 'Labour profile not found'
             });
+        }
+
+        // Handle labour card photo upload to Cloudinary
+        if (labourCardDetails && labourCardDetails.photo) {
+            if (labourCardDetails.photo.startsWith('data:image')) {
+                try {
+                    // Delete old photo if exists
+                    if (labour.labourCardDetails?.photo && labour.labourCardDetails.photo.includes('cloudinary.com')) {
+                        await deleteFromCloudinary(labour.labourCardDetails.photo);
+                    }
+                    
+                    // Upload new photo to Cloudinary
+                    const cloudinaryUrl = await uploadToCloudinary(labourCardDetails.photo, 'rajghar/labour-cards');
+                    labourCardDetails.photo = cloudinaryUrl;
+                } catch (error) {
+                    console.error('Labour card photo upload error:', error);
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Failed to upload labour card photo',
+                        error: error.message
+                    });
+                }
+            }
         }
 
         // Update labour card details

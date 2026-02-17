@@ -15,8 +15,48 @@ const FindUser = () => {
     const [selectedCity, setSelectedCity] = useState('');
     const [appliedJobs, setAppliedJobs] = useState({});
     const [loading, setLoading] = useState(true);
+    const [isProfileComplete, setIsProfileComplete] = useState(true);
 
     const cities = ['Indore', 'Bhopal', 'Dewas', 'Ujjain', 'Jabalpur', 'Gwalior', 'Ratlam'];
+
+    // Check profile completion status
+    useEffect(() => {
+        checkProfileCompletion();
+    }, []);
+
+    const checkProfileCompletion = async () => {
+        try {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                setIsProfileComplete(false);
+                return;
+            }
+
+            const profileResponse = await fetch('http://localhost:5000/api/contractor/profile', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            const profileData = await profileResponse.json();
+            
+            if (!profileData.success || !profileData.data.contractor) {
+                setIsProfileComplete(false);
+                return;
+            }
+
+            const contractor = profileData.data.contractor;
+            const user = profileData.data.user;
+            
+            const firstName = contractor.firstName || user?.firstName;
+            const lastName = contractor.lastName || user?.lastName;
+            
+            setIsProfileComplete(!!(firstName && lastName));
+        } catch (error) {
+            console.error('Error checking profile completion:', error);
+            setIsProfileComplete(false);
+        }
+    };
 
     // Load jobs from database
     useEffect(() => {
@@ -155,31 +195,68 @@ const FindUser = () => {
     };
 
     const handleApplyNow = async (jobId) => {
-        // Get contractor profile data
-        const contractorProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
-        
-        if (!contractorProfile.firstName || !contractorProfile.lastName) {
-            toast.error('Please complete your profile first', {
-                duration: 3000,
-                position: 'top-center',
-            });
-            return;
-        }
-        
-        // Find the job
-        const job = jobs.find(j => j.id === jobId);
-        if (!job) return;
-        
-        // Get mobile number
-        const mobileNumber = contractorProfile.mobileNumber || localStorage.getItem('mobile_number') || 'Not specified';
-        
         try {
+            console.log('🔵 Applying to job:', jobId);
+            
+            // Fetch fresh profile from database
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                toast.error('Please login first', {
+                    duration: 3000,
+                    position: 'top-center',
+                });
+                return;
+            }
+
+            // Get contractor profile from database
+            const profileResponse = await fetch('http://localhost:5000/api/contractor/profile', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            const profileData = await profileResponse.json();
+            
+            if (!profileData.success || !profileData.data.contractor) {
+                toast.error('Please complete your profile first', {
+                    duration: 3000,
+                    position: 'top-center',
+                });
+                return;
+            }
+
+            const contractor = profileData.data.contractor;
+            const user = profileData.data.user;
+            
+            // Check if profile is complete
+            const firstName = contractor.firstName || user?.firstName;
+            const lastName = contractor.lastName || user?.lastName;
+            const city = contractor.city || user?.city;
+            const mobileNumber = user?.mobileNumber || localStorage.getItem('mobile_number');
+            
+            if (!firstName || !lastName) {
+                toast.error('Please complete your profile first', {
+                    duration: 3000,
+                    position: 'top-center',
+                });
+                return;
+            }
+            
+            console.log('✅ Profile verified:', { firstName, lastName, city });
+            
+            // Find the job
+            const job = jobs.find(j => j.id === jobId);
+            if (!job) {
+                toast.error('Job not found');
+                return;
+            }
+            
             // Submit application to database
             const response = await jobAPI.applyToJob(jobId, {
                 applicantType: 'Contractor',
-                applicantName: `${contractorProfile.firstName} ${contractorProfile.lastName}`,
-                phoneNumber: mobileNumber,
-                location: contractorProfile.city || 'Not specified',
+                applicantName: `${firstName} ${lastName}`,
+                phoneNumber: mobileNumber || 'Not specified',
+                location: city || 'Not specified',
                 message: `I am interested in this ${job.category} job.`
             });
 
@@ -190,10 +267,6 @@ const FindUser = () => {
                     [jobId]: { status: 'Pending', jobId: jobId }
                 };
                 setAppliedJobs(updatedAppliedJobs);
-                
-                // Also save to localStorage as backup
-                const appliedJobIds = Object.keys(updatedAppliedJobs);
-                localStorage.setItem('contractor_applied_jobs', JSON.stringify(appliedJobIds));
                 
                 toast.success('Application sent successfully!', {
                     duration: 3000,
@@ -238,6 +311,16 @@ const FindUser = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
             <ContractorHeader />
+
+            {/* Profile Completion Banner */}
+            {!isProfileComplete && (
+                <div className="bg-red-50 border-l-4 border-red-500 px-4 py-3 mx-4 mt-3 rounded-lg flex items-center gap-2">
+                    <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-red-700 text-sm font-medium">Please complete your profile first</span>
+                </div>
+            )}
 
             {/* Search Bar */}
             <div className="bg-white px-4 py-3 shadow-sm">

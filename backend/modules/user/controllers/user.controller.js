@@ -1,4 +1,5 @@
 import User from '../models/User.model.js';
+import { uploadToCloudinary, deleteFromCloudinary } from '../../../utils/cloudinary.utils.js';
 
 export const getProfile = async (req, res, next) => {
     try {
@@ -23,6 +24,29 @@ export const updateProfile = async (req, res, next) => {
                 updates[key] = req.body[key];
             }
         });
+
+        // Handle profile photo upload to Cloudinary
+        if (updates.profilePhoto && updates.profilePhoto.startsWith('data:image')) {
+            try {
+                const user = await User.findById(req.user._id);
+                
+                // Delete old profile photo from Cloudinary if exists
+                if (user.profilePhoto && user.profilePhoto.includes('cloudinary.com')) {
+                    await deleteFromCloudinary(user.profilePhoto);
+                }
+                
+                // Upload new photo to Cloudinary
+                const cloudinaryUrl = await uploadToCloudinary(updates.profilePhoto, 'rajghar/profiles');
+                updates.profilePhoto = cloudinaryUrl;
+            } catch (error) {
+                console.error('Profile photo upload error:', error);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Failed to upload profile photo',
+                    error: error.message
+                });
+            }
+        }
 
         const user = await User.findByIdAndUpdate(
             req.user._id,

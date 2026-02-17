@@ -25,7 +25,9 @@ const PromotionalBanner = ({ targetAudience = 'ALL' }) => {
                 setAdminBroadcasts(response.data.data.broadcasts);
             }
         } catch (error) {
-            console.error('Error fetching broadcasts:', error);
+            // Silently handle error - just use default banners
+            console.log('Broadcasts not available, using default banners');
+            setAdminBroadcasts([]); // Use empty array to show default banners
         } finally {
             setLoading(false);
         }

@@ -121,7 +121,11 @@ const FindContractor = () => {
             if (response.success && response.data.jobs) {
                 console.log('📦 Raw API response:', response.data.jobs);
                 
-                const dbJobs = response.data.jobs.map(job => ({
+                // Filter only Active status cards
+                const activeJobs = response.data.jobs.filter(job => job.profileStatus === 'Active');
+                console.log('✅ Filtered Active jobs:', activeJobs.length, 'out of', response.data.jobs.length);
+                
+                const dbJobs = activeJobs.map(job => ({
                     id: job._id,
                     contractorName: job.contractorName,
                     phoneNumber: job.phoneNumber,
@@ -138,15 +142,16 @@ const FindContractor = () => {
                     budgetAmount: job.budgetAmount,
                     rating: job.rating || 0,
                     profileStatus: job.profileStatus,
-                    availabilityStatus: job.profileStatus === 'Active' ? 'Available' : 'Closed',
+                    availabilityStatus: 'Available', // Always Available since we filtered Active only
                     createdAt: job.createdAt
                 }));
                 
                 console.log('🔄 Mapped contractor jobs:', dbJobs);
                 
-                // Merge with localStorage
-                const localCards = JSON.parse(localStorage.getItem('contractor_cards_for_user') || '[]');
-                console.log('💾 LocalStorage cards:', localCards.length);
+                // Merge with localStorage (also filter Active only)
+                const localCards = JSON.parse(localStorage.getItem('contractor_cards_for_user') || '[]')
+                    .filter(card => card.availabilityStatus === 'Available');
+                console.log('💾 LocalStorage cards (Available only):', localCards.length);
                 
                 // Combine and remove duplicates
                 const allCards = [...dbJobs, ...localCards];

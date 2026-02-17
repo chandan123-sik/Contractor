@@ -6,6 +6,7 @@ import ProfilePhotoUpload from '../components/ProfilePhotoUpload';
 import FormInput from '../components/FormInput';
 import FormSelect from '../components/FormSelect';
 import FormTextarea from '../components/FormTextarea';
+import { userAPI } from '../../../services/api';
 
 const PersonalDetails = () => {
     const navigate = useNavigate();
@@ -44,16 +45,75 @@ const PersonalDetails = () => {
         setFormData(prev => ({ ...prev, profileImage: imageData }));
     };
 
-    const handleSaveChanges = () => {
-        const userProfile = JSON.parse(localStorage.getItem('user_profile') || '{}');
-        const updatedProfile = {
-            ...userProfile,
-            ...formData
-        };
-        localStorage.setItem('user_profile', JSON.stringify(updatedProfile));
+    const handleSaveChanges = async () => {
+        try {
+            // Validate required fields
+            if (!formData.firstName.trim()) {
+                toast.error('First name is required');
+                return;
+            }
 
-        toast.success('Personal details updated successfully');
-        navigate('/user/settings');
+            // Check if user has access token
+            const token = localStorage.getItem('access_token');
+            
+            if (!token) {
+                // No token - save to localStorage (fallback)
+                console.log('No access token found, saving to localStorage');
+                const userProfile = JSON.parse(localStorage.getItem('user_profile') || '{}');
+                const updatedProfile = {
+                    ...userProfile,
+                    ...formData
+                };
+                localStorage.setItem('user_profile', JSON.stringify(updatedProfile));
+                toast.success('Personal details updated successfully');
+                navigate('/user/settings');
+                return;
+            }
+
+            // Has token - save to backend with Cloudinary
+            console.log('📤 Updating user profile with backend API...');
+            
+            const updateData = {
+                firstName: formData.firstName,
+                middleName: formData.middleName,
+                lastName: formData.lastName,
+                gender: formData.gender,
+                state: formData.state,
+                city: formData.city,
+                address: formData.address
+            };
+
+            // Add profile photo if it's base64 (new upload)
+            if (formData.profileImage && formData.profileImage.startsWith('data:image')) {
+                console.log('📸 Profile photo detected (base64), will upload to Cloudinary');
+                updateData.profilePhoto = formData.profileImage;
+            }
+
+            const response = await userAPI.updateProfile(updateData);
+            
+            console.log('✅ Profile updated:', response);
+
+            // Update localStorage with response data
+            if (response.success && response.data.user) {
+                const updatedUser = response.data.user;
+                localStorage.setItem('user_profile', JSON.stringify({
+                    firstName: updatedUser.firstName,
+                    middleName: updatedUser.middleName,
+                    lastName: updatedUser.lastName,
+                    gender: updatedUser.gender,
+                    state: updatedUser.state,
+                    city: updatedUser.city,
+                    address: updatedUser.address,
+                    profileImage: updatedUser.profilePhoto || formData.profileImage
+                }));
+            }
+
+            toast.success('Personal details updated successfully');
+            navigate('/user/settings');
+        } catch (error) {
+            console.error('❌ Error updating profile:', error);
+            toast.error(error.response?.data?.message || 'Failed to update profile');
+        }
     };
 
     const genderOptions = [

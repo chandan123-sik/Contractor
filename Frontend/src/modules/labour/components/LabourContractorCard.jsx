@@ -105,21 +105,46 @@ const LabourContractorCard = ({ card, onViewDetails, onApplyNow, index = 0, appl
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
-                <button
-                    onClick={() => onViewDetails(card)}
-                    className="flex-1 btn-secondary"
-                >
-                    View Details
-                </button>
-                <button
-                    onClick={() => !buttonConfig.disabled && onApplyNow(card.id)}
-                    className={buttonConfig.className}
-                    disabled={buttonConfig.disabled}
-                >
-                    {buttonConfig.text}
-                </button>
-            </div>
+            {applicationStatus?.status === 'Accepted' ? (
+                <div className="space-y-2">
+                    <button
+                        onClick={() => onViewDetails(card)}
+                        className="w-full btn-secondary py-2.5"
+                    >
+                        View Details
+                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            disabled
+                            className="flex-1 bg-green-500 text-white cursor-default shadow-md font-semibold py-2 rounded-lg text-sm"
+                        >
+                            ✓ Approved
+                        </button>
+                        <button
+                            onClick={() => alert('Chat feature coming soon!')}
+                            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition-all active:scale-95 text-sm"
+                        >
+                            💬 Chat
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => onViewDetails(card)}
+                        className="flex-1 btn-secondary py-2.5"
+                    >
+                        View Details
+                    </button>
+                    <button
+                        onClick={() => !buttonConfig.disabled && onApplyNow(card.id)}
+                        className={buttonConfig.className}
+                        disabled={buttonConfig.disabled}
+                    >
+                        {buttonConfig.text}
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

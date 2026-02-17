@@ -26,6 +26,8 @@ import AboutUs from '../modules/user/pages/AboutUs';
 import Subscription from '../modules/user/pages/Subscription';
 import Notifications from '../modules/user/pages/Notifications';
 import UserHistory from '../modules/user/pages/History';
+import UserChat from '../modules/user/pages/Chat';
+import UserChatConversation from '../modules/user/pages/ChatConversation';
 
 // Contractor Pages
 import ContractorHome from '../modules/contractor/pages/ContractorHome';
@@ -46,6 +48,8 @@ import ContractorContactUs from '../modules/contractor/pages/ContactUs';
 import ContractorNotifications from '../modules/contractor/pages/Notifications';
 import ContractorSubscription from '../modules/contractor/pages/Subscription';
 import ContractorHistory from '../modules/contractor/pages/History';
+import ContractorChatList from '../modules/contractor/pages/ChatList';
+import ContractorChatConversation from '../modules/contractor/pages/ChatConversation';
 
 // Labour Pages
 import LabourDetails from '../modules/labour/pages/LabourDetails';
@@ -67,6 +71,8 @@ import LabourSubscription from '../modules/labour/pages/Subscription';
 import CreateLabourCard from '../modules/labour/pages/CreateLabourCard';
 import LabourMyCard from '../modules/labour/pages/LabourMyCard';
 import History from '../modules/labour/pages/History';
+import LabourChatList from '../modules/labour/pages/ChatList';
+import LabourChatConversation from '../modules/labour/pages/ChatConversation';
 
 // Admin Pages
 import AdminLogin from '../modules/admin/pages/AdminLogin';
@@ -119,6 +125,8 @@ const AppRoutes = () => {
             <Route path="/user/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
             <Route path="/user/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/user/history" element={<ProtectedRoute><UserHistory /></ProtectedRoute>} />
+            <Route path="/user/chat" element={<ProtectedRoute><UserChat /></ProtectedRoute>} />
+            <Route path="/user/chat/:id" element={<ProtectedRoute><UserChatConversation /></ProtectedRoute>} />
 
             {/* Contractor Module Routes - Protected */}
             <Route path="/contractor/home" element={<ProtectedRoute><ContractorHome /></ProtectedRoute>} />
@@ -139,6 +147,8 @@ const AppRoutes = () => {
             <Route path="/contractor/notifications" element={<ProtectedRoute><ContractorNotifications /></ProtectedRoute>} />
             <Route path="/contractor/subscription" element={<ProtectedRoute><ContractorSubscription /></ProtectedRoute>} />
             <Route path="/contractor/history" element={<ProtectedRoute><ContractorHistory /></ProtectedRoute>} />
+            <Route path="/contractor/chat" element={<ProtectedRoute><ContractorChatList /></ProtectedRoute>} />
+            <Route path="/contractor/chat/:id" element={<ProtectedRoute><ContractorChatConversation /></ProtectedRoute>} />
 
             {/* Labour Module Routes - Protected */}
             <Route path="/labour/home" element={<ProtectedRoute><LabourDashboard /></ProtectedRoute>} />
@@ -161,6 +171,8 @@ const AppRoutes = () => {
             <Route path="/labour/create-card" element={<ProtectedRoute><CreateLabourCard /></ProtectedRoute>} />
             <Route path="/labour/my-card" element={<ProtectedRoute><LabourMyCard /></ProtectedRoute>} />
             <Route path="/labour/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+            <Route path="/labour/chat" element={<ProtectedRoute><LabourChatList /></ProtectedRoute>} />
+            <Route path="/labour/chat/:id" element={<ProtectedRoute><LabourChatConversation /></ProtectedRoute>} />
 
             {/* Admin Module Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Hammer, Clock, MapPin, Upload, Star } from 'lucide-react';
 import LabourBottomNav from '../components/LabourBottomNav';
 import toast from 'react-hot-toast';
+import { labourAPI } from '../../../services/api';
 
 const LabourWorkDetails = () => {
     const navigate = useNavigate();
@@ -72,29 +73,84 @@ const LabourWorkDetails = () => {
         setFormData(prev => ({ ...prev, rating }));
     };
 
-    const handleSaveWorkDetails = () => {
+    const handleSaveWorkDetails = async () => {
         if (!formData.skillType) {
             toast.error('Please select a skill type');
             return;
         }
 
-        // Update localStorage
-        const existingProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
-        const updatedProfile = {
-            ...existingProfile,
-            skillType: formData.skillType,
-            experience: formData.experience,
-            previousWorkLocation: formData.previousWorkLocation,
-            workPhotos: formData.workPhotos,
-            rating: formData.rating,
-            availability: formData.availability
-        };
-        localStorage.setItem('labour_profile', JSON.stringify(updatedProfile));
-        
-        // Dispatch event to update header
-        window.dispatchEvent(new Event('profileUpdated'));
-        
-        toast.success('Work details saved successfully!');
+        try {
+            // Check if user has access token
+            const token = localStorage.getItem('access_token');
+            
+            if (!token) {
+                // No token - save to localStorage (fallback)
+                console.log('No access token found, saving to localStorage');
+                const existingProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
+                const updatedProfile = {
+                    ...existingProfile,
+                    skillType: formData.skillType,
+                    experience: formData.experience,
+                    previousWorkLocation: formData.previousWorkLocation,
+                    workPhotos: formData.workPhotos,
+                    rating: formData.rating,
+                    availability: formData.availability
+                };
+                localStorage.setItem('labour_profile', JSON.stringify(updatedProfile));
+                window.dispatchEvent(new Event('profileUpdated'));
+                toast.success('Work details saved successfully!');
+                return;
+            }
+
+            // Has token - save to backend with Cloudinary
+            console.log('📤 Updating work details with backend API...');
+            
+            const updateData = {
+                skillType: formData.skillType,
+                experience: formData.experience,
+                previousWorkLocation: formData.previousWorkLocation,
+                rating: formData.rating,
+                availability: formData.availability
+            };
+
+            // Filter work photos - separate new uploads (base64) from existing URLs
+            const newPhotos = formData.workPhotos.filter(photo => photo.startsWith('data:image'));
+            const existingPhotos = formData.workPhotos.filter(photo => !photo.startsWith('data:image'));
+
+            if (newPhotos.length > 0) {
+                console.log(`📸 ${newPhotos.length} new work photos detected, will upload to Cloudinary`);
+                updateData.workPhotos = formData.workPhotos; // Send all photos, backend will handle filtering
+            } else if (existingPhotos.length > 0) {
+                updateData.workPhotos = existingPhotos; // Keep existing photos
+            }
+
+            const response = await labourAPI.updateWorkDetails(updateData);
+            
+            console.log('✅ Work details updated:', response);
+
+            // Update localStorage with response data
+            if (response.success && response.data.labour) {
+                const updatedLabour = response.data.labour;
+                const existingProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
+                localStorage.setItem('labour_profile', JSON.stringify({
+                    ...existingProfile,
+                    skillType: updatedLabour.skillType,
+                    experience: updatedLabour.experience,
+                    previousWorkLocation: updatedLabour.previousWorkLocation,
+                    workPhotos: updatedLabour.workPhotos || formData.workPhotos,
+                    rating: updatedLabour.rating,
+                    availability: updatedLabour.availability
+                }));
+            }
+            
+            // Dispatch event to update header
+            window.dispatchEvent(new Event('profileUpdated'));
+            
+            toast.success('Work details saved successfully!');
+        } catch (error) {
+            console.error('❌ Error updating work details:', error);
+            toast.error(error.response?.data?.message || 'Failed to update work details');
+        }
     };
 
     return (

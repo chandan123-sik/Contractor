@@ -101,21 +101,46 @@ const ContractorJobCard = ({ job, onViewDetails, onApplyNow, appliedJobs = {}, i
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
-                <button
-                    onClick={() => onViewDetails(job)}
-                    className="flex-1 btn-secondary"
-                >
-                    View Details
-                </button>
-                <button
-                    onClick={handleApplyClick}
-                    disabled={job.status !== 'Open' || isApplied}
-                    className={`flex-1 font-bold py-2 rounded-lg transition-all duration-200 ease-out ${buttonClass}`}
-                >
-                    {buttonText}
-                </button>
-            </div>
+            {applicationStatus === 'Accepted' ? (
+                <div className="space-y-2">
+                    <button
+                        onClick={() => onViewDetails(job)}
+                        className="w-full btn-secondary py-2.5"
+                    >
+                        View Details
+                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            disabled
+                            className="flex-1 bg-green-500 text-white cursor-default shadow-md font-semibold py-2 rounded-lg text-sm"
+                        >
+                            ✓ Approved
+                        </button>
+                        <button
+                            onClick={() => alert('Chat feature coming soon!')}
+                            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition-all active:scale-95 text-sm"
+                        >
+                            💬 Chat
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => onViewDetails(job)}
+                        className="flex-1 btn-secondary py-2.5"
+                    >
+                        View Details
+                    </button>
+                    <button
+                        onClick={handleApplyClick}
+                        disabled={job.status !== 'Open' || isApplied}
+                        className={`flex-1 font-bold py-2.5 rounded-lg transition-all duration-200 ease-out ${buttonClass}`}
+                    >
+                        {buttonText}
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

@@ -263,25 +263,67 @@ const MyProjectForUser = () => {
         setSelectedCard(null);
     };
 
-    const handleToggleAvailability = (cardId) => {
-        const updatedCards = cards.map(card => {
-            if (card.id === cardId) {
-                const newStatus = card.availabilityStatus === 'Available' ? 'Busy' : 'Available';
-                console.log(`🔄 Toggling card ${cardId} from ${card.availabilityStatus} to ${newStatus}`); // Debug
-                return {
-                    ...card,
-                    availabilityStatus: newStatus
-                };
+    const handleToggleAvailability = async (cardId) => {
+        const card = cards.find(c => c.id === cardId);
+        if (!card) return;
+        
+        const newStatus = card.availabilityStatus === 'Available' ? 'Busy' : 'Available';
+        const newProfileStatus = newStatus === 'Available' ? 'Active' : 'Closed';
+        
+        console.log(`🔄 Toggling card ${cardId} from ${card.availabilityStatus} to ${newStatus}`);
+        
+        try {
+            const token = localStorage.getItem('access_token');
+            
+            if (token) {
+                // Update in database
+                const response = await contractorAPI.updateContractorJob(cardId, {
+                    profileStatus: newProfileStatus
+                });
+                
+                if (response.success) {
+                    console.log('✅ Status updated in database');
+                    
+                    // Update local state
+                    const updatedCards = cards.map(c => {
+                        if (c.id === cardId) {
+                            return {
+                                ...c,
+                                availabilityStatus: newStatus,
+                                profileStatus: newProfileStatus
+                            };
+                        }
+                        return c;
+                    });
+                    
+                    setCards(updatedCards);
+                    toast.success(`Status changed to ${newStatus}`);
+                } else {
+                    throw new Error('Failed to update status');
+                }
+            } else {
+                // Fallback to localStorage
+                const updatedCards = cards.map(c => {
+                    if (c.id === cardId) {
+                        return {
+                            ...c,
+                            availabilityStatus: newStatus
+                        };
+                    }
+                    return c;
+                });
+                
+                setCards(updatedCards);
+                localStorage.setItem('contractor_cards_for_user', JSON.stringify(updatedCards));
+                console.log('💾 Saved updated cards to localStorage:', updatedCards);
             }
-            return card;
-        });
-        
-        setCards(updatedCards);
-        localStorage.setItem('contractor_cards_for_user', JSON.stringify(updatedCards));
-        console.log('💾 Saved updated cards to localStorage:', updatedCards); // Debug
-        
-        // Trigger a custom event to notify other tabs/windows
-        window.dispatchEvent(new Event('storage'));
+            
+            // Trigger a custom event to notify other tabs/windows
+            window.dispatchEvent(new Event('storage'));
+        } catch (error) {
+            console.error('❌ Error updating availability status:', error);
+            toast.error('Failed to update status. Please try again.');
+        }
     };
 
     return (

@@ -1,4 +1,5 @@
 import LabourCategory from '../models/LabourCategory.model.js';
+import { uploadToCloudinary, deleteFromCloudinary } from '../../../utils/cloudinary.utils.js';
 
 // @desc    Get all labour categories
 // @route   GET /api/admin/labour-categories
@@ -55,7 +56,23 @@ export const getCategoryById = async (req, res) => {
 // @access  Private (SUPER_ADMIN, ADMIN_LABOUR)
 export const createCategory = async (req, res) => {
     try {
+        console.log('\n🟢 ===== CREATE CATEGORY =====');
+        console.log('📦 Request Body:', { 
+            name: req.body.name, 
+            hasImage: !!req.body.image,
+            imageLength: req.body.image?.length 
+        });
+        
         const { name, image } = req.body;
+
+        // Validate name
+        if (!name || !name.trim()) {
+            console.log('❌ Category name is required');
+            return res.status(400).json({
+                success: false,
+                message: 'Category name is required'
+            });
+        }
 
         // Check if category exists
         const existingCategory = await LabourCategory.findOne({ 
@@ -63,17 +80,49 @@ export const createCategory = async (req, res) => {
         });
 
         if (existingCategory) {
+            console.log('❌ Category already exists:', name);
             return res.status(400).json({
                 success: false,
                 message: 'Category with this name already exists'
             });
         }
 
+        // Handle category image
+        let categoryImage = 'https://cdn-icons-png.flaticon.com/512/4825/4825038.png'; // Default
+        
+        if (image) {
+            if (image.startsWith('data:image')) {
+                // Base64 image - upload to Cloudinary
+                console.log('📤 Uploading base64 image to Cloudinary...');
+                try {
+                    categoryImage = await uploadToCloudinary(image, 'rajghar/categories');
+                    console.log('✅ Image uploaded successfully:', categoryImage);
+                } catch (uploadError) {
+                    console.error('❌ Cloudinary upload failed:', uploadError.message);
+                    // Don't fail the whole request, use default image
+                    console.log('⚠️ Using default image instead');
+                    categoryImage = 'https://cdn-icons-png.flaticon.com/512/4825/4825038.png';
+                }
+            } else if (image.startsWith('http')) {
+                // URL provided
+                console.log('🔗 Using provided URL:', image);
+                categoryImage = image;
+            } else {
+                console.log('⚠️ Invalid image format, using default');
+            }
+        } else {
+            console.log('🎨 No image provided, using default icon');
+        }
+
+        // Create category
         const category = await LabourCategory.create({
-            name,
-            image: image || 'https://cdn-icons-png.flaticon.com/512/4825/4825038.png',
+            name: name.trim(),
+            image: categoryImage,
             createdBy: req.admin._id
         });
+
+        console.log('✅ Category created successfully:', category._id);
+        console.log('===========================\n');
 
         res.status(201).json({
             success: true,
@@ -82,6 +131,10 @@ export const createCategory = async (req, res) => {
         });
 
     } catch (error) {
+        console.error('❌ CREATE CATEGORY ERROR:', error);
+        console.error('Error stack:', error.stack);
+        console.log('===========================\n');
+        
         res.status(500).json({
             success: false,
             message: 'Server error creating category',
@@ -107,7 +160,31 @@ export const updateCategory = async (req, res) => {
         }
 
         if (name !== undefined) category.name = name;
-        if (image !== undefined) category.image = image;
+        
+        // Handle category image update
+        if (image !== undefined) {
+            if (image.startsWith('data:image')) {
+                try {
+                    // Delete old image if it's from Cloudinary
+                    if (category.image && category.image.includes('cloudinary.com')) {
+                        await deleteFromCloudinary(category.image);
+                    }
+                    
+                    // Upload new image
+                    category.image = await uploadToCloudinary(image, 'rajghar/categories');
+                } catch (error) {
+                    console.error('Category image upload error:', error);
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Failed to upload category image',
+                        error: error.message
+                    });
+                }
+            } else {
+                category.image = image;
+            }
+        }
+        
         if (isActive !== undefined) category.isActive = isActive;
 
         await category.save();
@@ -146,6 +223,15 @@ export const deleteCategory = async (req, res) => {
                 success: false,
                 message: 'Category not found'
             });
+        }
+
+        // Delete category image from Cloudinary if exists
+        if (category.image && category.image.includes('cloudinary.com')) {
+            try {
+                await deleteFromCloudinary(category.image);
+            } catch (error) {
+                console.error('Failed to delete category image from Cloudinary:', error);
+            }
         }
 
         await category.deleteOne();

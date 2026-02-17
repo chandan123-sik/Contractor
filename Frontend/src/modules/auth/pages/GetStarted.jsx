@@ -1,53 +1,114 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Users, Briefcase, MapPin } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 const GetStarted = () => {
     const navigate = useNavigate();
+    const [currentSlide, setCurrentSlide] = useState(0);
+    const [displayText, setDisplayText] = useState('');
+    const [isTyping, setIsTyping] = useState(true);
+
+    // Real construction/labour related images - contractors, workers, materials
+    const backgroundImages = [
+        {
+            url: "https://images.unsplash.com/photo-1621905251918-48416bd8575a?q=80&w=2069&auto=format&fit=crop",
+            alt: "Construction Workers Team",
+            text: "Find Skilled Workers"
+        },
+        {
+            url: "https://static.vecteezy.com/system/resources/previews/002/439/960/non_2x/businessman-and-engineer-looking-at-a-building-blueprint-at-a-high-rise-building-construction-site-free-photo.jpg",
+            alt: "Contractor at Construction Site",
+            text: "Hire Contractors"
+        },
+        {
+            url: "https://images.unsplash.com/photo-1513467535987-fd81bc7d62f8?q=80&w=2072&auto=format&fit=crop",
+            alt: "Construction Materials",
+            text: "Build Your Dream"
+        },
+        {
+            url: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?q=80&w=2070&auto=format&fit=crop",
+            alt: "Workers at Construction Site",
+            text: "Expert Labour Force"
+        },
+        {
+            url: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=2076&auto=format&fit=crop",
+            alt: "Building Construction Work",
+            text: "Quality Construction"
+        }
+    ];
+
+    // Typewriter effect
+    useEffect(() => {
+        const currentText = backgroundImages[currentSlide].text;
+        let charIndex = 0;
+        setDisplayText('');
+        setIsTyping(true);
+
+        const typingInterval = setInterval(() => {
+            if (charIndex < currentText.length) {
+                setDisplayText(currentText.substring(0, charIndex + 1));
+                charIndex++;
+            } else {
+                setIsTyping(false);
+                clearInterval(typingInterval);
+            }
+        }, 100); // 100ms per character
+
+        return () => clearInterval(typingInterval);
+    }, [currentSlide]);
+
+    // Auto-scroll every 4 seconds
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentSlide((prev) => (prev + 1) % backgroundImages.length);
+        }, 4000);
+
+        return () => clearInterval(interval);
+    }, [backgroundImages.length]);
 
     return (
         <div className="h-screen flex flex-col relative bg-gradient-to-br from-gray-900 to-gray-800 overflow-hidden">
-            {/* Background Image Section with Overlay */}
+            {/* Background Image Carousel Section with Overlay */}
             <div className="flex-1 relative">
-                <img
-                    src="https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?q=80&w=2070&auto=format&fit=crop"
-                    alt="Professional Worker"
-                    className="w-full h-full object-cover"
-                />
+                {/* Image Slides */}
+                {backgroundImages.map((image, index) => (
+                    <img
+                        key={index}
+                        src={image.url}
+                        alt={image.alt}
+                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+                            index === currentSlide ? 'opacity-100' : 'opacity-0'
+                        }`}
+                    />
+                ))}
+                
                 {/* Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/60"></div>
+
+                {/* Animated Typewriter Text - Top Left */}
+                <div className="absolute top-8 left-6 z-10">
+                    <h2
+                        className="text-2xl md:text-3xl font-bold text-white"
+                        style={{
+                            textShadow: '2px 2px 8px rgba(0,0,0,0.8)'
+                        }}
+                    >
+                        {displayText}
+                        <span className={`${isTyping ? 'animate-pulse' : 'opacity-0'}`}>|</span>
+                    </h2>
+                </div>
             </div>
 
-            {/* Enhanced Bottom Section */}
-            <div className="bg-gradient-to-br from-amber-400 via-amber-500 to-yellow-500 p-8 pt-10 pb-12 rounded-t-[2.5rem] -mt-12 relative z-10 shadow-2xl">
+            {/* Bottom Section - Compact */}
+            <div className="bg-gradient-to-br from-amber-400 via-amber-500 to-yellow-500 p-6 pt-8 pb-10 rounded-t-[2.5rem] -mt-12 relative z-10 shadow-2xl">
                 {/* Decorative Element */}
                 <div className="absolute top-3 left-1/2 transform -translate-x-1/2 w-12 h-1.5 bg-white/30 rounded-full"></div>
                 
                 <div className="flex flex-col items-center text-center">
-                    {/* Main Heading */}
-                    <h1 className="text-2xl md:text-3xl font-extrabold text-white mb-3 leading-tight tracking-tight">
+                    {/* Slogan */}
+                    <h1 className="text-xl md:text-2xl font-bold text-white mb-6 leading-tight">
                         Your All-in-One Hiring Solution
                     </h1>
-                    
-                    {/* Subtitle */}
-                    <p className="text-white/95 text-base mb-8 px-2 max-w-md leading-relaxed font-medium">
-                        Find and hire the best talent for your work from anywhere in India.
-                    </p>
-
-                    {/* Feature Pills */}
-                    <div className="flex flex-wrap justify-center gap-3 mb-8">
-                        <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
-                            <Users className="w-4 h-4 text-white" />
-                            <span className="text-white text-sm font-semibold">Verified Workers</span>
-                        </div>
-                        <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
-                            <Briefcase className="w-4 h-4 text-white" />
-                            <span className="text-white text-sm font-semibold">Quick Hiring</span>
-                        </div>
-                        <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
-                            <MapPin className="w-4 h-4 text-white" />
-                            <span className="text-white text-sm font-semibold">Pan India</span>
-                        </div>
-                    </div>
 
                     {/* CTA Button */}
                     <button
@@ -58,10 +119,21 @@ const GetStarted = () => {
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
                     </button>
 
-                    {/* Additional Info */}
-                    <p className="text-white/80 text-xs mt-6 font-medium">
-                        Join thousands of satisfied employers
-                    </p>
+                    {/* Dots Indicator - Below Button */}
+                    <div className="flex gap-2 mt-6">
+                        {backgroundImages.map((_, index) => (
+                            <button
+                                key={index}
+                                onClick={() => setCurrentSlide(index)}
+                                className={`h-2 rounded-full transition-all duration-300 ${
+                                    index === currentSlide 
+                                        ? 'bg-white w-8' 
+                                        : 'bg-white/50 w-2 hover:bg-white/75'
+                                }`}
+                                aria-label={`Go to slide ${index + 1}`}
+                            />
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>

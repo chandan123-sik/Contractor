@@ -1,22 +1,38 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Crown, Bell } from 'lucide-react';
 import logo from '../../../assets/Majdoor Sathi.png';
 
-const LabourHeader = () => {
+const LabourHeader = memo(() => {
     const navigate = useNavigate();
     const location = useLocation();
     const [labourName, setLabourName] = useState('');
     const [notificationCount, setNotificationCount] = useState(0);
 
     useEffect(() => {
-        // Fetch labour profile from database
+        // Load name from localStorage immediately for instant display
+        const loadNameFromStorage = () => {
+            try {
+                const profile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
+                if (profile.firstName) {
+                    setLabourName(profile.firstName);
+                    return true;
+                }
+            } catch (error) {
+                console.error('Error reading labour profile from localStorage:', error);
+            }
+            return false;
+        };
+
+        // Load from localStorage first (instant display, no flash)
+        loadNameFromStorage();
+
+        // Fetch labour profile from API to sync
         const fetchLabourProfile = async () => {
             try {
                 const token = localStorage.getItem('access_token');
                 if (!token) {
                     console.log('No access token found');
-                    setLabourName('Labour');
                     return;
                 }
 
@@ -39,27 +55,35 @@ const LabourHeader = () => {
                     if (firstName) {
                         setLabourName(firstName);
                         console.log('✅ Name set:', firstName);
+                        
+                        // Update localStorage for next time
+                        try {
+                            const existingProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
+                            existingProfile.firstName = firstName;
+                            localStorage.setItem('labour_profile', JSON.stringify(existingProfile));
+                        } catch (error) {
+                            console.error('Error updating localStorage:', error);
+                        }
                     } else {
                         // Fallback to mobile number
                         const mobileNumber = localStorage.getItem('mobile_number');
                         setLabourName(mobileNumber ? `Labour ${mobileNumber.slice(-4)}` : 'Labour');
                         console.log('⚠️ No firstName found, using fallback');
                     }
-                } else {
-                    setLabourName('Labour');
                 }
             } catch (error) {
                 console.error('❌ Error fetching labour profile:', error);
-                setLabourName('Labour');
+                // Keep the localStorage name if API fails
             }
         };
 
-        // Fetch from database
+        // Fetch from API (will update if different)
         fetchLabourProfile();
 
         // Listen for profile update events
         const handleProfileUpdate = () => {
             console.log('📢 Profile update event received');
+            loadNameFromStorage();
             fetchLabourProfile();
         };
 
@@ -155,6 +179,8 @@ const LabourHeader = () => {
             </div>
         </div>
     );
-};
+});
+
+LabourHeader.displayName = 'LabourHeader';
 
 export default LabourHeader;

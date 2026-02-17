@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, User } from 'lucide-react';
 import LabourBottomNav from '../components/LabourBottomNav';
 import toast from 'react-hot-toast';
+import { userAPI } from '../../../services/api';
 
 const LabourPersonalDetails = () => {
     const navigate = useNavigate();
@@ -55,7 +56,7 @@ const LabourPersonalDetails = () => {
         }
     };
 
-    const handleSaveChanges = () => {
+    const handleSaveChanges = async () => {
         if (!formData.firstName.trim()) {
             toast.error('First name is required');
             return;
@@ -66,26 +67,82 @@ const LabourPersonalDetails = () => {
             return;
         }
 
-        // Update localStorage
-        const existingProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
-        const updatedProfile = {
-            ...existingProfile,
-            photo: formData.profileImage,
-            firstName: formData.firstName,
-            middleName: formData.middleName,
-            lastName: formData.lastName,
-            gender: formData.gender,
-            dob: formData.dob,
-            state: formData.state,
-            city: formData.city,
-            address: formData.address
-        };
-        localStorage.setItem('labour_profile', JSON.stringify(updatedProfile));
-        
-        // Dispatch event to update header
-        window.dispatchEvent(new Event('profileUpdated'));
-        
-        toast.success('Changes saved successfully!');
+        try {
+            // Check if user has access token
+            const token = localStorage.getItem('access_token');
+            
+            if (!token) {
+                // No token - save to localStorage (fallback)
+                console.log('No access token found, saving to localStorage');
+                const existingProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
+                const updatedProfile = {
+                    ...existingProfile,
+                    photo: formData.profileImage,
+                    firstName: formData.firstName,
+                    middleName: formData.middleName,
+                    lastName: formData.lastName,
+                    gender: formData.gender,
+                    dob: formData.dob,
+                    state: formData.state,
+                    city: formData.city,
+                    address: formData.address
+                };
+                localStorage.setItem('labour_profile', JSON.stringify(updatedProfile));
+                window.dispatchEvent(new Event('profileUpdated'));
+                toast.success('Changes saved successfully!');
+                return;
+            }
+
+            // Has token - save to backend with Cloudinary
+            console.log('📤 Updating labour profile with backend API...');
+            
+            const updateData = {
+                firstName: formData.firstName,
+                middleName: formData.middleName,
+                lastName: formData.lastName,
+                gender: formData.gender,
+                dob: formData.dob,
+                state: formData.state,
+                city: formData.city,
+                address: formData.address
+            };
+
+            // Add profile photo if it's base64 (new upload)
+            if (formData.profileImage && formData.profileImage.startsWith('data:image')) {
+                console.log('📸 Profile photo detected (base64), will upload to Cloudinary');
+                updateData.profilePhoto = formData.profileImage;
+            }
+
+            const response = await userAPI.updateProfile(updateData);
+            
+            console.log('✅ Profile updated:', response);
+
+            // Update localStorage with response data
+            if (response.success && response.data.user) {
+                const updatedUser = response.data.user;
+                const existingProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
+                localStorage.setItem('labour_profile', JSON.stringify({
+                    ...existingProfile,
+                    photo: updatedUser.profilePhoto || formData.profileImage,
+                    firstName: updatedUser.firstName,
+                    middleName: updatedUser.middleName,
+                    lastName: updatedUser.lastName,
+                    gender: updatedUser.gender,
+                    dob: updatedUser.dob,
+                    state: updatedUser.state,
+                    city: updatedUser.city,
+                    address: updatedUser.address
+                }));
+            }
+            
+            // Dispatch event to update header
+            window.dispatchEvent(new Event('profileUpdated'));
+            
+            toast.success('Changes saved successfully!');
+        } catch (error) {
+            console.error('❌ Error updating profile:', error);
+            toast.error(error.response?.data?.message || 'Failed to update profile');
+        }
     };
 
     return (

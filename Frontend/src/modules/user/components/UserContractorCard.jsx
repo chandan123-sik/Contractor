@@ -63,35 +63,56 @@ const UserContractorCard = ({ card, onViewDetails, onApplyNow, index = 0, hiredS
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
-                <button
-                    onClick={() => onViewDetails(card)}
-                    className="btn-secondary flex-1"
-                >
-                    View Details
-                </button>
-                <button
-                    onClick={() => onApplyNow(card.id)}
-                    disabled={hiredStatus}
-                    className={`flex-1 font-bold py-3 rounded-lg transition-all active:scale-95 ${
-                        hiredStatus === 'approved'
-                            ? 'bg-green-500 text-white cursor-not-allowed'
-                            : hiredStatus === 'declined'
-                            ? 'bg-gray-500 text-white cursor-not-allowed'
+            {hiredStatus === 'approved' ? (
+                <div className="space-y-2">
+                    <button
+                        onClick={() => onViewDetails(card)}
+                        className="w-full btn-secondary py-2.5"
+                    >
+                        View Details
+                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            disabled
+                            className="flex-1 bg-green-500 text-white cursor-default shadow-md font-semibold py-2 rounded-lg text-sm"
+                        >
+                            ✓ Approved
+                        </button>
+                        <button
+                            onClick={() => alert('Chat feature coming soon!')}
+                            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition-all active:scale-95 text-sm"
+                        >
+                            💬 Chat
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => onViewDetails(card)}
+                        className="btn-secondary flex-1 py-2.5"
+                    >
+                        View Details
+                    </button>
+                    <button
+                        onClick={() => onApplyNow(card.id)}
+                        disabled={hiredStatus}
+                        className={`flex-1 font-bold py-2.5 rounded-lg transition-all active:scale-95 ${
+                            hiredStatus === 'declined'
+                                ? 'bg-gray-500 text-white cursor-not-allowed'
+                                : hiredStatus === 'pending'
+                                ? 'bg-red-500 text-white cursor-not-allowed'
+                                : 'btn-primary'
+                        }`}
+                    >
+                        {hiredStatus === 'declined'
+                            ? 'Not Approved'
                             : hiredStatus === 'pending'
-                            ? 'bg-red-500 text-white cursor-not-allowed'
-                            : 'btn-primary'
-                    }`}
-                >
-                    {hiredStatus === 'approved'
-                        ? 'Approved'
-                        : hiredStatus === 'declined'
-                        ? 'Not Approved'
-                        : hiredStatus === 'pending'
-                        ? 'Request Sent'
-                        : 'Hire Contractor'}
-                </button>
-            </div>
+                            ? 'Request Sent'
+                            : 'Hire Contractor'}
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

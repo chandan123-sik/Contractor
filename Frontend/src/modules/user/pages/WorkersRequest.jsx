@@ -51,9 +51,11 @@ const WorkersRequest = () => {
                     }
                 }
                 
-                // Filter only pending applications
-                const pendingApplications = allApplications.filter(app => app.status === 'Pending');
-                setRequests(pendingApplications);
+                // Filter only Labour applications and pending status
+                const labourApplications = allApplications.filter(app => 
+                    app.type === 'labour' && app.status === 'Pending'
+                );
+                setRequests(labourApplications);
             }
         } catch (error) {
             console.error('Failed to fetch applications:', error);

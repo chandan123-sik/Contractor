@@ -18,8 +18,13 @@ const UserRequest = () => {
                 const response = await labourAPI.getLabourHireRequests({ status: 'pending' });
                 
                 if (response.success) {
+                    // Filter only User requests (requesterModel === 'User')
+                    const userRequests = response.data.hireRequests.filter(
+                        req => req.requesterModel === 'User'
+                    );
+                    
                     // Transform API data to match UI format
-                    const transformedRequests = response.data.hireRequests.map(req => ({
+                    const transformedRequests = userRequests.map(req => ({
                         id: req._id,
                         labourId: req.labourId,
                         labourName: req.labourName,

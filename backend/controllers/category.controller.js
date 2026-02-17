@@ -5,8 +5,8 @@ import LabourCategory from '../modules/admin/models/LabourCategory.model.js';
 // @access  Public
 export const getPublicCategories = async (req, res) => {
     try {
-        const categories = await LabourCategory.find()
-            .select('name icon')
+        const categories = await LabourCategory.find({ isActive: true })
+            .select('name icon image') // Include both icon and image fields
             .sort({ name: 1 });
 
         res.status(200).json({

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, User, Briefcase, Shield, Phone, Info, LogOut, MessageSquare, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User, Briefcase, Shield, Phone, Info, LogOut, MessageSquare, X, MessageCircle } from 'lucide-react';
 import LabourBottomNav from '../components/LabourBottomNav';
 import toast from 'react-hot-toast';
 import { authAPI } from '../../../services/api';
@@ -76,6 +76,7 @@ const LabourSettings = () => {
         { icon: Shield, label: 'Legal', path: '/labour/legal-details', color: 'text-gray-700' },
         { icon: Briefcase, label: 'My Card', path: '/labour/my-card', color: 'text-gray-700' },
         { icon: Briefcase, label: 'History', path: '/labour/history', color: 'text-gray-700' },
+        { icon: MessageCircle, label: 'Chat', path: '/labour/chat', color: 'text-gray-700' },
         { icon: Phone, label: 'Contact us', path: '/labour/contact-us', color: 'text-gray-700', divider: true },
         { icon: Info, label: 'About us', path: '/labour/about-us', color: 'text-gray-700' },
         { icon: MessageSquare, label: 'Feedback and Reports', path: '/labour/feedback', color: 'text-gray-700' }

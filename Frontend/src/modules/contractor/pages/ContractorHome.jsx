@@ -81,6 +81,14 @@ const ContractorHome = () => {
             <div className="px-4 mt-2 mb-6">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-gray-900">Categories</h3>
+                    {filteredCategories.length > 8 && (
+                        <button
+                            onClick={handleSeeAllClick}
+                            className="text-blue-500 font-semibold text-sm hover:text-blue-600 transition-colors"
+                        >
+                            {showAllCategories ? 'See less' : 'See all'}
+                        </button>
+                    )}
                 </div>
 
                 {loading ? (
@@ -100,11 +108,19 @@ const ContractorHome = () => {
                                 className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white shadow-sm hover:shadow-md transition-all active:scale-95"
                             >
                                 <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center text-2xl overflow-hidden">
-                                    {category.icon ? (
-                                        category.icon.startsWith('http') ? (
-                                            <img src={category.icon} alt={category.name} className="w-8 h-8 object-contain" />
+                                    {(category.image || category.icon) ? (
+                                        (category.image || category.icon).startsWith('http') ? (
+                                            <img 
+                                                src={category.image || category.icon} 
+                                                alt={category.name} 
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = 'https://cdn-icons-png.flaticon.com/512/4825/4825038.png';
+                                                }}
+                                            />
                                         ) : (
-                                            <span>{category.icon}</span>
+                                            <span>{category.image || category.icon}</span>
                                         )
                                     ) : (
                                         <span>🔧</span>

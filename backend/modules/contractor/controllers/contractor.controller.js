@@ -160,7 +160,7 @@ export const getContractorProfile = async (req, res, next) => {
         console.log('👤 User ID:', req.user._id);
         
         const contractor = await Contractor.findOne({ user: req.user._id })
-            .populate('user', 'firstName lastName mobileNumber profileImage');
+            .populate('user', 'firstName lastName mobileNumber profileImage city state');
 
         if (!contractor) {
             console.log('❌ Contractor profile not found');
@@ -176,7 +176,10 @@ export const getContractorProfile = async (req, res, next) => {
 
         res.status(200).json({
             success: true,
-            data: { contractor }
+            data: { 
+                contractor,
+                user: contractor.user // Include user data in response
+            }
         });
     } catch (error) {
         console.error('❌ GET CONTRACTOR PROFILE ERROR:', error.message);

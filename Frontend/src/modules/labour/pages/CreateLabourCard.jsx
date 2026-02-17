@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Upload, User } from 'lucide-react';
 import LabourBottomNav from '../components/LabourBottomNav';
 import toast from 'react-hot-toast';
 import { labourAPI } from '../../../services/api';
 
 const CreateLabourCard = () => {
     const navigate = useNavigate();
+    const photoInputRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         fullName: '',
@@ -20,7 +21,8 @@ const CreateLabourCard = () => {
         experience: '',
         previousWorkLocation: '',
         availability: 'Full Time',
-        availabilityStatus: 'Available'
+        availabilityStatus: 'Available',
+        cardPhoto: null // Add card photo field
     });
 
     // Auto-fill from labour profile
@@ -49,6 +51,35 @@ const CreateLabourCard = () => {
 
     const handleRating = (rating) => {
         setFormData(prev => ({ ...prev, rating }));
+    };
+
+    const handlePhotoUpload = () => {
+        photoInputRef.current?.click();
+    };
+
+    const handlePhotoChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            toast.error('Please select an image file');
+            return;
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('Image size should be less than 5MB');
+            return;
+        }
+
+        // Convert to base64
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setFormData(prev => ({ ...prev, cardPhoto: reader.result }));
+            toast.success('Photo added successfully');
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleSubmit = async (e) => {
@@ -81,6 +112,12 @@ const CreateLabourCard = () => {
                 rating: formData.rating,
                 hasLabourCard: true
             };
+
+            // Add card photo if uploaded (base64)
+            if (formData.cardPhoto && formData.cardPhoto.startsWith('data:image')) {
+                console.log('📸 Card photo detected, will upload to Cloudinary');
+                cardData.labourCardDetails.photo = formData.cardPhoto;
+            }
 
             console.log('Creating labour card:', cardData);
 
@@ -133,6 +170,39 @@ const CreateLabourCard = () => {
             
             <div className="flex-1 overflow-y-auto p-4 pb-20">
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Card Photo Upload */}
+                    <div className="bg-white rounded-lg shadow-sm p-4">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-4">Card Photo</h2>
+                        
+                        <div className="flex flex-col items-center">
+                            <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden mb-3 border-2 border-gray-200">
+                                {formData.cardPhoto ? (
+                                    <img src={formData.cardPhoto} alt="Card" className="w-full h-full object-cover" />
+                                ) : (
+                                    <User className="w-16 h-16 text-gray-400" />
+                                )}
+                            </div>
+                            
+                            <input
+                                type="file"
+                                ref={photoInputRef}
+                                onChange={handlePhotoChange}
+                                className="hidden"
+                                accept="image/*"
+                            />
+                            
+                            <button
+                                type="button"
+                                onClick={handlePhotoUpload}
+                                className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold px-6 py-2 rounded-full transition-all"
+                            >
+                                <Upload size={18} />
+                                <span>Upload Photo</span>
+                            </button>
+                            <p className="text-xs text-gray-500 mt-2">Optional - Add your photo to the card</p>
+                        </div>
+                    </div>
+
                     {/* Header Section */}
                     <div className="bg-white rounded-lg shadow-sm p-4">
                         <h2 className="text-lg font-semibold text-gray-900 mb-4">Header Information</h2>
