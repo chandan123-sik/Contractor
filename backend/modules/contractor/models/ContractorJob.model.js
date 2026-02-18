@@ -96,7 +96,12 @@ const contractorJobSchema = new mongoose.Schema({
             enum: ['Pending', 'Accepted', 'Rejected'],
             default: 'Pending'
         },
-        message: String
+        message: String,
+        chatId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Chat',
+            default: null
+        }
     }],
     selectedLabour: {
         type: mongoose.Schema.Types.ObjectId,

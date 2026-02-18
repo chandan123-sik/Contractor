@@ -5,6 +5,8 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#ffffff" />
+    <!-- Enable native lazy loading for images -->
+    <meta name="loading" content="lazy" />
     <title>frontend</title>
     <style>
       /* Prevent FOUC and layout shift */
@@ -16,6 +18,11 @@
       /* Prevent scrollbar shift */
       html {
         overflow-y: scroll;
+      }
+      
+      /* Optimize image loading */
+      img {
+        content-visibility: auto;
       }
     </style>
   </head>

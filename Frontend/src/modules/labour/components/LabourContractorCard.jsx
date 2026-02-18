@@ -1,8 +1,12 @@
 import { MapPin, Briefcase, Phone, Calendar, IndianRupee } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { memo } from 'react';
 
-const LabourContractorCard = ({ card, onViewDetails, onApplyNow, index = 0, appliedJobs = {} }) => {
+const LabourContractorCard = memo(({ card, onViewDetails, onApplyNow, index = 0, appliedJobs = {} }) => {
+    const navigate = useNavigate();
     const applicationStatus = appliedJobs[card.id];
     const isApplied = applicationStatus && applicationStatus.status;
+    const chatId = applicationStatus?.chatId;
 
     const getButtonConfig = () => {
         if (!isApplied) {
@@ -42,6 +46,81 @@ const LabourContractorCard = ({ card, onViewDetails, onApplyNow, index = 0, appl
     };
 
     const buttonConfig = getButtonConfig();
+
+    const handleChatClick = async () => {
+        console.log('🔵 Chat button clicked');
+        console.log('Current chatId:', chatId);
+        console.log('Card ID:', card.id);
+        console.log('Card Contractor Name:', card.contractorName);
+        console.log('Application Status:', applicationStatus);
+        
+        try {
+            // Import API modules
+            const { contractorAPI, chatAPI } = await import('../../../services/api');
+            
+            // ALWAYS check for existing chats first (most reliable method)
+            console.log('🔍 Checking for existing chats...');
+            const chatsResponse = await chatAPI.getUserChats();
+            console.log('📊 User Chats Response:', chatsResponse);
+            
+            if (chatsResponse.success && chatsResponse.data.chats && chatsResponse.data.chats.length > 0) {
+                console.log('📋 Available chats:', chatsResponse.data.chats.map(c => ({
+                    id: c._id,
+                    name: c.otherParticipant?.name
+                })));
+                
+                // Find chat with this contractor by name (case-insensitive, trimmed)
+                const existingChat = chatsResponse.data.chats.find(chat => {
+                    const otherName = (chat.otherParticipant?.name || '').toLowerCase().trim();
+                    const cardName = (card.contractorName || '').toLowerCase().trim();
+                    console.log(`Comparing: "${otherName}" === "${cardName}"`);
+                    return otherName === cardName;
+                });
+                
+                if (existingChat) {
+                    console.log('✅ Found existing chat with contractor:', existingChat._id);
+                    navigate(`/labour/chat/${existingChat._id}`);
+                    return;
+                }
+                
+                console.log('⚠️ No existing chat found with this contractor name');
+            } else {
+                console.log('⚠️ No chats available or API failed');
+            }
+            
+            // If chatId is available in application status, use it
+            if (chatId) {
+                console.log('✅ ChatId available in application status, navigating to:', `/labour/chat/${chatId}`);
+                navigate(`/labour/chat/${chatId}`);
+                return;
+            }
+            
+            // Fetch latest application status to get chatId
+            console.log('🔄 Fetching latest application status...');
+            const response = await contractorAPI.getLabourApplications();
+            console.log('📊 Applications Response:', response);
+            
+            if (response.success && response.data.applications) {
+                const updatedStatus = response.data.applications[card.id];
+                console.log('📋 Updated Status for card:', updatedStatus);
+                
+                if (updatedStatus?.chatId) {
+                    console.log('✅ ChatId found in updated application, navigating to:', `/labour/chat/${updatedStatus.chatId}`);
+                    navigate(`/labour/chat/${updatedStatus.chatId}`);
+                    return;
+                }
+            }
+            
+            // If still no chat found, navigate to chat list page
+            console.log('❌ No chat available through any method, redirecting to chat list');
+            navigate('/labour/chat');
+            
+        } catch (error) {
+            console.error('❌ Failed to open chat:', error);
+            // On error, still try to navigate to chat list
+            navigate('/labour/chat');
+        }
+    };
 
     return (
         <div className="premium-card card-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
@@ -121,7 +200,7 @@ const LabourContractorCard = ({ card, onViewDetails, onApplyNow, index = 0, appl
                             ✓ Approved
                         </button>
                         <button
-                            onClick={() => alert('Chat feature coming soon!')}
+                            onClick={handleChatClick}
                             className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition-all active:scale-95 text-sm"
                         >
                             💬 Chat
@@ -147,6 +226,8 @@ const LabourContractorCard = ({ card, onViewDetails, onApplyNow, index = 0, appl
             )}
         </div>
     );
-};
+});
+
+LabourContractorCard.displayName = 'LabourContractorCard';
 
 export default LabourContractorCard;

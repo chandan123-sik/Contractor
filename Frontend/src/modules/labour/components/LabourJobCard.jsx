@@ -1,11 +1,91 @@
 import { MapPin, Briefcase, Calendar, IndianRupee } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { memo } from 'react';
 
-const LabourJobCard = ({ job, onViewDetails, onApplyNow, appliedJobs = {}, index = 0 }) => {
+const LabourJobCard = memo(({ job, onViewDetails, onApplyNow, appliedJobs = {}, index = 0 }) => {
+    const navigate = useNavigate();
+    
     // Check if this job has been applied to and get its status
     const applicationData = appliedJobs[job.id];
     const isApplied = !!applicationData;
     const applicationStatus = applicationData?.status;
+    const chatId = applicationData?.chatId;
+    
+    const handleChatClick = async () => {
+        console.log('🔵 Chat button clicked (Labour Panel - User Job)');
+        console.log('Current chatId:', chatId);
+        console.log('Job ID:', job.id);
+        console.log('Job User Name:', job.userName);
+        console.log('Application Data:', applicationData);
+        
+        try {
+            // Import API modules
+            const { jobAPI, chatAPI } = await import('../../../services/api');
+            
+            // ALWAYS check for existing chats first (most reliable method)
+            console.log('🔍 Checking for existing chats...');
+            const chatsResponse = await chatAPI.getUserChats();
+            console.log('📊 User Chats Response:', chatsResponse);
+            
+            if (chatsResponse.success && chatsResponse.data.chats && chatsResponse.data.chats.length > 0) {
+                console.log('📋 Available chats:', chatsResponse.data.chats.map(c => ({
+                    id: c._id,
+                    name: c.otherParticipant?.name
+                })));
+                
+                // Find chat with this user by name (case-insensitive, trimmed)
+                const existingChat = chatsResponse.data.chats.find(chat => {
+                    const otherName = (chat.otherParticipant?.name || '').toLowerCase().trim();
+                    const jobUserName = (job.userName || '').toLowerCase().trim();
+                    console.log(`Comparing: "${otherName}" === "${jobUserName}"`);
+                    return otherName === jobUserName;
+                });
+                
+                if (existingChat) {
+                    console.log('✅ Found existing chat with user:', existingChat._id);
+                    navigate(`/labour/chat/${existingChat._id}`);
+                    return;
+                }
+                
+                console.log('⚠️ No existing chat found with this user name');
+            } else {
+                console.log('⚠️ No chats available or API failed');
+            }
+            
+            // If chatId is available in application data, use it
+            if (chatId) {
+                console.log('✅ ChatId available in application data, navigating to:', `/labour/chat/${chatId}`);
+                navigate(`/labour/chat/${chatId}`);
+                return;
+            }
+            
+            // Fetch latest application status to get chatId
+            console.log('🔄 Fetching latest application status...');
+            const response = await jobAPI.getMyApplications();
+            console.log('📊 Applications Response:', response);
+            
+            if (response.success && response.data.applications) {
+                const updatedApplication = response.data.applications[job.id];
+                console.log('📋 Updated Application for job:', updatedApplication);
+                
+                if (updatedApplication?.chatId) {
+                    console.log('✅ ChatId found in updated application, navigating to:', `/labour/chat/${updatedApplication.chatId}`);
+                    navigate(`/labour/chat/${updatedApplication.chatId}`);
+                    return;
+                }
+            }
+            
+            // If still no chat found, navigate to chat list page
+            console.log('❌ No chat available through any method, redirecting to chat list');
+            navigate('/labour/chat');
+            
+        } catch (error) {
+            console.error('❌ Failed to open chat:', error);
+            // On error, still try to navigate to chat list
+            navigate('/labour/chat');
+        }
+    };
     
     const handleApplyClick = () => {
         if (job.status !== 'Open') {
@@ -117,7 +197,7 @@ const LabourJobCard = ({ job, onViewDetails, onApplyNow, appliedJobs = {}, index
                             ✓ Approved
                         </button>
                         <button
-                            onClick={() => alert('Chat feature coming soon!')}
+                            onClick={handleChatClick}
                             className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition-all active:scale-95 text-sm"
                         >
                             💬 Chat
@@ -143,6 +223,8 @@ const LabourJobCard = ({ job, onViewDetails, onApplyNow, appliedJobs = {}, index
             )}
         </div>
     );
-};
+});
+
+LabourJobCard.displayName = 'LabourJobCard';
 
 export default LabourJobCard;

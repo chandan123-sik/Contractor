@@ -689,7 +689,7 @@ export const getSentContractorHireRequests = async (req, res) => {
         console.log('👤 userId:', userId);
 
         const hireRequests = await ContractorHireRequest.find({ requesterId: userId })
-            .select('contractorId contractorJobId status createdAt updatedAt')
+            .select('contractorId contractorJobId status chatId createdAt updatedAt')
             .sort({ createdAt: -1 });
 
         console.log('📊 Found', hireRequests.length, 'hire requests');
@@ -702,6 +702,7 @@ export const getSentContractorHireRequests = async (req, res) => {
                 _id: req._id,
                 contractorId: req.contractorJobId.toString(), // Return ContractorJob ID for frontend matching
                 status: req.status,
+                chatId: req.chatId,
                 createdAt: req.createdAt,
                 updatedAt: req.updatedAt
             };
@@ -730,12 +731,19 @@ export const getSentContractorHireRequests = async (req, res) => {
 
 // @desc    Update contractor hire request status (accept/decline)
 // @route   PATCH /api/contractor/hire-request/:id
+// @desc    Update contractor hire request status (accept/decline)
+// @route   PATCH /api/contractor/hire-request/:id
 // @access  Private
 export const updateContractorHireRequestStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
         const userId = req.user._id;
+
+        console.log('\n🟡 ===== UPDATE CONTRACTOR HIRE REQUEST STATUS =====');
+        console.log('Request ID:', id);
+        console.log('New Status:', status);
+        console.log('Contractor User ID:', userId);
 
         // Validate status
         if (!['accepted', 'declined'].includes(status)) {
@@ -755,7 +763,7 @@ export const updateContractorHireRequestStatus = async (req, res) => {
         }
 
         // Verify contractor owns this request
-        const contractor = await Contractor.findOne({ user: userId });
+        const contractor = await Contractor.findOne({ user: userId }).populate('user');
         if (!contractor || contractor._id.toString() !== hireRequest.contractorId.toString()) {
             return res.status(403).json({
                 success: false,
@@ -766,7 +774,61 @@ export const updateContractorHireRequestStatus = async (req, res) => {
         // Update status
         hireRequest.status = status;
         hireRequest.respondedAt = new Date();
+
+        // ✅ CREATE CHAT AUTOMATICALLY when status is accepted
+        if (status === 'accepted') {
+            console.log('✅ Status is accepted, creating chat...');
+
+            // Import chat controller
+            const { createChatFromRequest } = await import('../../../controllers/chat.controller.js');
+
+            // Get requester (User) details
+            const requester = await User.findById(hireRequest.requesterId);
+
+            if (!requester) {
+                console.log('❌ Requester not found');
+                return res.status(404).json({
+                    success: false,
+                    message: 'Requester not found'
+                });
+            }
+
+            // Prepare chat data
+            const chatData = {
+                participant1: {
+                    userId: contractor.user._id,
+                    userType: 'Contractor',
+                    name: `${contractor.user.firstName} ${contractor.user.lastName}`,
+                    profilePhoto: contractor.user.profilePhoto || '',
+                    mobileNumber: contractor.user.mobileNumber
+                },
+                participant2: {
+                    userId: requester._id,
+                    userType: 'User',
+                    name: `${requester.firstName} ${requester.lastName}`,
+                    profilePhoto: requester.profilePhoto || '',
+                    mobileNumber: requester.mobileNumber
+                },
+                relatedRequest: {
+                    requestId: hireRequest._id,
+                    requestType: 'ContractorHireRequest'
+                }
+            };
+
+            console.log('📦 Chat Data:', JSON.stringify(chatData, null, 2));
+
+            // Create chat
+            const chat = await createChatFromRequest(chatData);
+
+            // Link chat to hire request
+            hireRequest.chatId = chat._id;
+            console.log('✅ Chat created and linked:', chat._id);
+        }
+
         await hireRequest.save();
+
+        console.log('✅ Contractor hire request updated successfully');
+        console.log('===========================\n');
 
         res.status(200).json({
             success: true,
@@ -774,7 +836,8 @@ export const updateContractorHireRequestStatus = async (req, res) => {
             data: { hireRequest }
         });
     } catch (error) {
-        console.error('Update contractor hire request status error:', error);
+        console.error('❌ Update contractor hire request status error:', error);
+        console.log('===========================\n');
         res.status(500).json({
             success: false,
             message: 'Failed to update contractor hire request status',
@@ -993,7 +1056,8 @@ export const getLabourApplications = async (req, res, next) => {
                         jobId: job._id.toString(),
                         applicationId: app._id.toString(),
                         status: app.status,
-                        appliedAt: app.appliedAt
+                        appliedAt: app.appliedAt,
+                        chatId: app.chatId || null  // ✅ Include chatId
                     };
                 }
             });
@@ -1026,7 +1090,12 @@ export const updateContractorJobApplicationStatus = async (req, res, next) => {
         console.log('Application ID:', req.params.applicationId);
         console.log('New Status:', req.body.status);
 
-        const job = await ContractorJob.findById(req.params.jobId);
+        const job = await ContractorJob.findById(req.params.jobId)
+            .populate('contractor')
+            .populate({
+                path: 'applications.labour',
+                populate: { path: 'user', select: 'firstName lastName mobileNumber profilePhoto' }
+            });
 
         if (!job) {
             return res.status(404).json({
@@ -1054,15 +1123,83 @@ export const updateContractorJobApplicationStatus = async (req, res, next) => {
         }
 
         application.status = req.body.status;
+
+        // ✅ CREATE CHAT AUTOMATICALLY when status is Accepted
+        if (req.body.status === 'Accepted' && !application.chatId) {
+            console.log('✅ Status is Accepted, creating chat...');
+
+            // Import chat controller
+            const { createChatFromRequest } = await import('../../../controllers/chat.controller.js');
+
+            // Get contractor user details
+            const contractorUser = await User.findById(job.user);
+            if (!contractorUser) {
+                console.log('❌ Contractor user not found');
+                return res.status(404).json({
+                    success: false,
+                    message: 'Contractor user not found'
+                });
+            }
+
+            // Get labour details
+            const labour = application.labour;
+            if (!labour || !labour.user) {
+                console.log('❌ Labour not found');
+                return res.status(404).json({
+                    success: false,
+                    message: 'Labour not found'
+                });
+            }
+
+            // Prepare chat data
+            const chatData = {
+                participant1: {
+                    userId: contractorUser._id,
+                    userType: 'Contractor',
+                    name: `${contractorUser.firstName} ${contractorUser.lastName}`,
+                    profilePhoto: contractorUser.profilePhoto || '',
+                    mobileNumber: contractorUser.mobileNumber
+                },
+                participant2: {
+                    userId: labour.user._id,
+                    userType: 'Labour',
+                    name: `${labour.user.firstName} ${labour.user.lastName}`,
+                    profilePhoto: labour.user.profilePhoto || '',
+                    mobileNumber: labour.user.mobileNumber
+                },
+                relatedRequest: {
+                    requestId: application._id,
+                    requestType: 'ContractorJobApplication'
+                }
+            };
+
+            console.log('📦 Chat Data:', JSON.stringify(chatData, null, 2));
+
+            // Create chat
+            const chat = await createChatFromRequest(chatData);
+
+            // Link chat to application
+            application.chatId = chat._id;
+            console.log('✅ Chat created and linked:', chat._id);
+        }
+
         await job.save();
 
         console.log('✅ Application status updated');
+        console.log('📤 Returning application with chatId:', application.chatId);
         console.log('===========================\n');
 
         res.status(200).json({
             success: true,
             message: 'Application status updated successfully',
-            data: { application }
+            data: { 
+                application: {
+                    _id: application._id,
+                    status: application.status,
+                    chatId: application.chatId,
+                    appliedAt: application.appliedAt
+                }
+            }
         });
     } catch (error) {
         console.error('❌ UPDATE APPLICATION STATUS ERROR:', error.message);

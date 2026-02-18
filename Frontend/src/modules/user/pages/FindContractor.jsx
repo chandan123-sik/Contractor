@@ -87,10 +87,21 @@ const FindContractor = () => {
                 
                 // Create state map from requests
                 const uiStateMap = {};
+                const requestsMap = {};
+                
                 response.data.hireRequests.forEach(req => {
                     const contractorId = req.contractorId; // Already a string from backend
                     
-                    console.log(`Mapping contractorId: ${contractorId} → status: ${req.status}`);
+                    console.log(`Mapping contractorId: ${contractorId} → status: ${req.status}, chatId: ${req.chatId}`);
+                    
+                    // Store full request data for chat access
+                    requestsMap[contractorId] = {
+                        _id: req._id,
+                        status: req.status,
+                        chatId: req.chatId,
+                        createdAt: req.createdAt,
+                        updatedAt: req.updatedAt
+                    };
                     
                     // Map status to UI states
                     if (req.status === 'accepted') {
@@ -103,11 +114,16 @@ const FindContractor = () => {
                 });
                 
                 console.log('✅ Final contractor UI state map:', uiStateMap);
+                console.log('✅ Final contractor requests map:', requestsMap);
                 setHiredContractors(uiStateMap);
+                
+                // Store requests map in state for chat access
+                window.userContractorRequests = requestsMap;
             }
         } catch (error) {
             console.error('Failed to load contractor hired state:', error);
             setHiredContractors({});
+            window.userContractorRequests = {};
         }
     };
 
@@ -331,6 +347,7 @@ const FindContractor = () => {
                             onViewDetails={handleViewDetails}
                             onApplyNow={handleApplyNow}
                             hiredStatus={hiredContractors[card.id]}
+                            hiredRequests={window.userContractorRequests || {}}
                         />
                     ))
                 )}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import ContractorBottomNav from '../components/ContractorBottomNav';
 import ContractorHeader from '../components/ContractorHeader';
@@ -7,6 +7,7 @@ import { labourAPI } from '../../../services/api';
 
 const HireWorkers = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     const [labourCards, setLabourCards] = useState([]);
     const [filteredCards, setFilteredCards] = useState([]);
     const [selectedCard, setSelectedCard] = useState(null);
@@ -15,6 +16,7 @@ const HireWorkers = () => {
     const [selectedCity, setSelectedCity] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [hiredWorkers, setHiredWorkers] = useState({});
+    const [chatIds, setChatIds] = useState({}); // Store chatIds for approved workers
 
     const cities = ['Indore', 'Bhopal', 'Dewas', 'Ujjain', 'Jabalpur', 'Gwalior', 'Ratlam'];
 
@@ -40,14 +42,18 @@ const HireWorkers = () => {
                     
                     // Create state map from requests
                     const uiStateMap = {};
+                    const chatIdMap = {};
                     response.data.hireRequests.forEach(req => {
                         const labourId = req.labourId; // Already a string from backend
                         
-                        console.log(`Mapping labourId: ${labourId} → status: ${req.status}`);
+                        console.log(`Mapping labourId: ${labourId} → status: ${req.status}, chatId: ${req.chatId}`);
                         
                         // Map status to UI states
                         if (req.status === 'accepted') {
                             uiStateMap[labourId] = 'approved';
+                            if (req.chatId) {
+                                chatIdMap[labourId] = req.chatId;
+                            }
                         } else if (req.status === 'declined') {
                             uiStateMap[labourId] = 'declined';
                         } else {
@@ -56,7 +62,9 @@ const HireWorkers = () => {
                     });
                     
                     console.log('✅ Final UI state map:', uiStateMap);
+                    console.log('✅ Final chatId map:', chatIdMap);
                     setHiredWorkers(uiStateMap);
+                    setChatIds(chatIdMap);
                 }
             } catch (error) {
                 console.error('Failed to load hired state:', error);
@@ -409,7 +417,14 @@ const HireWorkers = () => {
                                                 ✓ Approved
                                             </button>
                                             <button
-                                                onClick={() => alert('Chat feature coming soon!')}
+                                                onClick={() => {
+                                                    const chatId = chatIds[card.id];
+                                                    if (chatId) {
+                                                        navigate(`/contractor/chat/${chatId}`);
+                                                    } else {
+                                                        alert('Chat is being created. Please refresh the page.');
+                                                    }
+                                                }}
                                                 className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-all active:scale-95"
                                             >
                                                 Chat

@@ -28,21 +28,57 @@ const History = () => {
 
     const loadHistory = async () => {
         try {
-            console.log('🔵 Loading labour application history from database...');
-            const response = await labourAPI.getLabourApplicationHistory();
+            console.log('🔵 Loading labour hire request history from database...');
             
-            if (response.success) {
-                console.log('✅ History loaded:', response.data.history.length, 'items');
-                console.log('📊 History data sample:', response.data.history[0]);
-                setHistory(response.data.history);
-            }
+            // Get accepted and declined hire requests
+            const acceptedResponse = await labourAPI.getLabourHireRequests({ status: 'accepted' });
+            const declinedResponse = await labourAPI.getLabourHireRequests({ status: 'declined' });
+            
+            const acceptedRequests = acceptedResponse.success ? acceptedResponse.data.hireRequests : [];
+            const declinedRequests = declinedResponse.success ? declinedResponse.data.hireRequests : [];
+            
+            // Combine and format the requests
+            const allRequests = [...acceptedRequests, ...declinedRequests];
+            
+            const formattedHistory = allRequests.map(req => {
+                // Format date and time
+                const requestDate = new Date(req.createdAt);
+                const formattedDate = requestDate.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                });
+                const formattedTime = requestDate.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+
+                return {
+                    id: req._id,
+                    _id: req._id,
+                    jobTitle: req.labourSkill || 'Labour Work',
+                    category: req.labourSkill,
+                    userName: req.requesterName,
+                    contractorName: req.requesterName,
+                    phoneNumber: req.requesterPhone,
+                    location: req.requesterLocation,
+                    date: formattedDate,
+                    time: formattedTime,
+                    status: req.status,
+                    type: req.requesterModel === 'User' ? 'user' : 'contractor',
+                    appliedAt: req.createdAt
+                };
+            });
+
+            // Sort by most recent first
+            formattedHistory.sort((a, b) => new Date(b.appliedAt) - new Date(a.appliedAt));
+            
+            console.log('✅ History loaded:', formattedHistory.length, 'items');
+            console.log('📊 History data sample:', formattedHistory[0]);
+            setHistory(formattedHistory);
         } catch (error) {
             console.error('❌ Failed to load history:', error);
-            // Fallback to localStorage
-            const userHist = JSON.parse(localStorage.getItem('labour_request_history') || '[]');
-            const contractorHist = JSON.parse(localStorage.getItem('labour_contractor_history') || '[]');
-            const combined = [...userHist, ...contractorHist].sort((a, b) => b.id - a.id);
-            setHistory(combined);
+            setHistory([]);
         } finally {
             setLoading(false);
         }

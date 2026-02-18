@@ -1,6 +1,7 @@
 import { MapPin, Phone, Calendar, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { memo } from 'react';
 
-const ContractorRequestCard = ({ request, onAccept, onDecline, index = 0, showButtons = true, showStatus = false }) => {
+const ContractorRequestCard = memo(({ request, onAccept, onDecline, index = 0, showButtons = true, showStatus = false }) => {
     // Safety checks for required fields
     const contractorName = request.contractorName || request.applicantName || 'Unknown';
     const location = request.location || 'Not specified';
@@ -92,6 +93,8 @@ const ContractorRequestCard = ({ request, onAccept, onDecline, index = 0, showBu
             )}
         </div>
     );
-};
+});
+
+ContractorRequestCard.displayName = 'ContractorRequestCard';
 
 export default ContractorRequestCard;

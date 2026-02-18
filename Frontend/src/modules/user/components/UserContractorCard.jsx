@@ -1,6 +1,89 @@
 import { MapPin, Star, Phone, IndianRupee } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { memo } from 'react';
 
-const UserContractorCard = ({ card, onViewDetails, onApplyNow, index = 0, hiredStatus }) => {
+const UserContractorCard = memo(({ card, onViewDetails, onApplyNow, index = 0, hiredStatus, hiredRequests = {} }) => {
+    const navigate = useNavigate();
+    
+    // Get hire request details including chatId
+    const hireRequest = hiredRequests[card.id];
+    const chatId = hireRequest?.chatId;
+    
+    const handleChatClick = async () => {
+        console.log('🔵 Chat button clicked (User Panel)');
+        console.log('Current chatId:', chatId);
+        console.log('Card ID:', card.id);
+        console.log('Card Contractor Name:', card.contractorName);
+        console.log('Hire Request:', hireRequest);
+        
+        try {
+            // Import API modules
+            const { contractorAPI, chatAPI } = await import('../../../services/api');
+            
+            // ALWAYS check for existing chats first (most reliable method)
+            console.log('🔍 Checking for existing chats...');
+            const chatsResponse = await chatAPI.getUserChats();
+            console.log('📊 User Chats Response:', chatsResponse);
+            
+            if (chatsResponse.success && chatsResponse.data.chats && chatsResponse.data.chats.length > 0) {
+                console.log('📋 Available chats:', chatsResponse.data.chats.map(c => ({
+                    id: c._id,
+                    name: c.otherParticipant?.name
+                })));
+                
+                // Find chat with this contractor by name (case-insensitive, trimmed)
+                const existingChat = chatsResponse.data.chats.find(chat => {
+                    const otherName = (chat.otherParticipant?.name || '').toLowerCase().trim();
+                    const cardName = (card.contractorName || '').toLowerCase().trim();
+                    console.log(`Comparing: "${otherName}" === "${cardName}"`);
+                    return otherName === cardName;
+                });
+                
+                if (existingChat) {
+                    console.log('✅ Found existing chat with contractor:', existingChat._id);
+                    navigate(`/user/chat/${existingChat._id}`);
+                    return;
+                }
+                
+                console.log('⚠️ No existing chat found with this contractor name');
+            } else {
+                console.log('⚠️ No chats available or API failed');
+            }
+            
+            // If chatId is available in hire request, use it
+            if (chatId) {
+                console.log('✅ ChatId available in hire request, navigating to:', `/user/chat/${chatId}`);
+                navigate(`/user/chat/${chatId}`);
+                return;
+            }
+            
+            // Fetch latest hire request status to get chatId
+            console.log('🔄 Fetching latest hire request status...');
+            const response = await contractorAPI.getSentContractorHireRequests();
+            console.log('📊 Hire Requests Response:', response);
+            
+            if (response.success && response.data.hireRequests) {
+                const updatedRequest = response.data.hireRequests.find(req => req.contractorId === card.id);
+                console.log('📋 Updated Request for card:', updatedRequest);
+                
+                if (updatedRequest?.chatId) {
+                    console.log('✅ ChatId found in updated request, navigating to:', `/user/chat/${updatedRequest.chatId}`);
+                    navigate(`/user/chat/${updatedRequest.chatId}`);
+                    return;
+                }
+            }
+            
+            // If still no chat found, navigate to chat list page
+            console.log('❌ No chat available through any method, redirecting to chat list');
+            navigate('/user/chat');
+            
+        } catch (error) {
+            console.error('❌ Failed to open chat:', error);
+            // On error, still try to navigate to chat list
+            navigate('/user/chat');
+        }
+    };
+    
     return (
         <div className="premium-card card-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
             {/* Header with Contractor Info and Status Badge */}
@@ -79,7 +162,7 @@ const UserContractorCard = ({ card, onViewDetails, onApplyNow, index = 0, hiredS
                             ✓ Approved
                         </button>
                         <button
-                            onClick={() => alert('Chat feature coming soon!')}
+                            onClick={handleChatClick}
                             className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition-all active:scale-95 text-sm"
                         >
                             💬 Chat
@@ -115,6 +198,8 @@ const UserContractorCard = ({ card, onViewDetails, onApplyNow, index = 0, hiredS
             )}
         </div>
     );
-};
+});
+
+UserContractorCard.displayName = 'UserContractorCard';
 
 export default UserContractorCard;

@@ -89,6 +89,11 @@ const jobSchema = new mongoose.Schema({
             type: String,
             enum: ['Pending', 'Accepted', 'Rejected'],
             default: 'Pending'
+        },
+        chatId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Chat',
+            default: null
         }
     }],
     selectedLabour: {

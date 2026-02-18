@@ -367,7 +367,8 @@ export const getMyApplications = async (req, res, next) => {
                         jobId: job._id.toString(),
                         applicationId: app._id.toString(),
                         status: app.status,
-                        appliedAt: app.appliedAt
+                        appliedAt: app.appliedAt,
+                        chatId: app.chatId || null  // ✅ Include chatId
                     };
                 }
             });
@@ -475,18 +476,25 @@ export const updateApplicationStatus = async (req, res, next) => {
         console.log('Job ID:', req.params.id);
         console.log('Application ID:', req.params.applicationId);
         console.log('New Status:', req.body.status);
+        console.log('User ID:', req.user._id);
 
-        const job = await Job.findById(req.params.id);
+        const job = await Job.findById(req.params.id).populate('user');
 
         if (!job) {
+            console.log('❌ Job not found');
             return res.status(404).json({
                 success: false,
                 message: 'Job not found'
             });
         }
 
+        console.log('✅ Job found:', job._id);
+        console.log('   Job owner:', job.user._id);
+        console.log('   Request user:', req.user._id);
+
         // Check if user owns this job
-        if (job.user.toString() !== req.user._id.toString()) {
+        if (job.user._id.toString() !== req.user._id.toString()) {
+            console.log('❌ Not authorized - user does not own this job');
             return res.status(403).json({
                 success: false,
                 message: 'Not authorized to update applications for this job'
@@ -497,25 +505,161 @@ export const updateApplicationStatus = async (req, res, next) => {
         const application = job.applications.id(req.params.applicationId);
 
         if (!application) {
+            console.log('❌ Application not found in job');
+            console.log('   Available application IDs:', job.applications.map(a => a._id.toString()));
             return res.status(404).json({
                 success: false,
                 message: 'Application not found'
             });
         }
 
+        console.log('✅ Application found:', application._id);
+        console.log('   Applicant ID:', application.applicant);
+        console.log('   Applicant Type:', application.applicantType);
+        console.log('   Current Status:', application.status);
+
         application.status = req.body.status;
+
+        // ✅ CREATE CHAT AUTOMATICALLY when status is Accepted
+        if (req.body.status === 'Accepted' && !application.chatId) {
+            console.log('✅ Status is Accepted, creating chat...');
+
+            try {
+                // Import chat controller and models
+                const { createChatFromRequest } = await import('../../../controllers/chat.controller.js');
+                const Labour = (await import('../../labour/models/Labour.model.js')).default;
+                const Contractor = (await import('../../contractor/models/Contractor.model.js')).default;
+                const User = (await import('../models/User.model.js')).default;
+
+                // Get applicant details based on type
+                let applicantUser = null;
+                let applicantUserType = application.applicantType;
+
+                console.log('🔍 Looking for applicant user...');
+                console.log('   Applicant ID:', application.applicant);
+                console.log('   Applicant Type:', application.applicantType);
+
+                if (application.applicantType === 'Labour') {
+                    // application.applicant contains User ID, not Labour ID
+                    // So we need to find Labour by user field
+                    console.log('   Searching Labour by user field...');
+                    const labour = await Labour.findOne({ user: application.applicant }).populate('user');
+                    
+                    if (labour && labour.user) {
+                        console.log('   ✅ Found Labour profile with user');
+                        applicantUser = labour.user;
+                    } else {
+                        console.log('   ⚠️ Labour profile not found, trying direct User lookup...');
+                        // If Labour profile not found, applicant might be the User directly
+                        applicantUser = await User.findById(application.applicant);
+                        if (applicantUser) {
+                            console.log('   ✅ Found User directly');
+                        }
+                    }
+                } else if (application.applicantType === 'Contractor') {
+                    // application.applicant contains User ID, not Contractor ID
+                    // So we need to find Contractor by user field
+                    console.log('   Searching Contractor by user field...');
+                    const contractor = await Contractor.findOne({ user: application.applicant }).populate('user');
+                    
+                    if (contractor && contractor.user) {
+                        console.log('   ✅ Found Contractor profile with user');
+                        applicantUser = contractor.user;
+                    } else {
+                        console.log('   ⚠️ Contractor profile not found, trying direct User lookup...');
+                        // If Contractor profile not found, applicant might be the User directly
+                        applicantUser = await User.findById(application.applicant);
+                        if (applicantUser) {
+                            console.log('   ✅ Found User directly');
+                        }
+                    }
+                }
+
+                if (!applicantUser) {
+                    console.log('❌ Applicant user not found after all attempts');
+                    console.log('   Application applicant ID:', application.applicant);
+                    console.log('   Application applicant type:', application.applicantType);
+                    
+                    // Don't fail the accept operation, just skip chat creation
+                    console.log('⚠️ Skipping chat creation, but accepting application');
+                    await job.save();
+                    
+                    return res.status(200).json({
+                        success: true,
+                        message: 'Application accepted successfully (chat will be created later)',
+                        data: { 
+                            application: {
+                                _id: application._id,
+                                status: application.status,
+                                chatId: null,
+                                appliedAt: application.appliedAt
+                            }
+                        }
+                    });
+                }
+
+                console.log('✅ Applicant user found:', applicantUser._id);
+                console.log('   Name:', `${applicantUser.firstName} ${applicantUser.lastName}`);
+
+                // Prepare chat data
+                const chatData = {
+                    participant1: {
+                        userId: job.user._id,
+                        userType: 'User',
+                        name: `${job.user.firstName} ${job.user.lastName}`,
+                        profilePhoto: job.user.profilePhoto || '',
+                        mobileNumber: job.user.mobileNumber
+                    },
+                    participant2: {
+                        userId: applicantUser._id,
+                        userType: applicantUserType,
+                        name: `${applicantUser.firstName} ${applicantUser.lastName}`,
+                        profilePhoto: applicantUser.profilePhoto || '',
+                        mobileNumber: applicantUser.mobileNumber
+                    },
+                    relatedRequest: {
+                        requestId: application._id,
+                        requestType: 'JobApplication'
+                    }
+                };
+
+                console.log('📦 Chat Data prepared');
+
+                // Create chat
+                const chat = await createChatFromRequest(chatData);
+
+                // Link chat to application
+                application.chatId = chat._id;
+                console.log('✅ Chat created and linked:', chat._id);
+            } catch (chatError) {
+                console.error('❌ Error creating chat:', chatError.message);
+                console.error('   Stack:', chatError.stack);
+                // Don't fail the accept, just log the error
+                console.log('⚠️ Continuing with accept despite chat error');
+            }
+        }
+
         await job.save();
 
-        console.log('✅ Application status updated');
+        console.log('✅ Application status updated successfully');
+        console.log('📤 Returning application with chatId:', application.chatId);
         console.log('===========================\n');
 
         res.status(200).json({
             success: true,
             message: 'Application status updated successfully',
-            data: { application }
+            data: { 
+                application: {
+                    _id: application._id,
+                    status: application.status,
+                    chatId: application.chatId,
+                    appliedAt: application.appliedAt
+                }
+            }
         });
     } catch (error) {
         console.error('❌ UPDATE APPLICATION STATUS ERROR:', error.message);
+        console.error('   Stack:', error.stack);
         console.log('===========================\n');
         next(error);
     }

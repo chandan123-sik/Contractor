@@ -503,6 +503,47 @@ export const contractorAPI = {
     }
 };
 
+// Chat APIs
+export const chatAPI = {
+    // Get all chats for current user
+    getUserChats: async () => {
+        const response = await api.get('/chat/chats');
+        return response.data;
+    },
+
+    // Get specific chat details
+    getChatById: async (chatId) => {
+        const response = await api.get(`/chat/chats/${chatId}`);
+        return response.data;
+    },
+
+    // Get messages for a chat
+    getChatMessages: async (chatId, page = 1, limit = 50) => {
+        const response = await api.get(`/chat/chats/${chatId}/messages`, {
+            params: { page, limit }
+        });
+        return response.data;
+    },
+
+    // Send message
+    sendMessage: async (chatId, messageData) => {
+        const response = await api.post(`/chat/chats/${chatId}/messages`, messageData);
+        return response.data;
+    },
+
+    // Mark messages as read
+    markAsRead: async (chatId) => {
+        const response = await api.patch(`/chat/chats/${chatId}/read`);
+        return response.data;
+    },
+
+    // Delete chat
+    deleteChat: async (chatId) => {
+        const response = await api.delete(`/chat/chats/${chatId}`);
+        return response.data;
+    }
+};
+
 export default api;
 
 

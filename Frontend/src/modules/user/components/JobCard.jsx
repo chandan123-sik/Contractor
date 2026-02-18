@@ -1,6 +1,7 @@
 import { MapPin, Briefcase, Calendar, IndianRupee, Phone } from 'lucide-react';
+import { memo } from 'react';
 
-const JobCard = ({ job, onViewDetails, onToggleJobStatus, index = 0 }) => {
+const JobCard = memo(({ job, onViewDetails, onToggleJobStatus, index = 0 }) => {
     return (
         <div className="premium-card card-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
             {/* Header with User Info and Status */}
@@ -86,6 +87,8 @@ const JobCard = ({ job, onViewDetails, onToggleJobStatus, index = 0 }) => {
             </div>
         </div>
     );
-};
+});
+
+JobCard.displayName = 'JobCard';
 
 export default JobCard;

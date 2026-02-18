@@ -55,6 +55,13 @@ const contractorHireRequestSchema = new mongoose.Schema({
         default: 'pending'
     },
 
+    // Chat Reference (added when request is accepted)
+    chatId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Chat',
+        default: null
+    },
+
     // Response Details
     respondedAt: {
         type: Date,

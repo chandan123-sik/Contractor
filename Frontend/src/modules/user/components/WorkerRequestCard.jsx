@@ -1,6 +1,7 @@
 import { MapPin, Phone, Calendar, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { memo } from 'react';
 
-const WorkerRequestCard = ({ request, onAccept, onDecline, index = 0, showButtons = true, showStatus = false }) => {
+const WorkerRequestCard = memo(({ request, onAccept, onDecline, index = 0, showButtons = true, showStatus = false }) => {
     // Safety checks for required fields
     const workerName = request.workerName || request.applicantName || 'Unknown';
     const location = request.location || 'Not specified';
@@ -92,6 +93,8 @@ const WorkerRequestCard = ({ request, onAccept, onDecline, index = 0, showButton
             )}
         </div>
     );
-};
+});
+
+WorkerRequestCard.displayName = 'WorkerRequestCard';
 
 export default WorkerRequestCard;
