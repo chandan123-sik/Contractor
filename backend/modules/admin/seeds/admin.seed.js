@@ -18,76 +18,68 @@ const connectDB = async () => {
     }
 };
 
-// Seed Admin Users
+// Seed Admin Users (Production-Ready)
 const seedAdmins = async () => {
     try {
-        // Clear existing admins
-        await Admin.deleteMany({});
-        console.log('🗑️  Cleared existing admins');
-
-        // Create default admins one by one (to trigger pre-save hooks)
-        const admins = [
-            {
-                username: 'admin',
-                password: 'admin123',
-                name: 'Super Admin',
-                email: 'admin@rajghar.com',
-                phone: '9999999999',
-                role: 'SUPER_ADMIN'
-            },
-            {
-                username: 'user_admin',
-                password: 'admin123',
-                name: 'User Admin',
-                email: 'useradmin@rajghar.com',
-                phone: '9999999998',
-                role: 'ADMIN_USER'
-            },
-            {
-                username: 'labour_admin',
-                password: 'admin123',
-                name: 'Labour Admin',
-                email: 'labouradmin@rajghar.com',
-                phone: '9999999997',
-                role: 'ADMIN_LABOUR'
-            },
-            {
-                username: 'contractor_admin',
-                password: 'admin123',
-                name: 'Contractor Admin',
-                email: 'contractoradmin@rajghar.com',
-                phone: '9999999996',
-                role: 'ADMIN_CONTRACTOR'
-            }
-        ];
-
-        // Create admins one by one to trigger password hashing
-        for (const adminData of admins) {
-            await Admin.create(adminData);
+        // Check if any admin already exists
+        const existingAdminCount = await Admin.countDocuments();
+        
+        if (existingAdminCount > 0) {
+            console.log('⚠️  Admins already exist in database. Skipping admin seeding.');
+            console.log(`   Found ${existingAdminCount} admin(s) in database.`);
+            console.log('   To reset admins, manually delete them from database first.');
+            return;
         }
 
-        console.log('✅ Admin users seeded successfully');
-        console.log('\n📋 Default Admin Credentials:');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        admins.forEach(admin => {
-            console.log(`\n👤 ${admin.role}`);
-            console.log(`   Username: ${admin.username}`);
-            console.log(`   Password: ${admin.password}`);
-            console.log(`   Email: ${admin.email}`);
+        // Get super admin credentials from environment or use defaults
+        const superAdminUsername = process.env.SUPER_ADMIN_USERNAME || 'admin';
+        const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'admin123';
+        const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@rajghar.com';
+        const superAdminPhone = process.env.SUPER_ADMIN_PHONE || '9999999999';
+
+        // Create only Super Admin
+        const superAdmin = await Admin.create({
+            username: superAdminUsername,
+            password: superAdminPassword,
+            name: 'Super Admin',
+            email: superAdminEmail,
+            phone: superAdminPhone,
+            role: 'SUPER_ADMIN',
+            isActive: true
         });
-        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+        console.log('✅ Super Admin created successfully');
+        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('📋 SUPER ADMIN CREDENTIALS (SAVE THESE!)');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log(`\n👤 Username: ${superAdminUsername}`);
+        console.log(`🔑 Password: ${superAdminPassword}`);
+        console.log(`📧 Email: ${superAdminEmail}`);
+        console.log(`📱 Phone: ${superAdminPhone}`);
+        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('⚠️  IMPORTANT FOR PRODUCTION:');
+        console.log('   1. Change the password immediately after first login');
+        console.log('   2. Use Admin Management dashboard to create other admins');
+        console.log('   3. Set strong passwords for production deployment');
+        console.log('   4. Use environment variables for credentials');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
     } catch (error) {
         console.error('❌ Error seeding admins:', error.message);
+        throw error;
     }
 };
 
 // Seed Labour Categories
 const seedLabourCategories = async () => {
     try {
-        // Clear existing categories
-        await LabourCategory.deleteMany({});
-        console.log('🗑️  Cleared existing labour categories');
+        // Check if categories already exist
+        const existingCategoriesCount = await LabourCategory.countDocuments();
+        
+        if (existingCategoriesCount > 0) {
+            console.log('⚠️  Labour categories already exist. Skipping category seeding.');
+            return;
+        }
 
         // Create default categories
         const categories = [
@@ -105,15 +97,20 @@ const seedLabourCategories = async () => {
 
     } catch (error) {
         console.error('❌ Error seeding labour categories:', error.message);
+        throw error;
     }
 };
 
 // Seed CMS Content
 const seedCMSContent = async () => {
     try {
-        // Clear existing CMS content
-        await CMSContent.deleteMany({});
-        console.log('🗑️  Cleared existing CMS content');
+        // Check if CMS content already exists
+        const existingContentCount = await CMSContent.countDocuments();
+        
+        if (existingContentCount > 0) {
+            console.log('⚠️  CMS content already exists. Skipping CMS seeding.');
+            return;
+        }
 
         // Create default CMS content
         const cmsContent = [
@@ -150,6 +147,7 @@ const seedCMSContent = async () => {
 
     } catch (error) {
         console.error('❌ Error seeding CMS content:', error.message);
+        throw error;
     }
 };
 
@@ -164,7 +162,7 @@ const seedAll = async () => {
         await seedLabourCategories();
         await seedCMSContent();
         
-        console.log('\n✅ All data seeded successfully!\n');
+        console.log('\n✅ Database seeding completed!\n');
         
         process.exit(0);
     } catch (error) {
@@ -175,3 +173,4 @@ const seedAll = async () => {
 
 // Run seeding
 seedAll();
+

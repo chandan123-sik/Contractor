@@ -9,8 +9,12 @@ import Contractor from '../modules/contractor/models/Contractor.model.js';
 // @access  Private
 export const createChatFromRequest = async (requestData) => {
     try {
-        console.log('\n🟢 ===== CREATE CHAT FROM REQUEST =====');
-        console.log('📦 Request Data:', JSON.stringify(requestData, null, 2));
+        const isDev = process.env.NODE_ENV === 'development';
+        
+        if (isDev) {
+            console.log('\n🟢 ===== CREATE CHAT FROM REQUEST =====');
+            console.log('📦 Request Data:', JSON.stringify(requestData, null, 2));
+        }
 
         const {
             participant1,
@@ -21,9 +25,11 @@ export const createChatFromRequest = async (requestData) => {
         const userId1 = participant1.userId.toString();
         const userId2 = participant2.userId.toString();
 
-        console.log('👥 Checking for existing chat between:');
-        console.log('   Participant 1:', userId1, `(${participant1.userType})`);
-        console.log('   Participant 2:', userId2, `(${participant2.userType})`);
+        if (isDev) {
+            console.log('👥 Checking for existing chat between:');
+            console.log('   Participant 1:', userId1, `(${participant1.userType})`);
+            console.log('   Participant 2:', userId2, `(${participant2.userType})`);
+        }
 
         // ✅ FIRST: Check if chat exists between these two participants (most important check)
         let existingChat = await Chat.findOne({
@@ -35,17 +41,19 @@ export const createChatFromRequest = async (requestData) => {
         });
 
         if (existingChat) {
-            console.log('✅ FOUND existing chat between these participants:', existingChat._id);
-            console.log('   Reusing existing chat instead of creating new one');
+            if (isDev) {
+                console.log('✅ FOUND existing chat between these participants:', existingChat._id);
+                console.log('   Reusing existing chat instead of creating new one');
+            }
             
             // Update relatedRequest to link this new interaction to existing chat
             if (!existingChat.relatedRequest || existingChat.relatedRequest.requestId.toString() !== relatedRequest.requestId.toString()) {
-                console.log('   Updating relatedRequest reference to new interaction');
+                if (isDev) console.log('   Updating relatedRequest reference to new interaction');
                 existingChat.relatedRequest = relatedRequest;
                 await existingChat.save();
             }
             
-            console.log('===========================\n');
+            if (isDev) console.log('===========================\n');
             return existingChat;
         }
 
@@ -55,13 +63,15 @@ export const createChatFromRequest = async (requestData) => {
         });
 
         if (existingChat) {
-            console.log('⚠️ Chat already exists for this specific request:', existingChat._id);
-            console.log('===========================\n');
+            if (isDev) {
+                console.log('⚠️ Chat already exists for this specific request:', existingChat._id);
+                console.log('===========================\n');
+            }
             return existingChat;
         }
 
         // No existing chat found - create new one
-        console.log('📝 No existing chat found, creating new chat...');
+        if (isDev) console.log('📝 No existing chat found, creating new chat...');
         
         const chat = await Chat.create({
             participants: [participant1, participant2],
@@ -73,14 +83,18 @@ export const createChatFromRequest = async (requestData) => {
             }
         });
 
-        console.log('✅ New chat created successfully:', chat._id);
-        console.log('===========================\n');
+        if (isDev) {
+            console.log('✅ New chat created successfully:', chat._id);
+            console.log('===========================\n');
+        }
 
         return chat;
     } catch (error) {
         console.error('❌ CREATE CHAT ERROR:', error.message);
-        console.error('Stack:', error.stack);
-        console.log('===========================\n');
+        if (process.env.NODE_ENV === 'development') {
+            console.error('Stack:', error.stack);
+            console.log('===========================\n');
+        }
         throw error;
     }
 };
@@ -90,9 +104,6 @@ export const createChatFromRequest = async (requestData) => {
 // @access  Private
 export const getUserChats = async (req, res) => {
     try {
-        console.log('\n🔵 ===== GET USER CHATS =====');
-        console.log('👤 User ID:', req.user._id);
-
         const userId = req.user._id;
 
         // Find all chats where user is a participant
@@ -124,9 +135,6 @@ export const getUserChats = async (req, res) => {
             };
         });
 
-        console.log('✅ Found', formattedChats.length, 'chats');
-        console.log('===========================\n');
-
         res.status(200).json({
             success: true,
             data: {
@@ -136,7 +144,6 @@ export const getUserChats = async (req, res) => {
         });
     } catch (error) {
         console.error('❌ GET USER CHATS ERROR:', error.message);
-        console.log('===========================\n');
         res.status(500).json({
             success: false,
             message: 'Failed to get chats',

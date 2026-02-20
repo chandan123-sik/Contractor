@@ -8,6 +8,7 @@ import verificationAdminRoutes from './verification.admin.routes.js';
 import cmsAdminRoutes from './cms.admin.routes.js';
 import dashboardAdminRoutes from './dashboard.admin.routes.js';
 import broadcastAdminRoutes from './broadcast.admin.routes.js';
+import adminManagementRoutes from './admin.management.routes.js';
 
 const router = express.Router();
 
@@ -21,5 +22,6 @@ router.use('/verification', verificationAdminRoutes);
 router.use('/cms', cmsAdminRoutes);
 router.use('/dashboard', dashboardAdminRoutes);
 router.use('/broadcasts', broadcastAdminRoutes);
+router.use('/management', adminManagementRoutes);
 
 export default router;

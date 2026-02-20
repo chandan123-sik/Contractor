@@ -423,3 +423,41 @@ export const broadcastAPI = {
         return response.data;
     }
 };
+
+// ==================== ADMIN MANAGEMENT APIs ====================
+export const adminManagementAPI = {
+    getAllAdmins: async (params = {}) => {
+        const response = await adminApi.get('/management/admins', { params });
+        return response.data;
+    },
+
+    getAdminById: async (id) => {
+        const response = await adminApi.get(`/management/admins/${id}`);
+        return response.data;
+    },
+
+    createAdmin: async (adminData) => {
+        const response = await adminApi.post('/management/admins', adminData);
+        return response.data;
+    },
+
+    updateAdmin: async (id, adminData) => {
+        const response = await adminApi.put(`/management/admins/${id}`, adminData);
+        return response.data;
+    },
+
+    deleteAdmin: async (id) => {
+        const response = await adminApi.delete(`/management/admins/${id}`);
+        return response.data;
+    },
+
+    resetAdminPassword: async (id, newPassword) => {
+        const response = await adminApi.put(`/management/admins/${id}/reset-password`, { newPassword });
+        return response.data;
+    },
+
+    getAdminStats: async () => {
+        const response = await adminApi.get('/management/stats');
+        return response.data;
+    }
+};

@@ -19,7 +19,8 @@ import {
     MoreVertical,
     LogOut,
     SlidersHorizontal,
-    Image
+    Image,
+    UserCog
 } from 'lucide-react';
 import { Outlet, useNavigate, useLocation, Link, NavLink } from 'react-router-dom';
 import './AdminDashboard.css';
@@ -498,6 +499,17 @@ const ProfessionalDashboard = () => {
                         >
                             <Image size={20} />
                             <span>Banner Section</span>
+                        </NavLink>
+                    )}
+                    
+                    {hasAccess(['SUPER_ADMIN']) && (
+                        <NavLink
+                            to="/admin/dashboard/admins"
+                            onClick={closeMobileMenu}
+                            className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}
+                        >
+                            <UserCog size={20} />
+                            <span>Admin Management</span>
                         </NavLink>
                     )}
                     

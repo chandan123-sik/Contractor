@@ -40,10 +40,16 @@ const app = express();
 // Create HTTP server for Socket.io
 const server = http.createServer(app);
 
-// Initialize Socket.io
+// Initialize Socket.io with CORS
+const allowedSocketOrigins = process.env.CORS_ORIGIN?.split(',') || [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://yourapp.vercel.app' // Add your production URL here
+];
+
 const io = new Server(server, {
     cors: {
-        origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173', 'http://localhost:5174'],
+        origin: allowedSocketOrigins,
         credentials: true,
         methods: ['GET', 'POST']
     }
@@ -69,33 +75,43 @@ io.use((socket, next) => {
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
-    console.log('✅ Socket connected:', socket.id, 'User:', socket.userId);
+    if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Socket connected:', socket.id, 'User:', socket.userId);
+    }
 
     // Join user to their personal room
     socket.join(socket.userId.toString());
 
     // Join chat room
     socket.on('join-chat', (chatId) => {
-        console.log('📥 User', socket.userId, 'joined chat:', chatId);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('📥 User', socket.userId, 'joined chat:', chatId);
+        }
         socket.join(chatId);
     });
 
     // Leave chat room
     socket.on('leave-chat', (chatId) => {
-        console.log('📤 User', socket.userId, 'left chat:', chatId);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('📤 User', socket.userId, 'left chat:', chatId);
+        }
         socket.leave(chatId);
     });
 
     // Send message
     socket.on('send-message', (data) => {
-        console.log('💬 Message from', socket.userId, 'to chat:', data.chatId);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('💬 Message from', socket.userId, 'to chat:', data.chatId);
+        }
         // Emit to all users in the chat room
         io.to(data.chatId).emit('receive-message', data);
     });
 
     // Mark messages as read
     socket.on('mark-read', (data) => {
-        console.log('✓✓ Messages marked as read in chat:', data.chatId);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('✓✓ Messages marked as read in chat:', data.chatId);
+        }
         io.to(data.chatId).emit('messages-read', data);
     });
 
@@ -110,7 +126,9 @@ io.on('connection', (socket) => {
 
     // Disconnect
     socket.on('disconnect', () => {
-        console.log('❌ Socket disconnected:', socket.id);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('❌ Socket disconnected:', socket.id);
+        }
     });
 });
 
@@ -132,8 +150,15 @@ app.use(compression({
     }
 }));
 
+// CORS Configuration - Supports both development and production
+const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://yourapp.vercel.app' // Add your production URL here
+];
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173', 'http://localhost:5174'],
+    origin: allowedOrigins,
     credentials: true
 }));
 
@@ -141,14 +166,16 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Request logging middleware
-app.use((req, res, next) => {
-    console.log(`\n📨 ${req.method} ${req.path}`);
-    if (Object.keys(req.body).length > 0) {
-        console.log('Body keys:', Object.keys(req.body));
-    }
-    next();
-});
+// Request logging middleware (only in development)
+if (process.env.NODE_ENV === 'development') {
+    app.use((req, res, next) => {
+        console.log(`\n📨 ${req.method} ${req.path}`);
+        if (Object.keys(req.body).length > 0) {
+            console.log('Body keys:', Object.keys(req.body));
+        }
+        next();
+    });
+}
 
 // Routes
 app.use('/api/auth', authRoutes);
