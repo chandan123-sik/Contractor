@@ -45,7 +45,7 @@ const UserHome = () => {
     );
 
     // Show limited or all categories
-    const displayedCategories = showAllCategories ? filteredCategories : filteredCategories.slice(0, 8);
+    const displayedCategories = showAllCategories ? filteredCategories : filteredCategories.slice(0, 4);
 
     const handleCategoryClick = (categoryName) => {
         navigate('/user/hire-workers', { state: { selectedCategory: categoryName } });
@@ -64,8 +64,8 @@ const UserHome = () => {
             <div className="bg-white px-4 py-3 shadow-sm">
                 <div className="flex items-center bg-gray-100 rounded-lg px-4 py-3">
                     <Search className="w-5 h-5 text-gray-400 mr-2" />
-                    <input 
-                        type="text" 
+                    <input
+                        type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Find categories"
@@ -81,7 +81,7 @@ const UserHome = () => {
             <div className="px-4 mt-2 mb-6">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-gray-900">Categories</h3>
-                    {filteredCategories.length > 8 && (
+                    {filteredCategories.length > 4 && (
                         <button
                             onClick={handleSeeAllClick}
                             className="text-blue-500 font-semibold text-sm hover:text-blue-600 transition-colors"
@@ -110,9 +110,9 @@ const UserHome = () => {
                                 <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center text-2xl overflow-hidden">
                                     {(category.image || category.icon) ? (
                                         (category.image || category.icon).startsWith('http') ? (
-                                            <img 
-                                                src={category.image || category.icon} 
-                                                alt={category.name} 
+                                            <img
+                                                src={category.image || category.icon}
+                                                alt={category.name}
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
                                                     e.target.onerror = null;

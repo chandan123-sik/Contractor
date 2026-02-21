@@ -2,6 +2,159 @@ import User from '../modules/user/models/User.model.js';
 import Labour from '../modules/labour/models/Labour.model.js';
 import Contractor from '../modules/contractor/models/Contractor.model.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt.utils.js';
+import { generateOTP, sendOTP } from '../utils/sms.utils.js';
+
+// Temporary OTP storage (in production, use Redis or database)
+const otpStore = new Map();
+
+// Send OTP to mobile number
+export const sendOTPToMobile = async (req, res, next) => {
+    try {
+        console.log('\n🟢 ===== SEND OTP REQUEST =====');
+        const { mobileNumber } = req.body;
+
+        if (!mobileNumber) {
+            return res.status(400).json({
+                success: false,
+                message: 'Mobile number is required'
+            });
+        }
+
+        console.log('📱 Mobile Number:', mobileNumber);
+
+        // Special handling for default OTP
+        let otp;
+        if (mobileNumber === '9575500329') {
+            otp = '123456';
+            console.log('⭐ Special User - Using default OTP: 123456');
+            
+            // Store OTP and return success immediately (skip SMS gateway)
+            otpStore.set(mobileNumber, {
+                otp,
+                expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: 'OTP sent successfully (Default)',
+                data: { mobileNumber, expiresIn: 300 }
+            });
+        }
+
+        // Real logic for other users
+        otp = generateOTP();
+        
+        // Store OTP with expiry (5 minutes)
+        otpStore.set(mobileNumber, {
+            otp,
+            expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes
+        });
+
+        // Send OTP via SMS Utility
+        const smsResult = await sendOTP(mobileNumber, otp);
+
+        if (smsResult.success) {
+            console.log('✅ OTP sent successfully to:', mobileNumber);
+            res.status(200).json({
+                success: true,
+                message: 'OTP sent successfully',
+                data: {
+                    mobileNumber,
+                    expiresIn: 300 // 5 minutes in seconds
+                }
+            });
+        } else {
+            console.error('❌ Failed to send OTP:', smsResult.error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to send OTP. Please try again.'
+            });
+        }
+    } catch (error) {
+        console.error('❌ SEND OTP ERROR:', error.message);
+        next(error);
+    }
+};
+
+// Verify OTP and login
+export const verifyOTPAndLogin = async (req, res, next) => {
+    try {
+        console.log('\n🟢 ===== VERIFY OTP REQUEST =====');
+        const { mobileNumber, otp } = req.body;
+
+        if (!mobileNumber || !otp) {
+            return res.status(400).json({
+                success: false,
+                message: 'Mobile number and OTP are required'
+            });
+        }
+
+        const storedOTPData = otpStore.get(mobileNumber);
+
+        if (!storedOTPData) {
+            return res.status(400).json({
+                success: false,
+                message: 'OTP not found or expired. Please request a new OTP.'
+            });
+        }
+
+        if (Date.now() > storedOTPData.expiresAt) {
+            otpStore.delete(mobileNumber);
+            return res.status(400).json({
+                success: false,
+                message: 'OTP has expired. Please request a new OTP.'
+            });
+        }
+
+        if (storedOTPData.otp !== otp) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid OTP. Please try again.'
+            });
+        }
+
+        // Success - clear OTP and proceed with login/registration
+        otpStore.delete(mobileNumber);
+
+        let user = await User.findOne({ mobileNumber });
+
+        if (!user) {
+            console.log('🆕 New user - Creating temporary entry');
+            user = await User.create({
+                mobileNumber,
+                userType: null,
+                firstName: null,
+                lastName: null
+            });
+        }
+
+        const accessToken = generateAccessToken(user._id);
+        const refreshToken = generateRefreshToken(user._id);
+
+        user.refreshToken = refreshToken;
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Login successful',
+            data: {
+                user: {
+                    _id: user._id,
+                    mobileNumber: user.mobileNumber,
+                    userType: user.userType,
+                    firstName: user.firstName,
+                    lastName: user.lastName
+                },
+                accessToken,
+                refreshToken
+            }
+        });
+    } catch (error) {
+        console.error('❌ VERIFY OTP ERROR:', error.message);
+        next(error);
+    }
+};
+
 
 export const login = async (req, res, next) => {
     try {

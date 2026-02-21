@@ -6,6 +6,8 @@ const MobileInput = () => {
     const navigate = useNavigate();
     const [phoneNumber, setPhoneNumber] = useState('');
 
+    const [loading, setLoading] = useState(false);
+
     const handleKeyPress = (num) => {
         if (phoneNumber.length < 10) {
             setPhoneNumber(prev => prev + num);
@@ -16,9 +18,29 @@ const MobileInput = () => {
         setPhoneNumber(prev => prev.slice(0, -1));
     };
 
-    const handleContinue = () => {
+    const handleContinue = async () => {
         if (phoneNumber.length === 10) {
-            navigate('/otp-verify', { state: { phoneNumber } });
+            setLoading(true);
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/send-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mobileNumber: phoneNumber })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    navigate('/otp-verify', { state: { phoneNumber } });
+                } else {
+                    alert(data.message || 'Failed to send OTP');
+                }
+            } catch (error) {
+                console.error('Error sending OTP:', error);
+                alert('Connection error. Please check if backend is running.');
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
@@ -83,12 +105,12 @@ const MobileInput = () => {
                 <div className="mb-4">
                     <button
                         onClick={handleContinue}
-                        disabled={phoneNumber.length !== 10}
+                        disabled={phoneNumber.length !== 10 || loading}
                         className={`w-full py-3.5 rounded-full text-gray-900 font-bold text-base transition-colors
-              ${phoneNumber.length === 10 ? 'bg-[#fbbf24] hover:bg-yellow-500 shadow-md' : 'bg-yellow-100 text-gray-400 cursor-not-allowed'}
+              ${phoneNumber.length === 10 && !loading ? 'bg-[#fbbf24] hover:bg-yellow-500 shadow-md' : 'bg-yellow-100 text-gray-400 cursor-not-allowed'}
             `}
                     >
-                        Continue
+                        {loading ? 'Sending...' : 'Continue'}
                     </button>
                 </div>
 

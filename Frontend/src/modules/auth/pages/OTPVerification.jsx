@@ -9,6 +9,7 @@ const OTPVerification = () => {
     const phoneNumber = location.state?.phoneNumber || '5000000033'; // Default fallback
     const [otp, setOtp] = useState('');
     const [timer, setTimer] = useState(59);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -18,7 +19,7 @@ const OTPVerification = () => {
     }, []);
 
     const handleKeyPress = (num) => {
-        if (otp.length < 4) {
+        if (otp.length < 6) {
             setOtp(prev => prev + num);
         }
     };
@@ -28,102 +29,58 @@ const OTPVerification = () => {
     };
 
     const handleEnter = async () => {
-        if (otp.length === 4) {
-            // Check if OTP is correct (default: 1234)
-            if (otp !== '1234') {
-                toast.error('❌ Invalid OTP! Please enter 1234', {
-                    duration: 3000,
-                    position: 'top-center',
-                    style: {
-                        background: '#ef4444',
-                        color: '#fff',
-                        fontWeight: 'bold',
-                    }
-                });
-                setOtp(''); // Clear OTP
-                return;
-            }
-
-            // Show success message
-            toast.success('✅ OTP Verified Successfully!', {
-                duration: 2000,
-                position: 'top-center',
-            });
-
+        if (otp.length === 6) {
+            setLoading(true);
             try {
-                // Call login API
-                const response = await fetch('http://localhost:5000/api/auth/login', {
+                // Call real verify OTP API
+                const response = await fetch('http://localhost:5000/api/auth/verify-otp', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        mobileNumber: phoneNumber
+                        mobileNumber: phoneNumber,
+                        otp: otp
                     })
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
+                    toast.success('✅ OTP Verified Successfully!');
+
                     // Store tokens and user info
                     localStorage.setItem('access_token', data.data.accessToken);
                     localStorage.setItem('refresh_token', data.data.refreshToken);
                     localStorage.setItem('mobile_number', phoneNumber);
                     localStorage.setItem('user_id', data.data.user._id);
-                    
-                    // Store complete user object for reference
                     localStorage.setItem('user', JSON.stringify(data.data.user));
-                    
-                    const userType = data.data.user.userType;
-                    const firstName = data.data.user.firstName;
-                    
-                    console.log('✅ Login successful:', data.data.user);
-                    console.log('User Type:', userType);
-                    console.log('First Name:', firstName);
 
-                    // Check if user has completed profile
-                    // New user: userType is null OR firstName is null
-                    // Existing user: both userType and firstName exist
+                    const { userType, firstName } = data.data.user;
+
+                    // Redirection logic
                     if (userType && firstName) {
-                        // Existing user with complete profile - redirect to their panel
                         localStorage.setItem('user_type', userType);
-                        
-                        toast.success(`Welcome back, ${firstName}!`, {
-                            duration: 2000,
-                            position: 'top-center',
-                        });
+                        toast.success(`Welcome back, ${firstName}!`);
 
-                        // Redirect based on user type
-                        if (userType === 'User') {
-                            navigate('/user/home');
-                        } else if (userType === 'Contractor') {
-                            navigate('/contractor/home');
-                        } else if (userType === 'Labour') {
-                            navigate('/labour/home');
-                        } else {
-                            // Fallback to complete profile
-                            console.log('Unknown user type - redirecting to complete profile');
-                            navigate('/complete-profile');
-                        }
+                        // Role based routing
+                        const routes = {
+                            'User': '/user/home',
+                            'Contractor': '/contractor/home',
+                            'Labour': '/labour/home'
+                        };
+                        navigate(routes[userType] || '/complete-profile');
                     } else {
-                        // New user or incomplete profile - go to complete profile
-                        console.log('🆕 New user detected - redirecting to complete profile');
-                        console.log('   userType:', userType, '| firstName:', firstName);
-                        
-                        toast.success('Welcome! Please complete your profile', {
-                            duration: 2000,
-                            position: 'top-center',
-                        });
-                        
+                        toast.success('Welcome! Please complete your profile');
                         navigate('/complete-profile');
                     }
                 } else {
-                    console.error('Login failed:', data.message);
-                    toast.error(data.message || 'Login failed. Please try again.');
+                    toast.error(data.message || 'Invalid OTP. Please try again.');
+                    setOtp('');
                 }
             } catch (error) {
-                console.error('Login error:', error);
+                console.error('Verify OTP error:', error);
                 toast.error('Connection error. Please try again.');
+            } finally {
+                setLoading(false);
             }
         }
     };
@@ -146,15 +103,12 @@ const OTPVerification = () => {
                     <p className="text-gray-500 text-sm">
                         We sent it to the number +91 {phoneNumber}
                     </p>
-                    <p className="text-blue-600 text-sm mt-2 font-medium">
-                        💡 For testing, use OTP: 1234
-                    </p>
                 </div>
 
                 {/* OTP Display */}
                 <div className="flex justify-center mb-4">
                     <span className="text-2xl text-gray-400 tracking-[0.5em] font-medium">
-                        {otp.padEnd(4, '*').split('').map((char, index) => (
+                        {otp.padEnd(6, '*').split('').map((char, index) => (
                             <span key={index} className={index < otp.length ? 'text-gray-900' : 'text-gray-300'}>
                                 {index < otp.length ? char : '*'}
                             </span>
@@ -203,12 +157,12 @@ const OTPVerification = () => {
                 <div className="mb-6">
                     <button
                         onClick={handleEnter}
-                        disabled={otp.length !== 4}
+                        disabled={otp.length !== 6 || loading}
                         className={`w-full py-3.5 rounded-full text-gray-900 font-bold text-base transition-colors
-              ${otp.length === 4 ? 'bg-[#fbbf24] hover:bg-yellow-500 shadow-md' : 'bg-yellow-100 text-gray-400 cursor-not-allowed'}
+              ${otp.length === 6 && !loading ? 'bg-[#fbbf24] hover:bg-yellow-500 shadow-md' : 'bg-yellow-100 text-gray-400 cursor-not-allowed'}
             `}
                     >
-                        Enter
+                        {loading ? 'Verifying...' : 'Enter'}
                     </button>
                 </div>
             </div>

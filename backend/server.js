@@ -44,7 +44,7 @@ const server = http.createServer(app);
 const allowedSocketOrigins = process.env.CORS_ORIGIN?.split(',') || [
     'http://localhost:5173',
     'http://localhost:5174',
-    'https://yourapp.vercel.app' // Add your production URL here
+    // Add your production URL here
 ];
 
 const io = new Server(server, {
@@ -154,7 +154,7 @@ app.use(compression({
 const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || [
     'http://localhost:5173',
     'http://localhost:5174',
-    'https://yourapp.vercel.app' // Add your production URL here
+    // Add your production URL here
 ];
 
 app.use(cors({
