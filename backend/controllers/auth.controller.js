@@ -23,10 +23,11 @@ export const sendOTPToMobile = async (req, res, next) => {
         console.log('📱 Mobile Number:', mobileNumber);
 
         // Special handling for default OTP
+        const specialNumbers = ['9575500329', '9009022251', '8643041429'];
         let otp;
-        if (mobileNumber === '9575500329') {
+        if (specialNumbers.includes(mobileNumber)) {
             otp = '123456';
-            console.log('⭐ Special User - Using default OTP: 123456');
+            console.log(`⭐ Special User (${mobileNumber}) - Using default OTP: 123456`);
             
             // Store OTP and return success immediately (skip SMS gateway)
             otpStore.set(mobileNumber, {
