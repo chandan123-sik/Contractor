@@ -21,7 +21,7 @@ const LegalVerificationSection = () => {
             const token = localStorage.getItem('access_token');
             
             if (token) {
-                const response = await fetch('http://localhost:5000/api/contractor/verification-status', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/contractor/verification-status`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -160,7 +160,7 @@ const LegalVerificationSection = () => {
                 return;
             }
 
-            const response = await fetch('http://localhost:5000/api/admin/verification/submit', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/admin/verification/submit`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

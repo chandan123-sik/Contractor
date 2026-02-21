@@ -32,7 +32,7 @@ const FindUser = () => {
                 return;
             }
 
-            const profileResponse = await fetch('http://localhost:5000/api/contractor/profile', {
+            const profileResponse = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/contractor/profile`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -209,7 +209,7 @@ const FindUser = () => {
             }
 
             // Get contractor profile from database
-            const profileResponse = await fetch('http://localhost:5000/api/contractor/profile', {
+            const profileResponse = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/contractor/profile`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

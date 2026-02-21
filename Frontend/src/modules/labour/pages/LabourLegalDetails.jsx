@@ -26,7 +26,7 @@ const LabourLegalDetails = () => {
             const token = localStorage.getItem('access_token');
             
             if (token) {
-                const response = await fetch('http://localhost:5000/api/labour/verification-status', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/labour/verification-status`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -189,7 +189,7 @@ const LabourLegalDetails = () => {
             }
 
             // Submit verification request to database
-            const response = await fetch('http://localhost:5000/api/admin/verification/submit', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/admin/verification/submit`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -111,7 +111,7 @@ const LabourDetails = () => {
             }
 
             // Update work details in database
-            const response = await fetch('http://localhost:5000/api/labour/work-details', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/labour/work-details`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

@@ -33,7 +33,7 @@ const UserHeader = memo(() => {
                 const token = localStorage.getItem('access_token');
                 if (!token) return;
 
-                const response = await fetch('http://localhost:5000/api/users/profile', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/users/profile`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -89,7 +89,7 @@ const UserHeader = memo(() => {
                 const token = localStorage.getItem('access_token');
                 if (!token) return;
 
-                const response = await fetch('http://localhost:5000/api/notifications/unread-count?userType=USER', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/notifications/unread-count?userType=USER`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

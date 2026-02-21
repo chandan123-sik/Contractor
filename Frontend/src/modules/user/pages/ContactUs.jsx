@@ -35,9 +35,9 @@ const ContactUs = () => {
             
             // Fetch all CMS content in parallel
             const [contactRes, termsRes, privacyRes] = await Promise.all([
-                fetch('http://localhost:5000/api/admin/cms/contactUs'),
-                fetch('http://localhost:5000/api/admin/cms/terms'),
-                fetch('http://localhost:5000/api/admin/cms/privacy')
+                fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/admin/cms/contactUs`),
+                fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/admin/cms/terms`),
+                fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/admin/cms/privacy`)
             ]);
 
             const contactData = await contactRes.json();

@@ -49,7 +49,7 @@ const BusinessDetails = () => {
             
             // Save to database
             if (token) {
-                const response = await fetch('http://localhost:5000/api/contractor/business-details', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/contractor/business-details`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',

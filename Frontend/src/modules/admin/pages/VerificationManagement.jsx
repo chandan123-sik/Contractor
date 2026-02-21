@@ -38,7 +38,7 @@ const VerificationManagement = () => {
                 return;
             }
 
-            const response = await fetch(`http://localhost:5000/api/admin/verification/requests?category=${activeCategory}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/admin/verification/requests?category=${activeCategory}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -63,7 +63,7 @@ const VerificationManagement = () => {
         try {
             const token = localStorage.getItem('adminToken');
             
-            const response = await fetch(`http://localhost:5000/api/admin/verification/requests/${id}/${action}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/admin/verification/requests/${id}/${action}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,

@@ -36,7 +36,7 @@ const ContractorHeader = memo(() => {
                     return;
                 }
 
-                const response = await fetch('http://localhost:5000/api/contractor/profile', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/contractor/profile`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -111,7 +111,7 @@ const ContractorHeader = memo(() => {
                 const token = localStorage.getItem('access_token');
                 if (!token) return;
 
-                const response = await fetch('http://localhost:5000/api/notifications/unread-count?userType=CONTRACTOR', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/notifications/unread-count?userType=CONTRACTOR`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

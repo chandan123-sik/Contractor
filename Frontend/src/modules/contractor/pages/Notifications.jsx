@@ -25,7 +25,7 @@ const Notifications = () => {
                 return;
             }
 
-            const response = await fetch('http://localhost:5000/api/notifications?userType=CONTRACTOR', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/notifications?userType=CONTRACTOR`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -48,7 +48,7 @@ const Notifications = () => {
         try {
             const token = localStorage.getItem('access_token');
             
-            const response = await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/notifications/${id}/read`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -69,7 +69,7 @@ const Notifications = () => {
         try {
             const token = localStorage.getItem('access_token');
             
-            const response = await fetch('http://localhost:5000/api/notifications/read-all', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/notifications/read-all`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -92,7 +92,7 @@ const Notifications = () => {
         try {
             const token = localStorage.getItem('access_token');
             
-            const response = await fetch(`http://localhost:5000/api/notifications/${id}?userType=CONTRACTOR`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/notifications/${id}?userType=CONTRACTOR`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`

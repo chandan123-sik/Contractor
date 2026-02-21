@@ -169,7 +169,7 @@ const FindUser = () => {
             }
 
             // Get labour profile from database
-            const profileResponse = await fetch('http://localhost:5000/api/labour/profile', {
+            const profileResponse = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/labour/profile`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

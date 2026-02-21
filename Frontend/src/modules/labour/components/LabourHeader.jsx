@@ -36,7 +36,7 @@ const LabourHeader = memo(() => {
                     return;
                 }
 
-                const response = await fetch('http://localhost:5000/api/labour/profile', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/labour/profile`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -102,7 +102,7 @@ const LabourHeader = memo(() => {
                 const token = localStorage.getItem('access_token');
                 if (!token) return;
 
-                const response = await fetch('http://localhost:5000/api/notifications/unread-count?userType=LABOUR', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/notifications/unread-count?userType=LABOUR`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
