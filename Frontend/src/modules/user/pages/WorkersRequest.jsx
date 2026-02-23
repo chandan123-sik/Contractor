@@ -19,11 +19,11 @@ const WorkersRequest = () => {
             setLoading(true);
             // Get all user's jobs
             const jobsResponse = await jobAPI.getUserJobs();
-            
+
             if (jobsResponse.success && jobsResponse.data.jobs) {
                 // Collect all applications from all jobs
                 const allApplications = [];
-                
+
                 for (const job of jobsResponse.data.jobs) {
                     if (job.applications && job.applications.length > 0) {
                         // Transform applications to match component expectations
@@ -35,14 +35,14 @@ const WorkersRequest = () => {
                                 workerName: app.applicantName,
                                 location: app.location,
                                 phoneNumber: app.phoneNumber,
-                                date: new Date(app.appliedAt).toLocaleDateString('en-IN', { 
-                                    day: '2-digit', 
-                                    month: 'short', 
-                                    year: 'numeric' 
+                                date: new Date(app.appliedAt).toLocaleDateString('en-IN', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric'
                                 }),
-                                time: new Date(app.appliedAt).toLocaleTimeString('en-IN', { 
-                                    hour: '2-digit', 
-                                    minute: '2-digit' 
+                                time: new Date(app.appliedAt).toLocaleTimeString('en-IN', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
                                 }),
                                 type: app.applicantType.toLowerCase(),
                                 status: app.status
@@ -50,9 +50,9 @@ const WorkersRequest = () => {
                         });
                     }
                 }
-                
+
                 // Filter only Labour applications and pending status
-                const labourApplications = allApplications.filter(app => 
+                const labourApplications = allApplications.filter(app =>
                     app.type === 'labour' && app.status === 'Pending'
                 );
                 setRequests(labourApplications);
@@ -74,12 +74,12 @@ const WorkersRequest = () => {
 
         try {
             const response = await jobAPI.updateApplicationStatus(request.jobId, requestId, 'Accepted');
-            
+
             if (response.success) {
                 // Remove from pending requests
                 const updatedRequests = requests.filter(r => r.id !== requestId);
                 setRequests(updatedRequests);
-                
+
                 toast.success('Application accepted!', {
                     duration: 3000,
                     position: 'top-center',
@@ -103,12 +103,12 @@ const WorkersRequest = () => {
 
         try {
             const response = await jobAPI.updateApplicationStatus(request.jobId, requestId, 'Rejected');
-            
+
             if (response.success) {
                 // Remove from pending requests
                 const updatedRequests = requests.filter(r => r.id !== requestId);
                 setRequests(updatedRequests);
-                
+
                 toast.error('Application rejected', {
                     duration: 3000,
                     position: 'top-center',
@@ -127,42 +127,46 @@ const WorkersRequest = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
             {/* Header Section */}
-            <UserHeader />
+            <div className="sticky top-0 z-10 bg-white shadow-sm">
+                <UserHeader />
+            </div>
 
             {/* Main Content Area */}
-            <div className="p-4">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
-                    Worker Requests
-                    <span className="text-sm font-normal text-gray-600 ml-2">({requests.length})</span>
-                </h2>
-                
-                {loading ? (
-                    <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-                        <p className="text-gray-600">Loading applications...</p>
-                    </div>
-                ) : requests.length === 0 ? (
-                    <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Users className="w-8 h-8 text-gray-400" />
+            <div className="flex-1 overflow-y-auto">
+                <div className="p-4 pb-24">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">
+                        Worker Requests
+                        <span className="text-sm font-normal text-gray-600 ml-2">({requests.length})</span>
+                    </h2>
+
+                    {loading ? (
+                        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+                            <p className="text-gray-600">Loading applications...</p>
                         </div>
-                        <p className="text-gray-600 font-medium mb-1">No Worker Requests</p>
-                        <p className="text-sm text-gray-500">Requests from workers will appear here</p>
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {requests.map((request, index) => (
-                            <WorkerRequestCard
-                                key={request.id}
-                                request={request}
-                                index={index}
-                                onAccept={handleAccept}
-                                onDecline={handleDecline}
-                            />
-                        ))}
-                    </div>
-                )}
+                    ) : requests.length === 0 ? (
+                        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Users className="w-8 h-8 text-gray-400" />
+                            </div>
+                            <p className="text-gray-600 font-medium mb-1">No Worker Requests</p>
+                            <p className="text-sm text-gray-500">Requests from workers will appear here</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {requests.map((request, index) => (
+                                <WorkerRequestCard
+                                    key={request.id}
+                                    request={request}
+                                    index={index}
+                                    onAccept={handleAccept}
+                                    onDecline={handleDecline}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Bottom Navigation */}

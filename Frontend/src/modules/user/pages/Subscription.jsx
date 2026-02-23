@@ -66,32 +66,34 @@ const Subscription = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
             <PageHeader title="Subscription Plans" icon={Crown} sticky />
 
-            <div className="p-4 pb-8">
-                <BillingCycleToggle 
-                    billingCycle={billingCycle} 
-                    onChange={setBillingCycle} 
-                />
-
-                <div className="space-y-4 mt-6">
-                    {plans.map((plan) => (
-                        <SubscriptionPlanCard
-                            key={plan.id}
-                            plan={plan}
-                            billingCycle={billingCycle}
-                            isCurrentPlan={currentPlan === plan.id}
-                            onSubscribe={handleSubscribe}
-                        />
-                    ))}
-                </div>
-
-                <div className="mt-6">
-                    <InfoBox
-                        variant="info"
-                        message="💡 You can upgrade or downgrade your plan anytime. Changes take effect immediately."
+            <div className="flex-1 overflow-y-auto">
+                <div className="p-4 pb-8">
+                    <BillingCycleToggle
+                        billingCycle={billingCycle}
+                        onChange={setBillingCycle}
                     />
+
+                    <div className="space-y-4 mt-6">
+                        {plans.map((plan) => (
+                            <SubscriptionPlanCard
+                                key={plan.id}
+                                plan={plan}
+                                billingCycle={billingCycle}
+                                isCurrentPlan={currentPlan === plan.id}
+                                onSubscribe={handleSubscribe}
+                            />
+                        ))}
+                    </div>
+
+                    <div className="mt-6">
+                        <InfoBox
+                            variant="info"
+                            message="💡 You can upgrade or downgrade your plan anytime. Changes take effect immediately."
+                        />
+                    </div>
                 </div>
             </div>
         </div>

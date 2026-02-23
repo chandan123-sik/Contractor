@@ -3,13 +3,15 @@ import { Search, SlidersHorizontal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import LabourBottomNav from '../components/LabourBottomNav';
 import LabourHeader from '../components/LabourHeader';
+import PromotionalBanner from '../../../components/shared/PromotionalBanner';
+
 
 const LabourDashboard = () => {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
 
     return (
-        <div className="h-screen bg-gray-50 flex flex-col">
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
             {/* Header */}
             <LabourHeader />
 
@@ -33,13 +35,19 @@ const LabourDashboard = () => {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto p-4 pb-20">
-                <div className="flex items-center justify-center h-full">
+            <div className="flex-1 overflow-y-auto pb-20">
+                <div className="p-4">
+                    {/* Promotional Banners */}
+                    <PromotionalBanner />
+                </div>
+
+                <div className="flex items-center justify-center p-8">
                     <p className="text-gray-400 text-center">
                         Hire Workers content will be displayed here
                     </p>
                 </div>
             </div>
+
 
             {/* Bottom Navigation */}
             <LabourBottomNav />

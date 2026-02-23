@@ -56,12 +56,12 @@ const ContractorHome = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
-            {/* Header Section */}
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+            {/* Header Section (Sticky) */}
             <ContractorHeader />
 
-            {/* Search Bar */}
-            <div className="bg-white px-4 py-3 shadow-sm">
+            {/* Search Bar (Sticky) */}
+            <div className="bg-white px-4 py-3 shadow-sm z-10">
                 <div className="flex items-center bg-gray-100 rounded-lg px-4 py-3">
                     <Search className="w-5 h-5 text-gray-400 mr-2" />
                     <input
@@ -74,65 +74,68 @@ const ContractorHome = () => {
                 </div>
             </div>
 
-            {/* Promotional Banners */}
-            <PromotionalBanner />
+            {/* Scrollable Content Area */}
+            <div className="flex-1 overflow-y-auto pb-24">
+                {/* Promotional Banners */}
+                <PromotionalBanner />
 
-            {/* Categories Section */}
-            <div className="px-4 mt-2 mb-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-gray-900">Categories</h3>
-                    {filteredCategories.length > 4 && (
-                        <button
-                            onClick={handleSeeAllClick}
-                            className="text-blue-500 font-semibold text-sm hover:text-blue-600 transition-colors"
-                        >
-                            {showAllCategories ? 'See less' : 'See all'}
-                        </button>
+                {/* Categories Section */}
+                <div className="px-4 mt-2 mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-bold text-gray-900">Categories</h3>
+                        {filteredCategories.length > 4 && (
+                            <button
+                                onClick={handleSeeAllClick}
+                                className="text-blue-500 font-semibold text-sm hover:text-blue-600 transition-colors"
+                            >
+                                {showAllCategories ? 'See less' : 'See all'}
+                            </button>
+                        )}
+                    </div>
+
+                    {loading ? (
+                        <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+                            <p className="text-gray-600">Loading categories...</p>
+                        </div>
+                    ) : filteredCategories.length === 0 ? (
+                        <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+                            <p className="text-gray-600">No categories found</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-4 gap-4">
+                            {displayedCategories.map((category) => (
+                                <button
+                                    key={category._id}
+                                    onClick={() => handleCategoryClick(category.name)}
+                                    className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white shadow-sm hover:shadow-md transition-all active:scale-95"
+                                >
+                                    <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center text-2xl overflow-hidden">
+                                        {(category.image || category.icon) ? (
+                                            (category.image || category.icon).startsWith('http') ? (
+                                                <img
+                                                    src={category.image || category.icon}
+                                                    alt={category.name}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.src = 'https://cdn-icons-png.flaticon.com/512/4825/4825038.png';
+                                                    }}
+                                                />
+                                            ) : (
+                                                <span>{category.image || category.icon}</span>
+                                            )
+                                        ) : (
+                                            <span>🔧</span>
+                                        )}
+                                    </div>
+                                    <span className="text-xs text-gray-700 text-center font-medium leading-tight">
+                                        {category.name}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
                     )}
                 </div>
-
-                {loading ? (
-                    <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-                        <p className="text-gray-600">Loading categories...</p>
-                    </div>
-                ) : filteredCategories.length === 0 ? (
-                    <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-                        <p className="text-gray-600">No categories found</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-4 gap-4">
-                        {displayedCategories.map((category) => (
-                            <button
-                                key={category._id}
-                                onClick={() => handleCategoryClick(category.name)}
-                                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white shadow-sm hover:shadow-md transition-all active:scale-95"
-                            >
-                                <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center text-2xl overflow-hidden">
-                                    {(category.image || category.icon) ? (
-                                        (category.image || category.icon).startsWith('http') ? (
-                                            <img
-                                                src={category.image || category.icon}
-                                                alt={category.name}
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    e.target.onerror = null;
-                                                    e.target.src = 'https://cdn-icons-png.flaticon.com/512/4825/4825038.png';
-                                                }}
-                                            />
-                                        ) : (
-                                            <span>{category.image || category.icon}</span>
-                                        )
-                                    ) : (
-                                        <span>🔧</span>
-                                    )}
-                                </div>
-                                <span className="text-xs text-gray-700 text-center font-medium leading-tight">
-                                    {category.name}
-                                </span>
-                            </button>
-                        ))}
-                    </div>
-                )}
             </div>
 
             {/* Bottom Navigation */}

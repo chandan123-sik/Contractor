@@ -21,10 +21,10 @@ const MyProjects = () => {
     const fetchJobs = async () => {
         try {
             setLoading(true);
-            
+
             // Always fetch from API - no localStorage
             const response = await jobAPI.getUserJobs();
-            
+
             if (response.success && response.data.jobs) {
                 // Transform API data to match component expectations
                 const transformedJobs = response.data.jobs.map(job => ({
@@ -42,7 +42,7 @@ const MyProjects = () => {
                     status: job.status,
                     createdAt: job.createdAt
                 }));
-                
+
                 setJobs(transformedJobs);
             } else {
                 setJobs([]);
@@ -68,16 +68,16 @@ const MyProjects = () => {
 
         // Check if user has access token
         const token = localStorage.getItem('access_token');
-        
+
         if (!token) {
             // No token - update localStorage
             console.log('No access token found, updating localStorage');
-            const updatedJobs = jobs.map(j => 
+            const updatedJobs = jobs.map(j =>
                 j.id === jobId ? { ...j, status: newStatus } : j
             );
             setJobs(updatedJobs);
             localStorage.setItem('user_jobs', JSON.stringify(updatedJobs));
-            
+
             toast.success(`Job ${newStatus === 'Open' ? 'opened' : 'closed'} successfully`, {
                 duration: 2000,
                 position: 'top-center',
@@ -88,14 +88,14 @@ const MyProjects = () => {
         // Has token - update via API
         try {
             const response = await jobAPI.updateJob(jobId, { status: newStatus });
-            
+
             if (response.success) {
                 // Update local state
-                const updatedJobs = jobs.map(j => 
+                const updatedJobs = jobs.map(j =>
                     j.id === jobId ? { ...j, status: newStatus } : j
                 );
                 setJobs(updatedJobs);
-                
+
                 toast.success(`Job ${newStatus === 'Open' ? 'opened' : 'closed'} successfully`, {
                     duration: 2000,
                     position: 'top-center',
@@ -119,9 +119,9 @@ const MyProjects = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <PageHeader 
-                title="My Projects" 
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+            <PageHeader
+                title="My Projects"
                 backPath="/user/settings"
                 rightButton={jobs.length > 0 && (
                     <button
@@ -132,34 +132,36 @@ const MyProjects = () => {
                     </button>
                 )}
             />
-            
-            <div className="p-4 pb-20">
-                {loading ? (
-                    <div className="flex items-center justify-center min-h-[60vh]">
-                        <p className="text-gray-600">Loading jobs...</p>
-                    </div>
-                ) : jobs.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center min-h-[60vh]">
-                        <button
-                            onClick={handlePostJob}
-                            className="w-32 h-32 bg-yellow-100 rounded-full flex items-center justify-center mb-6 hover:bg-yellow-200 transition-all active:scale-95"
-                        >
-                            <Plus className="w-16 h-16 text-yellow-600" />
-                        </button>
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">No jobs posted yet</h3>
-                        <p className="text-gray-500 text-center">Post your first job to see it here</p>
-                    </div>
-                ) : (
-                    jobs.map((job, index) => (
-                        <JobCard
-                            key={job.id}
-                            job={job}
-                            index={index}
-                            onViewDetails={handleViewDetails}
-                            onToggleJobStatus={handleToggleJobStatus}
-                        />
-                    ))
-                )}
+
+            <div className="flex-1 overflow-y-auto">
+                <div className="p-4 pb-12">
+                    {loading ? (
+                        <div className="flex items-center justify-center min-h-[60vh]">
+                            <p className="text-gray-600">Loading jobs...</p>
+                        </div>
+                    ) : jobs.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+                            <button
+                                onClick={handlePostJob}
+                                className="w-32 h-32 bg-yellow-100 rounded-full flex items-center justify-center mb-6 hover:bg-yellow-200 transition-all active:scale-95"
+                            >
+                                <Plus className="w-16 h-16 text-yellow-600" />
+                            </button>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">No jobs posted yet</h3>
+                            <p className="text-gray-500 text-center">Post your first job to see it here</p>
+                        </div>
+                    ) : (
+                        jobs.map((job, index) => (
+                            <JobCard
+                                key={job.id}
+                                job={job}
+                                index={index}
+                                onViewDetails={handleViewDetails}
+                                onToggleJobStatus={handleToggleJobStatus}
+                            />
+                        ))
+                    )}
+                </div>
             </div>
 
             {/* Job Details Modal */}
@@ -175,7 +177,7 @@ const MyProjects = () => {
                                 ×
                             </button>
                         </div>
-                        
+
                         <div className="p-4 space-y-4">
                             <div>
                                 <label className="text-sm font-medium text-gray-500">User Name</label>
@@ -220,19 +222,18 @@ const MyProjects = () => {
                             <div>
                                 <label className="text-sm font-medium text-gray-500">Budget</label>
                                 <p className="text-gray-900 font-medium">
-                                    {selectedJob.budgetType === 'Negotiable' 
-                                        ? 'Negotiable' 
+                                    {selectedJob.budgetType === 'Negotiable'
+                                        ? 'Negotiable'
                                         : `₹${selectedJob.budgetAmount}`}
                                 </p>
                             </div>
 
                             <div>
                                 <label className="text-sm font-medium text-gray-500">Status</label>
-                                <p className={`font-medium ${
-                                    selectedJob.status === 'Open' 
-                                        ? 'text-green-600' 
+                                <p className={`font-medium ${selectedJob.status === 'Open'
+                                        ? 'text-green-600'
                                         : 'text-gray-600'
-                                }`}>
+                                    }`}>
                                     {selectedJob.status}
                                 </p>
                             </div>

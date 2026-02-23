@@ -10,10 +10,12 @@ const PersonalDetails = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-6">
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
             <ContractorPageHeader title="Personal details" backPath="/contractor/settings" sticky />
 
-            <PersonalDetailsForm onSave={handleSave} />
+            <div className="flex-1 overflow-y-auto">
+                <PersonalDetailsForm onSave={handleSave} />
+            </div>
         </div>
     );
 };

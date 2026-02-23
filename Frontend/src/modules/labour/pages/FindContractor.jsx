@@ -24,7 +24,7 @@ const FindContractor = () => {
     useEffect(() => {
         // Clean up old localStorage dummy data on mount
         localStorage.removeItem('contractor_cards_for_labour');
-        
+
         fetchContractorJobs();
         fetchApplicationStatus();
 
@@ -53,7 +53,7 @@ const FindContractor = () => {
     const fetchApplicationStatus = async () => {
         try {
             const response = await contractorAPI.getLabourApplications();
-            
+
             if (response.success) {
                 console.log('✅ Application status loaded:', response.data.applications);
                 setAppliedJobs(response.data.applications);
@@ -66,10 +66,10 @@ const FindContractor = () => {
     const fetchContractorJobs = async () => {
         try {
             setLoading(true);
-            
+
             // Fetch from database - pass audience: 'Labour' to get only Labour-targeted cards
             const response = await contractorAPI.browseContractorJobs({ audience: 'Labour' });
-            
+
             if (response.success && response.data.jobs) {
                 const dbJobs = response.data.jobs.map(job => ({
                     id: job._id,
@@ -91,7 +91,7 @@ const FindContractor = () => {
                     availabilityStatus: job.profileStatus === 'Active' ? 'Available' : 'Closed',
                     createdAt: job.createdAt
                 }));
-                
+
                 console.log('Loaded contractor jobs from database:', dbJobs.length);
                 setCards(dbJobs);
                 setFilteredCards(dbJobs);
@@ -116,7 +116,7 @@ const FindContractor = () => {
 
         // Filter by city
         if (selectedCity) {
-            filtered = filtered.filter(card => 
+            filtered = filtered.filter(card =>
                 card.city.toLowerCase() === selectedCity.toLowerCase()
             );
         }
@@ -141,13 +141,13 @@ const FindContractor = () => {
     const handleApplyNow = async (cardId) => {
         try {
             console.log('🟢 Applying to contractor job:', cardId);
-            
+
             const response = await contractorAPI.applyToContractorJob(cardId);
-            
+
             if (response.success) {
                 console.log('✅ Application submitted successfully');
                 toast.success('Application submitted successfully!');
-                
+
                 // Refresh application status
                 await fetchApplicationStatus();
             }
@@ -184,13 +184,13 @@ const FindContractor = () => {
     };
 
     return (
-        <div className="h-screen bg-gray-50 flex flex-col">
-            <div className="flex-1 overflow-y-auto">
-                {/* Header - Scrolls with content */}
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+            {/* Sticky Header and Search Bar */}
+            <div className="sticky top-0 z-10 bg-white">
                 <LabourHeader />
 
-                {/* Search Bar - Scrolls with content */}
-                <div className="bg-white px-4 py-3 shadow-sm">
+                {/* Search Bar */}
+                <div className="px-4 py-3 shadow-sm">
                     <div className="flex items-center gap-3">
                         <div className="flex-1 flex items-center bg-gray-100 rounded-lg px-4 py-2">
                             <Search className="w-5 h-5 text-gray-400 mr-2" />
@@ -202,7 +202,7 @@ const FindContractor = () => {
                                 className="flex-1 bg-transparent outline-none text-gray-700 placeholder-gray-400"
                             />
                         </div>
-                        <button 
+                        <button
                             onClick={handleOpenFilter}
                             className={`p-2 rounded-lg relative ${selectedCity ? 'bg-blue-500' : 'bg-gray-100'}`}
                         >
@@ -225,205 +225,204 @@ const FindContractor = () => {
                         </div>
                     )}
                 </div>
-
-                {/* Content Area */}
-                <div className="p-4 pb-20">
-                    {/* Promotional Banners */}
-                    <PromotionalBanner />
-                    
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
-                    Available Contractors
-                    {selectedCity && <span className="text-sm font-normal text-gray-600"> in {selectedCity}</span>}
-                    <span className="text-sm font-normal text-gray-600"> ({filteredCards.length})</span>
-                </h2>
-                
-                {filteredCards.length === 0 ? (
-                    <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-                        <p className="text-gray-600">
-                            {selectedCity || searchQuery 
-                                ? 'No contractors found matching your criteria' 
-                                : 'No contractors available at the moment'}
-                        </p>
-                        {(selectedCity || searchQuery) && (
-                            <button
-                                onClick={() => {
-                                    setSelectedCity('');
-                                    setSearchQuery('');
-                                }}
-                                className="mt-3 text-blue-500 hover:text-blue-600 font-medium"
-                            >
-                                Clear filters
-                            </button>
-                        )}
-                    </div>
-                ) : (
-                    filteredCards.map((card, index) => (
-                        <LabourContractorCard
-                            key={card.id}
-                            card={card}
-                            index={index}
-                            onViewDetails={handleViewDetails}
-                            onApplyNow={handleApplyNow}
-                            appliedJobs={appliedJobs}
-                        />
-                    ))
-                )}
             </div>
 
-            {/* Contractor Details Modal */}
-            {selectedCard && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
-                        <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-gray-900">Contractor Details</h2>
-                            <button
-                                onClick={handleCloseModal}
-                                className="text-gray-500 hover:text-gray-700 text-2xl"
-                            >
-                                ×
-                            </button>
-                        </div>
-                        
-                        <div className="p-4 space-y-4">
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Contractor Name</label>
-                                <p className="text-gray-900 font-medium">{selectedCard.contractorName}</p>
-                            </div>
+            {/* Main Content Area - Scrollable */}
+            <div className="flex-1 overflow-y-auto pb-24">
+                <div className="p-4">
+                    {/* Promotional Banners */}
+                    <PromotionalBanner />
 
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Phone Number</label>
-                                <p className="text-gray-900 font-medium">{selectedCard.phoneNumber}</p>
-                            </div>
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">
+                        Available Contractors
+                        {selectedCity && <span className="text-sm font-normal text-gray-600"> in {selectedCity}</span>}
+                        <span className="text-sm font-normal text-gray-600"> ({filteredCards.length})</span>
+                    </h2>
 
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">City</label>
-                                <p className="text-gray-900 font-medium">{selectedCard.city}</p>
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Address</label>
-                                <p className="text-gray-900">{selectedCard.address}</p>
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Business Type</label>
-                                <p className="text-gray-900 font-medium">{selectedCard.businessType}</p>
-                            </div>
-
-                            {selectedCard.businessName && (
-                                <div>
-                                    <label className="text-sm font-medium text-gray-500">Business Name</label>
-                                    <p className="text-gray-900 font-medium">{selectedCard.businessName}</p>
-                                </div>
-                            )}
-
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Labour Skill</label>
-                                <p className="text-gray-900 font-medium">{selectedCard.labourSkill}</p>
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Experience</label>
-                                <p className="text-gray-900 font-medium">{selectedCard.experience}</p>
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Work Duration</label>
-                                <p className="text-gray-900 font-medium">{selectedCard.workDuration}</p>
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Budget</label>
-                                <p className="text-gray-900 font-medium">
-                                    {selectedCard.budgetType === 'Negotiable' 
-                                        ? 'Negotiable' 
-                                        : `₹${selectedCard.budgetAmount}`}
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Profile Status</label>
-                                <p className={`font-medium ${
-                                    selectedCard.profileStatus === 'Active' 
-                                        ? 'text-green-600' 
-                                        : 'text-gray-600'
-                                }`}>
-                                    {selectedCard.profileStatus === 'Active' ? 'Open' : 'Closed'}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="sticky bottom-0 bg-white border-t p-4">
-                            <button
-                                onClick={handleCloseModal}
-                                className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 rounded-lg transition-all active:scale-95"
-                            >
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Filter Modal */}
-            {showFilterModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
-                    <div className="bg-white rounded-t-3xl w-full max-w-md animate-slide-up">
-                        {/* Header */}
-                        <div className="flex items-center justify-between p-6 border-b">
-                            <h2 className="text-2xl font-bold text-gray-900">Filter by City</h2>
-                            <button
-                                onClick={handleCloseFilter}
-                                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                            >
-                                <X className="w-6 h-6 text-gray-500" />
-                            </button>
-                        </div>
-
-                        {/* Content */}
-                        <div className="p-6 max-h-[60vh] overflow-y-auto">
-                            <div className="space-y-2">
-                                {/* All Cities Option */}
+                    {filteredCards.length === 0 ? (
+                        <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+                            <p className="text-gray-600">
+                                {selectedCity || searchQuery
+                                    ? 'No contractors found matching your criteria'
+                                    : 'No contractors available at the moment'}
+                            </p>
+                            {(selectedCity || searchQuery) && (
                                 <button
-                                    onClick={handleClearFilter}
-                                    className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
-                                        !selectedCity 
-                                            ? 'bg-blue-500 text-white font-medium' 
-                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
+                                    onClick={() => {
+                                        setSelectedCity('');
+                                        setSearchQuery('');
+                                    }}
+                                    className="mt-3 text-blue-500 hover:text-blue-600 font-medium"
                                 >
-                                    All Cities
+                                    Clear filters
                                 </button>
+                            )}
+                        </div>
+                    ) : (
+                        filteredCards.map((card, index) => (
+                            <LabourContractorCard
+                                key={card.id}
+                                card={card}
+                                index={index}
+                                onViewDetails={handleViewDetails}
+                                onApplyNow={handleApplyNow}
+                                appliedJobs={appliedJobs}
+                            />
+                        ))
+                    )}
+                </div>
 
-                                {/* City Options */}
-                                {cities.map((city) => (
-                                    <button
-                                        key={city}
-                                        onClick={() => handleCitySelect(city)}
-                                        className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
-                                            selectedCity === city 
-                                                ? 'bg-blue-500 text-white font-medium' 
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                        }`}
-                                    >
-                                        {city}
-                                    </button>
-                                ))}
+                {/* Contractor Details Modal */}
+                {selectedCard && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+                            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+                                <h2 className="text-xl font-bold text-gray-900">Contractor Details</h2>
+                                <button
+                                    onClick={handleCloseModal}
+                                    className="text-gray-500 hover:text-gray-700 text-2xl"
+                                >
+                                    ×
+                                </button>
+                            </div>
+
+                            <div className="p-4 space-y-4">
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500">Contractor Name</label>
+                                    <p className="text-gray-900 font-medium">{selectedCard.contractorName}</p>
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500">Phone Number</label>
+                                    <p className="text-gray-900 font-medium">{selectedCard.phoneNumber}</p>
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500">City</label>
+                                    <p className="text-gray-900 font-medium">{selectedCard.city}</p>
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500">Address</label>
+                                    <p className="text-gray-900">{selectedCard.address}</p>
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500">Business Type</label>
+                                    <p className="text-gray-900 font-medium">{selectedCard.businessType}</p>
+                                </div>
+
+                                {selectedCard.businessName && (
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-500">Business Name</label>
+                                        <p className="text-gray-900 font-medium">{selectedCard.businessName}</p>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500">Labour Skill</label>
+                                    <p className="text-gray-900 font-medium">{selectedCard.labourSkill}</p>
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500">Experience</label>
+                                    <p className="text-gray-900 font-medium">{selectedCard.experience}</p>
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500">Work Duration</label>
+                                    <p className="text-gray-900 font-medium">{selectedCard.workDuration}</p>
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500">Budget</label>
+                                    <p className="text-gray-900 font-medium">
+                                        {selectedCard.budgetType === 'Negotiable'
+                                            ? 'Negotiable'
+                                            : `₹${selectedCard.budgetAmount}`}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium text-gray-500">Profile Status</label>
+                                    <p className={`font-medium ${selectedCard.profileStatus === 'Active'
+                                        ? 'text-green-600'
+                                        : 'text-gray-600'
+                                        }`}>
+                                        {selectedCard.profileStatus === 'Active' ? 'Open' : 'Closed'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="sticky bottom-0 bg-white border-t p-4">
+                                <button
+                                    onClick={handleCloseModal}
+                                    className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 rounded-lg transition-all active:scale-95"
+                                >
+                                    Close
+                                </button>
                             </div>
                         </div>
+                    </div>
+                )}
 
-                        {/* Footer */}
-                        <div className="p-6 border-t">
-                            <button
-                                onClick={handleCloseFilter}
-                                className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 rounded-lg transition-all active:scale-95"
-                            >
-                                Apply Filter
-                            </button>
+                {/* Filter Modal */}
+                {showFilterModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
+                        <div className="bg-white rounded-t-3xl w-full max-w-md animate-slide-up">
+                            {/* Header */}
+                            <div className="flex items-center justify-between p-6 border-b">
+                                <h2 className="text-2xl font-bold text-gray-900">Filter by City</h2>
+                                <button
+                                    onClick={handleCloseFilter}
+                                    className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                                >
+                                    <X className="w-6 h-6 text-gray-500" />
+                                </button>
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-6 max-h-[60vh] overflow-y-auto">
+                                <div className="space-y-2">
+                                    {/* All Cities Option */}
+                                    <button
+                                        onClick={handleClearFilter}
+                                        className={`w-full text-left px-4 py-3 rounded-lg transition-all ${!selectedCity
+                                            ? 'bg-blue-500 text-white font-medium'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        All Cities
+                                    </button>
+
+                                    {/* City Options */}
+                                    {cities.map((city) => (
+                                        <button
+                                            key={city}
+                                            onClick={() => handleCitySelect(city)}
+                                            className={`w-full text-left px-4 py-3 rounded-lg transition-all ${selectedCity === city
+                                                ? 'bg-blue-500 text-white font-medium'
+                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                }`}
+                                        >
+                                            {city}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="p-6 border-t">
+                                <button
+                                    onClick={handleCloseFilter}
+                                    className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 rounded-lg transition-all active:scale-95"
+                                >
+                                    Apply Filter
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
             </div>
 
             {/* Bottom Navigation */}

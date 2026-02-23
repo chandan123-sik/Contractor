@@ -49,17 +49,17 @@ const Subscription = () => {
 
     const handleSubscribe = (planId) => {
         if (planId === currentPlan) return;
-        
+
         setCurrentPlan(planId);
         localStorage.setItem('labour_subscription', planId);
         toast.success('Subscription activated successfully!');
     };
 
     return (
-        <div className="h-screen bg-gray-50 flex flex-col">
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="bg-white px-4 py-4 shadow-sm flex items-center gap-3">
-                <button 
+            <div className="bg-white px-4 py-4 shadow-sm flex items-center gap-3 sticky top-0 z-10">
+                <button
                     onClick={() => navigate(-1)}
                     className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                 >
@@ -74,21 +74,19 @@ const Subscription = () => {
                 <div className="bg-white rounded-2xl p-1 flex mb-6 shadow-sm">
                     <button
                         onClick={() => setBillingCycle('monthly')}
-                        className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${
-                            billingCycle === 'monthly'
+                        className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${billingCycle === 'monthly'
                                 ? 'bg-yellow-400 text-gray-900'
                                 : 'text-gray-600'
-                        }`}
+                            }`}
                     >
                         Monthly
                     </button>
                     <button
                         onClick={() => setBillingCycle('yearly')}
-                        className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${
-                            billingCycle === 'yearly'
+                        className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${billingCycle === 'yearly'
                                 ? 'bg-yellow-400 text-gray-900'
                                 : 'text-gray-600'
-                        }`}
+                            }`}
                     >
                         Yearly
                         <span className="ml-1 text-xs text-green-600">(Save 17%)</span>
@@ -100,9 +98,8 @@ const Subscription = () => {
                     {plans.map((plan) => (
                         <div
                             key={plan.id}
-                            className={`bg-white rounded-2xl p-6 shadow-sm border-2 ${
-                                plan.popular ? 'border-yellow-400' : 'border-transparent'
-                            } relative`}
+                            className={`bg-white rounded-2xl p-6 shadow-sm border-2 ${plan.popular ? 'border-yellow-400' : 'border-transparent'
+                                } relative`}
                         >
                             {plan.popular && (
                                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-gray-900 px-4 py-1 rounded-full text-xs font-bold">
@@ -139,9 +136,8 @@ const Subscription = () => {
                                                 <X className="w-3 h-3 text-gray-400" />
                                             </div>
                                         )}
-                                        <span className={`text-sm ${
-                                            feature.included ? 'text-gray-700' : 'text-gray-400'
-                                        }`}>
+                                        <span className={`text-sm ${feature.included ? 'text-gray-700' : 'text-gray-400'
+                                            }`}>
                                             {feature.text}
                                         </span>
                                     </div>
@@ -159,11 +155,10 @@ const Subscription = () => {
                             ) : (
                                 <button
                                     onClick={() => handleSubscribe(plan.id)}
-                                    className={`w-full py-3 rounded-full font-semibold transition-all ${
-                                        plan.color === 'yellow'
+                                    className={`w-full py-3 rounded-full font-semibold transition-all ${plan.color === 'yellow'
                                             ? 'bg-yellow-400 hover:bg-yellow-500 text-gray-900'
                                             : 'bg-gray-900 hover:bg-gray-800 text-white'
-                                    }`}
+                                        }`}
                                 >
                                     {plan.id === 'free' ? 'Downgrade' : 'Upgrade to Premium'}
                                 </button>
@@ -175,7 +170,7 @@ const Subscription = () => {
                 {/* Info Note */}
                 <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
                     <p className="text-sm text-blue-800">
-                        <span className="font-semibold">Note:</span> Payment integration will be available in future updates. 
+                        <span className="font-semibold">Note:</span> Payment integration will be available in future updates.
                         For now, you can explore the subscription features.
                     </p>
                 </div>

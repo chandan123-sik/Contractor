@@ -16,7 +16,7 @@ const LabourLegalDetails = () => {
         if (profile.aadharNumber) {
             setAadharNumber(profile.aadharNumber);
         }
-        
+
         // Fetch verification status from database
         fetchVerificationStatus();
     }, []);
@@ -24,7 +24,7 @@ const LabourLegalDetails = () => {
     const fetchVerificationStatus = async () => {
         try {
             const token = localStorage.getItem('access_token');
-            
+
             if (token) {
                 const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/labour/verification-status`, {
                     headers: {
@@ -36,7 +36,7 @@ const LabourLegalDetails = () => {
 
                 if (data.success && data.data.verificationRequest) {
                     const request = data.data.verificationRequest;
-                    
+
                     // Update state based on database status
                     if (request.status === 'Approved') {
                         setVerificationStatus('verified');
@@ -55,8 +55,8 @@ const LabourLegalDetails = () => {
                     const verificationData = {
                         aadharNumber: request.aadhaarNumber,
                         photos: [request.aadhaarFrontUrl, request.aadhaarBackUrl],
-                        status: request.status === 'Approved' ? 'verified' : 
-                               request.status === 'Rejected' ? 'rejected' : 'submitted',
+                        status: request.status === 'Approved' ? 'verified' :
+                            request.status === 'Rejected' ? 'rejected' : 'submitted',
                         requestId: request.requestId
                     };
                     localStorage.setItem('labour_verification', JSON.stringify(verificationData));
@@ -115,7 +115,7 @@ const LabourLegalDetails = () => {
             Promise.all(newPhotos).then(photos => {
                 const updatedPhotos = [...uploadedPhotos, ...photos];
                 setUploadedPhotos(updatedPhotos);
-                
+
                 // Save to localStorage but don't change status
                 const verificationData = JSON.parse(localStorage.getItem('labour_verification') || '{}');
                 verificationData.photos = updatedPhotos;
@@ -124,7 +124,7 @@ const LabourLegalDetails = () => {
                     verificationData.status = 'pending';
                 }
                 localStorage.setItem('labour_verification', JSON.stringify(verificationData));
-                
+
                 toast.success('Document uploaded successfully');
             });
         }
@@ -135,10 +135,10 @@ const LabourLegalDetails = () => {
             toast.error('Cannot remove verified documents');
             return;
         }
-        
+
         const updatedPhotos = uploadedPhotos.filter((_, i) => i !== index);
         setUploadedPhotos(updatedPhotos);
-        
+
         // Update localStorage
         if (updatedPhotos.length === 0) {
             // If no photos left, reset verification status to pending
@@ -153,7 +153,7 @@ const LabourLegalDetails = () => {
             verificationData.photos = updatedPhotos;
             localStorage.setItem('labour_verification', JSON.stringify(verificationData));
         }
-        
+
         toast.success('Document removed');
     };
 
@@ -182,7 +182,7 @@ const LabourLegalDetails = () => {
             const token = localStorage.getItem('access_token');
             const labourProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
             const mobileNumber = localStorage.getItem('mobile_number');
-            
+
             if (!token) {
                 toast.error('Please login first');
                 return;
@@ -217,17 +217,17 @@ const LabourLegalDetails = () => {
                     submittedAt: new Date().toISOString(),
                     requestId: data.data.verificationRequest.requestId
                 };
-                
+
                 localStorage.setItem('labour_verification', JSON.stringify(verificationData));
                 setVerificationStatus('submitted');
-                
+
                 toast.success('Submitted for verification! Admin will review your documents.');
             } else {
                 toast.error(data.message || 'Failed to submit verification');
             }
         } catch (error) {
             console.error('Error submitting verification:', error);
-            
+
             // Fallback to localStorage
             const verificationData = {
                 aadharNumber,
@@ -236,10 +236,10 @@ const LabourLegalDetails = () => {
                 submittedAt: new Date().toISOString(),
                 labourId: JSON.parse(localStorage.getItem('labour_profile') || '{}').firstName || 'Labour'
             };
-            
+
             localStorage.setItem('labour_verification', JSON.stringify(verificationData));
             setVerificationStatus('submitted');
-            
+
             toast.success('Submitted for verification! Admin will review your documents.');
         }
     };
@@ -281,14 +281,14 @@ const LabourLegalDetails = () => {
     };
 
     return (
-        <div className="h-screen bg-gray-50 flex flex-col">
-            <div className="bg-white px-4 py-4 shadow-sm flex items-center gap-3">
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+            <div className="bg-white px-4 py-4 shadow-sm flex items-center gap-3 sticky top-0 z-10">
                 <button onClick={() => navigate(-1)} className="p-1">
                     <ChevronLeft className="w-6 h-6" />
                 </button>
                 <h1 className="text-xl font-bold">Legal Verification</h1>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-4 pb-20">
                 {/* Info Box */}
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
@@ -398,14 +398,13 @@ const LabourLegalDetails = () => {
                 <button
                     onClick={handleSubmitVerification}
                     disabled={verificationStatus === 'submitted' || verificationStatus === 'verified'}
-                    className={`w-full py-3.5 rounded-full text-white font-bold text-base transition-all shadow-md active:scale-[0.98] ${getButtonStyle()} ${
-                        (verificationStatus === 'submitted' || verificationStatus === 'verified') ? 'opacity-90 cursor-not-allowed' : ''
-                    }`}
+                    className={`w-full py-3.5 rounded-full text-white font-bold text-base transition-all shadow-md active:scale-[0.98] ${getButtonStyle()} ${(verificationStatus === 'submitted' || verificationStatus === 'verified') ? 'opacity-90 cursor-not-allowed' : ''
+                        }`}
                 >
                     {getButtonText()}
                 </button>
             </div>
-            
+
             <LabourBottomNav />
         </div>
     );

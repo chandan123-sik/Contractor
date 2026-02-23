@@ -83,10 +83,10 @@ const LabourSettings = () => {
     ];
 
     return (
-        <div className="h-screen bg-gray-50 flex flex-col">
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
             {/* Header */}
             <div className="bg-white px-4 py-4 shadow-sm flex items-center gap-3">
-                <button 
+                <button
                     onClick={() => navigate(-1)}
                     className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                 >
@@ -118,7 +118,7 @@ const LabourSettings = () => {
                             </div>
                         );
                     })}
-                    
+
                     {/* Log out button */}
                     <div className="h-2 bg-gray-50" />
                     <button
@@ -161,9 +161,8 @@ const LabourSettings = () => {
                                         onClick={() => setRating(star)}
                                         className="transition-transform hover:scale-110"
                                     >
-                                        <span className={`text-5xl ${
-                                            star <= rating ? 'text-green-600' : 'text-gray-300'
-                                        }`}>
+                                        <span className={`text-5xl ${star <= rating ? 'text-green-600' : 'text-gray-300'
+                                            }`}>
                                             ★
                                         </span>
                                     </button>

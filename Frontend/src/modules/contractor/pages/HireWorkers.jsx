@@ -3,7 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import ContractorBottomNav from '../components/ContractorBottomNav';
 import ContractorHeader from '../components/ContractorHeader';
+import PromotionalBanner from '../../../components/shared/PromotionalBanner';
 import { labourAPI } from '../../../services/api';
+
 
 const HireWorkers = () => {
     const location = useLocation();
@@ -23,7 +25,7 @@ const HireWorkers = () => {
     useEffect(() => {
         // Clean up old localStorage dummy data on mount
         localStorage.removeItem('labour_cards');
-        
+
         fetchLabourCards();
 
         // Check if category was passed from home page
@@ -36,18 +38,18 @@ const HireWorkers = () => {
             try {
                 // Fetch sent hire requests from database
                 const response = await labourAPI.getSentHireRequests({ requesterModel: 'Contractor' });
-                
+
                 if (response.success) {
                     console.log('📊 Sent hire requests:', response.data.hireRequests);
-                    
+
                     // Create state map from requests
                     const uiStateMap = {};
                     const chatIdMap = {};
                     response.data.hireRequests.forEach(req => {
                         const labourId = req.labourId; // Already a string from backend
-                        
+
                         console.log(`Mapping labourId: ${labourId} → status: ${req.status}, chatId: ${req.chatId}`);
-                        
+
                         // Map status to UI states
                         if (req.status === 'accepted') {
                             uiStateMap[labourId] = 'approved';
@@ -60,7 +62,7 @@ const HireWorkers = () => {
                             uiStateMap[labourId] = 'pending';
                         }
                     });
-                    
+
                     console.log('✅ Final UI state map:', uiStateMap);
                     console.log('✅ Final chatId map:', chatIdMap);
                     setHiredWorkers(uiStateMap);
@@ -71,7 +73,7 @@ const HireWorkers = () => {
                 setHiredWorkers({});
             }
         };
-        
+
         loadHiredState();
 
         // Update when page becomes visible (user switches back to this tab/page)
@@ -100,7 +102,7 @@ const HireWorkers = () => {
         try {
             // Always fetch from database - no localStorage or dummy cards
             const response = await labourAPI.browseLabourCards();
-            
+
             if (response.success && response.data.labours) {
                 // Transform API data
                 const dbCards = response.data.labours.map(labour => ({
@@ -119,7 +121,7 @@ const HireWorkers = () => {
                     availabilityStatus: labour.availabilityStatus || 'Available',
                     createdAt: labour.createdAt
                 }));
-                
+
                 setLabourCards(dbCards);
                 setFilteredCards(dbCards);
             } else {
@@ -139,14 +141,14 @@ const HireWorkers = () => {
 
         // Filter by category
         if (selectedCategory) {
-            filtered = filtered.filter(card => 
+            filtered = filtered.filter(card =>
                 card.primarySkill.toLowerCase() === selectedCategory.toLowerCase()
             );
         }
 
         // Filter by city
         if (selectedCity) {
-            filtered = filtered.filter(card => 
+            filtered = filtered.filter(card =>
                 card.city.toLowerCase() === selectedCity.toLowerCase()
             );
         }
@@ -193,7 +195,7 @@ const HireWorkers = () => {
         try {
             // Check if this is a dummy card (string ID) or real database card (ObjectId)
             const isDummyCard = typeof card.id === 'string' && card.id.length < 10;
-            
+
             if (isDummyCard) {
                 alert('⚠️ This is a demo worker. Please hire a real worker from the database.');
                 return;
@@ -252,208 +254,216 @@ const HireWorkers = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
-            <ContractorHeader />
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+            {/* Sticky Header and Search Bar */}
+            <div className="sticky top-0 z-10 bg-white">
+                <ContractorHeader />
 
-            {/* Search Bar */}
-            <div className="bg-white px-4 py-3 shadow-sm">
-                <div className="flex items-center gap-3">
-                    <div className="flex-1 flex items-center bg-gray-100 rounded-lg px-4 py-2">
-                        <Search className="w-5 h-5 text-gray-400 mr-2" />
-                        <input
-                            type="text"
-                            placeholder="Search workers..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="flex-1 bg-transparent outline-none text-gray-700 placeholder-gray-400"
-                        />
-                    </div>
-                    <button 
-                        onClick={handleOpenFilter}
-                        className={`p-2 rounded-lg relative ${selectedCity ? 'bg-blue-500' : 'bg-gray-100'}`}
-                    >
-                        <SlidersHorizontal className={`w-5 h-5 ${selectedCity ? 'text-white' : 'text-gray-600'}`} />
-                        {selectedCity && (
-                            <span className="absolute -top-1 -right-1 bg-red-500 w-3 h-3 rounded-full"></span>
-                        )}
-                    </button>
-                </div>
-                {/* Active Filter Badge */}
-                {selectedCity && (
-                    <div className="mt-2 flex items-center gap-2">
-                        <span className="text-xs text-gray-600">Filtered by:</span>
-                        <div className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                            <span>{selectedCity}</span>
-                            <button onClick={handleClearFilter} className="hover:bg-blue-200 rounded-full p-0.5">
-                                <X className="w-3 h-3" />
-                            </button>
+                {/* Search Bar */}
+                <div className="px-4 py-3 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="flex-1 flex items-center bg-gray-100 rounded-lg px-4 py-2">
+                            <Search className="w-5 h-5 text-gray-400 mr-2" />
+                            <input
+                                type="text"
+                                placeholder="Search workers..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="flex-1 bg-transparent outline-none text-gray-700 placeholder-gray-400"
+                            />
                         </div>
+                        <button
+                            onClick={handleOpenFilter}
+                            className={`p-2 rounded-lg relative ${selectedCity ? 'bg-blue-500' : 'bg-gray-100'}`}
+                        >
+                            <SlidersHorizontal className={`w-5 h-5 ${selectedCity ? 'text-white' : 'text-gray-600'}`} />
+                            {selectedCity && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 w-3 h-3 rounded-full"></span>
+                            )}
+                        </button>
                     </div>
-                )}
-            </div>
-
-            <div className="p-4">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
-                    Available Workers
-                    {selectedCategory && <span className="text-sm font-normal text-gray-600"> - {selectedCategory}</span>}
-                    {selectedCity && <span className="text-sm font-normal text-gray-600"> in {selectedCity}</span>}
-                    <span className="text-sm font-normal text-gray-600"> ({filteredCards.length})</span>
-                </h2>
-
-                {/* Active Filters */}
-                {(selectedCategory || selectedCity) && (
-                    <div className="mb-4 flex items-center gap-2 flex-wrap">
-                        <span className="text-xs text-gray-600">Active filters:</span>
-                        {selectedCategory && (
-                            <div className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                                <span>{selectedCategory}</span>
-                                <button onClick={() => setSelectedCategory('')} className="hover:bg-blue-200 rounded-full p-0.5">
-                                    <X className="w-3 h-3" />
-                                </button>
-                            </div>
-                        )}
-                        {selectedCity && (
+                    {/* Active Filter Badge */}
+                    {selectedCity && (
+                        <div className="mt-2 flex items-center gap-2">
+                            <span className="text-xs text-gray-600">Filtered by:</span>
                             <div className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
                                 <span>{selectedCity}</span>
                                 <button onClick={handleClearFilter} className="hover:bg-blue-200 rounded-full p-0.5">
                                     <X className="w-3 h-3" />
                                 </button>
                             </div>
-                        )}
-                    </div>
-                )}
-                
-                {filteredCards.length === 0 ? (
-                    <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-                        <p className="text-gray-600">
-                            {selectedCity || searchQuery || selectedCategory
-                                ? 'No workers found matching your criteria' 
-                                : 'No workers available at the moment'}
-                        </p>
-                        {(selectedCity || searchQuery || selectedCategory) && (
-                            <button
-                                onClick={() => {
-                                    setSelectedCity('');
-                                    setSearchQuery('');
-                                    setSelectedCategory('');
-                                }}
-                                className="mt-3 text-blue-500 hover:text-blue-600 font-medium"
-                            >
-                                Clear filters
-                            </button>
-                        )}
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {filteredCards.map((card, index) => (
-                            <div key={card.id} className="premium-card card-fade-in">
-                                {/* Header */}
-                                <div className="flex items-start gap-3 mb-3">
-                                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-md">
-                                        <span className="text-2xl font-bold text-gray-900">
-                                            {card.fullName.charAt(0).toUpperCase()}
-                                        </span>
-                                    </div>
-                                    <div className="flex-1">
-                                        <h3 className="font-bold text-lg text-gray-900">{card.fullName}</h3>
-                                        <p className="text-sm text-gray-600">🔧 {card.primarySkill}</p>
-                                        <div className="flex gap-1 mt-1">
-                                            {[1, 2, 3, 4, 5].map((star) => (
-                                                <span key={star} className={`text-lg transition-all ${star <= card.rating ? 'text-yellow-400' : 'text-gray-300'}`}>
-                                                    ★
-                                                </span>
-                                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Main Content Area - Scrollable */}
+            <div className="flex-1 overflow-y-auto pb-24">
+                <div className="p-4">
+                    {/* Promotional Banners */}
+                    <PromotionalBanner />
+
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">
+
+                        Available Workers
+                        {selectedCategory && <span className="text-sm font-normal text-gray-600"> - {selectedCategory}</span>}
+                        {selectedCity && <span className="text-sm font-normal text-gray-600"> in {selectedCity}</span>}
+                        <span className="text-sm font-normal text-gray-600"> ({filteredCards.length})</span>
+                    </h2>
+
+                    {/* Active Filters */}
+                    {(selectedCategory || selectedCity) && (
+                        <div className="mb-4 flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-gray-600">Active filters:</span>
+                            {selectedCategory && (
+                                <div className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                                    <span>{selectedCategory}</span>
+                                    <button onClick={() => setSelectedCategory('')} className="hover:bg-blue-200 rounded-full p-0.5">
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            )}
+                            {selectedCity && (
+                                <div className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                                    <span>{selectedCity}</span>
+                                    <button onClick={handleClearFilter} className="hover:bg-blue-200 rounded-full p-0.5">
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {filteredCards.length === 0 ? (
+                        <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+                            <p className="text-gray-600">
+                                {selectedCity || searchQuery || selectedCategory
+                                    ? 'No workers found matching your criteria'
+                                    : 'No workers available at the moment'}
+                            </p>
+                            {(selectedCity || searchQuery || selectedCategory) && (
+                                <button
+                                    onClick={() => {
+                                        setSelectedCity('');
+                                        setSearchQuery('');
+                                        setSelectedCategory('');
+                                    }}
+                                    className="mt-3 text-blue-500 hover:text-blue-600 font-medium"
+                                >
+                                    Clear filters
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {filteredCards.map((card, index) => (
+                                <div key={card.id} className="premium-card card-fade-in">
+                                    {/* Header */}
+                                    <div className="flex items-start gap-3 mb-3">
+                                        <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-md">
+                                            <span className="text-2xl font-bold text-gray-900">
+                                                {card.fullName.charAt(0).toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="font-bold text-lg text-gray-900">{card.fullName}</h3>
+                                            <p className="text-sm text-gray-600">🔧 {card.primarySkill}</p>
+                                            <div className="flex gap-1 mt-1">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <span key={star} className={`text-lg transition-all ${star <= card.rating ? 'text-yellow-400' : 'text-gray-300'}`}>
+                                                        ★
+                                                    </span>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Basic Info */}
-                                <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
-                                    <div>
-                                        <p className="text-gray-500 text-xs">Gender</p>
-                                        <p className="font-medium text-gray-900">{card.gender}</p>
+                                    {/* Basic Info */}
+                                    <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
+                                        <div>
+                                            <p className="text-gray-500 text-xs">Gender</p>
+                                            <p className="font-medium text-gray-900">{card.gender}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500 text-xs">City</p>
+                                            <p className="font-medium text-gray-900">{card.city}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500 text-xs">Mobile</p>
+                                            <p className="font-medium text-gray-900">{card.mobileNumber}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500 text-xs">Experience</p>
+                                            <p className="font-medium text-gray-900">{card.experience} years</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-gray-500 text-xs">City</p>
-                                        <p className="font-medium text-gray-900">{card.city}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500 text-xs">Mobile</p>
-                                        <p className="font-medium text-gray-900">{card.mobileNumber}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500 text-xs">Experience</p>
-                                        <p className="font-medium text-gray-900">{card.experience} years</p>
-                                    </div>
-                                </div>
 
-                                {/* Availability Status */}
-                                <div className="mb-3">
-                                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium transition-all ${
-                                        card.availabilityStatus === 'Available' 
-                                            ? 'bg-green-100 text-green-700' 
+                                    {/* Availability Status */}
+                                    <div className="mb-3">
+                                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium transition-all ${card.availabilityStatus === 'Available'
+                                            ? 'bg-green-100 text-green-700'
                                             : card.availabilityStatus === 'Busy'
-                                            ? 'bg-orange-100 text-orange-700'
-                                            : 'bg-gray-100 text-gray-700'
-                                    }`}>
-                                        {card.availabilityStatus || 'Available'}
-                                    </span>
-                                </div>
+                                                ? 'bg-orange-100 text-orange-700'
+                                                : 'bg-gray-100 text-gray-700'
+                                            }`}>
+                                            {card.availabilityStatus || 'Available'}
+                                        </span>
+                                    </div>
 
-                                {/* Buttons */}
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => handleViewDetails(card)}
-                                        className="flex-1 btn-secondary"
-                                    >
-                                        View Details
-                                    </button>
-                                    {hiredWorkers[card.id] === 'approved' ? (
-                                        <>
-                                            <button
-                                                disabled
-                                                className="flex-1 bg-green-500 text-white cursor-default shadow-lg font-bold py-3 rounded-lg"
-                                            >
-                                                ✓ Approved
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    const chatId = chatIds[card.id];
-                                                    if (chatId) {
-                                                        navigate(`/contractor/chat/${chatId}`);
-                                                    } else {
-                                                        alert('Chat is being created. Please refresh the page.');
-                                                    }
-                                                }}
-                                                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-all active:scale-95"
-                                            >
-                                                Chat
-                                            </button>
-                                        </>
-                                    ) : (
+                                    {/* Buttons */}
+                                    <div className="flex gap-3">
                                         <button
-                                            onClick={() => handleHireWorker(card)}
-                                            disabled={hiredWorkers[card.id]}
-                                            className={`flex-1 font-bold py-3 rounded-lg transition-all ${
-                                                hiredWorkers[card.id] === 'declined'
+                                            onClick={() => handleViewDetails(card)}
+                                            className="flex-1 btn-secondary"
+                                        >
+                                            View Details
+                                        </button>
+                                        {hiredWorkers[card.id] === 'approved' ? (
+                                            <>
+                                                <button
+                                                    disabled
+                                                    className="flex-1 bg-green-500 text-white cursor-default shadow-lg font-bold py-3 rounded-lg"
+                                                >
+                                                    ✓ Approved
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        const chatId = chatIds[card.id];
+                                                        if (chatId) {
+                                                            navigate(`/contractor/chat/${chatId}`);
+                                                        } else {
+                                                            alert('Chat is being created. Please refresh the page.');
+                                                        }
+                                                    }}
+                                                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-all active:scale-95"
+                                                >
+                                                    Chat
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleHireWorker(card)}
+                                                disabled={hiredWorkers[card.id]}
+                                                className={`flex-1 font-bold py-3 rounded-lg transition-all ${hiredWorkers[card.id] === 'declined'
                                                     ? 'bg-gray-400 text-white cursor-not-allowed'
                                                     : hiredWorkers[card.id] === 'pending'
-                                                    ? 'bg-orange-500 text-white cursor-not-allowed'
-                                                    : 'btn-primary hover:bg-yellow-500 active:scale-95'
-                                            }`}
-                                        >
-                                            {hiredWorkers[card.id] === 'declined'
-                                                ? '✗ Declined'
-                                                : hiredWorkers[card.id] === 'pending'
-                                                ? '⏳ Request Sent'
-                                                : 'Hire Worker'}
-                                        </button>
-                                    )}
+                                                        ? 'bg-orange-500 text-white cursor-not-allowed'
+                                                        : 'btn-primary hover:bg-yellow-500 active:scale-95'
+                                                    }`}
+                                            >
+                                                {hiredWorkers[card.id] === 'declined'
+                                                    ? '✗ Declined'
+                                                    : hiredWorkers[card.id] === 'pending'
+                                                        ? '⏳ Request Sent'
+                                                        : 'Hire Worker'}
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Details Modal */}
@@ -464,7 +474,7 @@ const HireWorkers = () => {
                             <h2 className="text-xl font-bold">Worker Details</h2>
                             <button onClick={handleCloseModal} className="text-2xl">×</button>
                         </div>
-                        
+
                         <div className="p-4 space-y-3">
                             <div><label className="text-sm text-gray-500">Full Name</label><p className="font-medium">{selectedCard.fullName}</p></div>
                             <div><label className="text-sm text-gray-500">Primary Skill</label><p className="font-medium">{selectedCard.primarySkill}</p></div>
@@ -509,11 +519,10 @@ const HireWorkers = () => {
                                 {/* All Cities Option */}
                                 <button
                                     onClick={handleClearFilter}
-                                    className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
-                                        !selectedCity 
-                                            ? 'bg-blue-500 text-white font-medium' 
-                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
+                                    className={`w-full text-left px-4 py-3 rounded-lg transition-all ${!selectedCity
+                                        ? 'bg-blue-500 text-white font-medium'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
                                 >
                                     All Cities
                                 </button>
@@ -523,11 +532,10 @@ const HireWorkers = () => {
                                     <button
                                         key={city}
                                         onClick={() => handleCitySelect(city)}
-                                        className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
-                                            selectedCity === city 
-                                                ? 'bg-blue-500 text-white font-medium' 
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                        }`}
+                                        className={`w-full text-left px-4 py-3 rounded-lg transition-all ${selectedCity === city
+                                            ? 'bg-blue-500 text-white font-medium'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
                                     >
                                         {city}
                                     </button>

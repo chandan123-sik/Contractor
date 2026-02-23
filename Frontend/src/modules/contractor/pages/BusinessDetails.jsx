@@ -46,7 +46,7 @@ const BusinessDetails = () => {
 
         try {
             const token = localStorage.getItem('access_token');
-            
+
             // Save to database
             if (token) {
                 const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/contractor/business-details`, {
@@ -59,7 +59,7 @@ const BusinessDetails = () => {
                 });
 
                 const data = await response.json();
-                
+
                 if (data.success) {
                     console.log('Business details saved to database:', data.data);
                     toast.success('Business details saved successfully');
@@ -76,7 +76,7 @@ const BusinessDetails = () => {
                 businessDetails: formData
             };
             localStorage.setItem('contractor_profile', JSON.stringify(updatedProfile));
-            
+
             // Check if coming from settings or onboarding
             const isFromSettings = contractorProfile.businessDetails !== undefined;
             if (isFromSettings) {
@@ -91,19 +91,21 @@ const BusinessDetails = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-6">
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
             <ContractorPageHeader title="Business details" sticky />
 
-            <div className="p-4 space-y-6">
-                <BusinessDetailForm formData={formData} onChange={handleChange} />
-                <BusinessAddressForm formData={formData} onChange={handleChange} />
+            <div className="flex-1 overflow-y-auto">
+                <div className="p-4 space-y-6 pb-12">
+                    <BusinessDetailForm formData={formData} onChange={handleChange} />
+                    <BusinessAddressForm formData={formData} onChange={handleChange} />
 
-                <button
-                    onClick={handleSaveBusinessDetails}
-                    className="w-full py-4 rounded-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold text-lg transition-all shadow-md active:scale-[0.98]"
-                >
-                    Save business details
-                </button>
+                    <button
+                        onClick={handleSaveBusinessDetails}
+                        className="w-full py-4 rounded-xl bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold text-lg transition-all shadow-md active:scale-95 mt-4"
+                    >
+                        Save business details
+                    </button>
+                </div>
             </div>
         </div>
     );

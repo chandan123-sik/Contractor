@@ -22,7 +22,7 @@ const Legal = () => {
     const fetchVerificationStatus = async () => {
         try {
             const token = localStorage.getItem('access_token');
-            
+
             if (token) {
                 const response = await fetch(`${import.meta.env.VITE_API_URL || `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}`}/users/verification-status`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -32,7 +32,7 @@ const Legal = () => {
 
                 if (data.success && data.data.verificationRequest) {
                     const request = data.data.verificationRequest;
-                    
+
                     if (request.status === 'Approved') setVerificationStatus('verified');
                     else if (request.status === 'Rejected') setVerificationStatus('rejected');
                     else if (request.status === 'Pending') setVerificationStatus('submitted');
@@ -44,8 +44,8 @@ const Legal = () => {
                     const verificationData = {
                         aadharNumber: request.aadhaarNumber,
                         photos: [request.aadhaarFrontUrl, request.aadhaarBackUrl],
-                        status: request.status === 'Approved' ? 'verified' : 
-                               request.status === 'Rejected' ? 'rejected' : 'submitted',
+                        status: request.status === 'Approved' ? 'verified' :
+                            request.status === 'Rejected' ? 'rejected' : 'submitted',
                         requestId: request.requestId
                     };
                     localStorage.setItem('user_verification', JSON.stringify(verificationData));
@@ -89,12 +89,12 @@ const Legal = () => {
             Promise.all(newPhotos).then(photos => {
                 const updatedPhotos = [...uploadedPhotos, ...photos];
                 setUploadedPhotos(updatedPhotos);
-                
+
                 // Save to localStorage
                 const verificationData = JSON.parse(localStorage.getItem('user_verification') || '{}');
                 verificationData.photos = updatedPhotos;
                 localStorage.setItem('user_verification', JSON.stringify(verificationData));
-                
+
                 toast.success('Document uploaded successfully');
             });
         }
@@ -105,10 +105,10 @@ const Legal = () => {
             toast.error('Cannot remove verified documents');
             return;
         }
-        
+
         const updatedPhotos = uploadedPhotos.filter((_, i) => i !== index);
         setUploadedPhotos(updatedPhotos);
-        
+
         // Update localStorage
         if (updatedPhotos.length === 0) {
             // If no photos left, reset verification status to pending
@@ -123,7 +123,7 @@ const Legal = () => {
             verificationData.photos = updatedPhotos;
             localStorage.setItem('user_verification', JSON.stringify(verificationData));
         }
-        
+
         toast.success('Document removed');
     };
 
@@ -153,7 +153,7 @@ const Legal = () => {
             const token = localStorage.getItem('access_token');
             const userProfile = JSON.parse(localStorage.getItem('user_profile') || '{}');
             const mobileNumber = localStorage.getItem('mobile_number');
-            
+
             if (!token) {
                 toast.error('Please login first');
                 return;
@@ -185,27 +185,27 @@ const Legal = () => {
                     submittedAt: new Date().toISOString(),
                     requestId: data.data.verificationRequest.requestId
                 };
-                
+
                 localStorage.setItem('user_verification', JSON.stringify(verificationData));
                 setVerificationStatus('submitted');
-                
+
                 toast.success('Submitted for verification! Admin will review your documents.');
             } else {
                 toast.error(data.message || 'Failed to submit verification');
             }
         } catch (error) {
             console.error('Error submitting verification:', error);
-            
+
             const verificationData = {
                 aadharNumber,
                 photos: uploadedPhotos,
                 status: 'submitted',
                 submittedAt: new Date().toISOString()
             };
-            
+
             localStorage.setItem('user_verification', JSON.stringify(verificationData));
             setVerificationStatus('submitted');
-            
+
             toast.success('Submitted for verification! Admin will review your documents.');
         } finally {
             setLoading(false);
@@ -249,120 +249,121 @@ const Legal = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-6">
-            <PageHeader title="Legal Verification" backPath="/user/settings" />
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+            <PageHeader title="Legal Verification" backPath="/user/settings" sticky />
 
-            <div className="p-4">
-                <InfoBox
-                    variant="info"
-                    message="Verified users get more visibility and trust. Your documents are stored securely."
-                />
+            <div className="flex-1 overflow-y-auto">
+                <div className="p-4 pb-12">
+                    <InfoBox
+                        variant="info"
+                        message="Verified users get more visibility and trust. Your documents are stored securely."
+                    />
 
-                <div className="mb-6 mt-6">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">
-                        Aadhaar Number (12 Digit)
-                    </label>
-                    <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3">
-                        <Shield className="w-5 h-5 text-gray-400" />
-                        <span className="text-gray-900 font-medium tracking-wide">
-                            {aadharNumber || 'Not provided'}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Upload Section */}
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    className="hidden"
-                    accept="image/*"
-                    multiple
-                />
-
-                {uploadedPhotos.length > 0 ? (
-                    <div className="mb-6">
+                    <div className="mb-6 mt-6">
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
-                            Uploaded Documents
+                            Aadhaar Number (12 Digit)
                         </label>
-                        <div className="grid grid-cols-2 gap-3 mb-3">
-                            {uploadedPhotos.map((photo, index) => (
-                                <div key={index} className="relative">
-                                    <img
-                                        src={photo}
-                                        alt={`Document ${index + 1}`}
-                                        className="w-full h-32 object-cover rounded-xl border-2 border-gray-200"
-                                    />
-                                    {verificationStatus !== 'verified' && (
-                                        <button
-                                            onClick={() => handleRemovePhoto(index)}
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition-all"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
+                        <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3">
+                            <Shield className="w-5 h-5 text-gray-400" />
+                            <span className="text-gray-900 font-medium tracking-wide">
+                                {aadharNumber || 'Not provided'}
+                            </span>
                         </div>
-                        {verificationStatus !== 'verified' && (
-                            <button
-                                onClick={handleUploadClick}
-                                className="w-full py-3 rounded-xl border-2 border-dashed border-gray-300 bg-white hover:border-yellow-400 hover:bg-yellow-50 transition-all flex items-center justify-center gap-2 text-gray-600 font-medium"
-                            >
-                                <Upload className="w-5 h-5" />
-                                Add More Documents
-                            </button>
-                        )}
                     </div>
-                ) : (
-                    <div
-                        onClick={handleUploadClick}
-                        className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-8 mb-6 cursor-pointer hover:border-yellow-400 hover:bg-yellow-50 transition-all"
-                    >
-                        <div className="flex flex-col items-center justify-center text-center">
-                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                <Upload className="w-6 h-6 text-gray-400" />
+
+                    {/* Upload Section */}
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        className="hidden"
+                        accept="image/*"
+                        multiple
+                    />
+
+                    {uploadedPhotos.length > 0 ? (
+                        <div className="mb-6">
+                            <label className="block text-sm font-semibold text-gray-700 mb-3">
+                                Uploaded Documents
+                            </label>
+                            <div className="grid grid-cols-2 gap-3 mb-3">
+                                {uploadedPhotos.map((photo, index) => (
+                                    <div key={index} className="relative">
+                                        <img
+                                            src={photo}
+                                            alt={`Document ${index + 1}`}
+                                            className="w-full h-32 object-cover rounded-xl border-2 border-gray-200"
+                                        />
+                                        {verificationStatus !== 'verified' && (
+                                            <button
+                                                onClick={() => handleRemovePhoto(index)}
+                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition-all"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
-                            <p className="text-gray-500 font-medium">Upload Document Photos</p>
-                            <p className="text-xs text-gray-400 mt-1">Tap to upload Aadhaar card photos</p>
+                            {verificationStatus !== 'verified' && (
+                                <button
+                                    onClick={handleUploadClick}
+                                    className="w-full py-3 rounded-xl border-2 border-dashed border-gray-300 bg-white hover:border-yellow-400 hover:bg-yellow-50 transition-all flex items-center justify-center gap-2 text-gray-600 font-medium"
+                                >
+                                    <Upload className="w-5 h-5" />
+                                    Add More Documents
+                                </button>
+                            )}
                         </div>
-                    </div>
-                )}
+                    ) : (
+                        <div
+                            onClick={handleUploadClick}
+                            className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-8 mb-6 cursor-pointer hover:border-yellow-400 hover:bg-yellow-50 transition-all"
+                        >
+                            <div className="flex flex-col items-center justify-center text-center">
+                                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                    <Upload className="w-6 h-6 text-gray-400" />
+                                </div>
+                                <p className="text-gray-500 font-medium">Upload Document Photos</p>
+                                <p className="text-xs text-gray-400 mt-1">Tap to upload Aadhaar card photos</p>
+                            </div>
+                        </div>
+                    )}
 
-                {/* Status Message */}
-                {verificationStatus === 'submitted' && (
-                    <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
-                        <p className="text-sm text-blue-700 font-medium">
-                            ⏳ Your verification is pending. Admin will review your documents soon.
-                        </p>
-                    </div>
-                )}
+                    {/* Status Message */}
+                    {verificationStatus === 'submitted' && (
+                        <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                            <p className="text-sm text-blue-700 font-medium">
+                                ⏳ Your verification is pending. Admin will review your documents soon.
+                            </p>
+                        </div>
+                    )}
 
-                {verificationStatus === 'verified' && (
-                    <div className="mb-4 bg-green-50 border border-green-200 rounded-xl p-4">
-                        <p className="text-sm text-green-700 font-medium">
-                            ✅ Your documents have been verified successfully!
-                        </p>
-                    </div>
-                )}
+                    {verificationStatus === 'verified' && (
+                        <div className="mb-4 bg-green-50 border border-green-200 rounded-xl p-4">
+                            <p className="text-sm text-green-700 font-medium">
+                                ✅ Your documents have been verified successfully!
+                            </p>
+                        </div>
+                    )}
 
-                {verificationStatus === 'rejected' && (
-                    <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-4">
-                        <p className="text-sm text-red-700 font-medium">
-                            ❌ Your verification was rejected. Please upload correct documents and try again.
-                        </p>
-                    </div>
-                )}
+                    {verificationStatus === 'rejected' && (
+                        <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-4">
+                            <p className="text-sm text-red-700 font-medium">
+                                ❌ Your verification was rejected. Please upload correct documents and try again.
+                            </p>
+                        </div>
+                    )}
 
-                <button
-                    onClick={handleSubmitVerification}
-                    disabled={verificationStatus === 'submitted' || verificationStatus === 'verified' || loading}
-                    className={`w-full py-4 rounded-full text-white font-bold text-lg transition-all shadow-md active:scale-[0.98] ${getButtonStyle()} ${
-                        (verificationStatus === 'submitted' || verificationStatus === 'verified' || loading) ? 'opacity-90 cursor-not-allowed' : ''
-                    }`}
-                >
-                    {loading ? 'Submitting...' : getButtonText()}
-                </button>
+                    <button
+                        onClick={handleSubmitVerification}
+                        disabled={verificationStatus === 'submitted' || verificationStatus === 'verified' || loading}
+                        className={`w-full py-4 rounded-xl text-white font-bold text-lg transition-all shadow-md active:scale-95 ${getButtonStyle()} ${(verificationStatus === 'submitted' || verificationStatus === 'verified' || loading) ? 'opacity-90 cursor-not-allowed' : ''
+                            }`}
+                    >
+                        {loading ? 'Submitting...' : getButtonText()}
+                    </button>
+                </div>
             </div>
         </div>
     );

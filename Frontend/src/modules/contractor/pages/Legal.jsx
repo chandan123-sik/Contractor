@@ -6,10 +6,14 @@ const Legal = () => {
     const navigate = useNavigate();
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <ContractorPageHeader title="Legal Verification" backPath="/contractor/settings" />
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+            <ContractorPageHeader title="Legal Verification" backPath="/contractor/settings" sticky />
 
-            <LegalVerificationSection />
+            <div className="flex-1 overflow-y-auto">
+                <div className="pb-12">
+                    <LegalVerificationSection />
+                </div>
+            </div>
         </div>
     );
 };

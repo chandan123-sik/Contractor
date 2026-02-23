@@ -14,9 +14,9 @@ const UserRequest = () => {
         const loadRequests = async () => {
             try {
                 setLoading(true);
-                
+
                 const response = await contractorAPI.getContractorHireRequests({ status: 'pending' });
-                
+
                 if (response.success) {
                     // Transform API data to match UI format
                     const transformedRequests = response.data.hireRequests.map(req => ({
@@ -33,7 +33,7 @@ const UserRequest = () => {
                         requestTime: new Date(req.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
                         status: req.status
                     }));
-                    
+
                     setRequests(transformedRequests);
                 }
             } catch (error) {
@@ -66,7 +66,7 @@ const UserRequest = () => {
         try {
             // Update status in database
             const response = await contractorAPI.updateContractorHireRequestStatus(requestId, 'accepted');
-            
+
             if (response.success) {
                 // Remove from current requests
                 const filteredRequests = requests.filter(req => req.id !== requestId);
@@ -90,7 +90,7 @@ const UserRequest = () => {
         try {
             // Update status in database
             const response = await contractorAPI.updateContractorHireRequestStatus(requestId, 'declined');
-            
+
             if (response.success) {
                 // Remove from current requests
                 const filteredRequests = requests.filter(req => req.id !== requestId);
@@ -111,9 +111,9 @@ const UserRequest = () => {
     };
 
     return (
-        <div className="h-screen bg-gray-50 flex flex-col">
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="bg-white px-4 py-4 shadow-sm flex items-center gap-3">
+            <div className="bg-white px-4 py-4 shadow-sm flex items-center gap-3 sticky top-0 z-10">
                 <button onClick={() => navigate(-1)} className="p-1">
                     <ChevronLeft className="w-6 h-6" />
                 </button>
@@ -141,8 +141,8 @@ const UserRequest = () => {
                 ) : (
                     <div className="space-y-4">
                         {requests.map((request) => (
-                            <div 
-                                key={request.id} 
+                            <div
+                                key={request.id}
                                 className="bg-white rounded-xl shadow-md p-4"
                             >
                                 {/* User Info Header */}

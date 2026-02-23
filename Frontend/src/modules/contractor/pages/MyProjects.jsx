@@ -15,14 +15,14 @@ const MyProjects = () => {
         try {
             setLoading(true);
             console.log('🔄 [MyProjects] Loading contractor cards for Labour...');
-            
+
             // Fetch jobs with targetAudience='Labour' filter
             const response = await contractorAPI.getContractorJobs({ targetAudience: 'Labour' });
             console.log('📦 [MyProjects] API Response:', response);
-            
+
             if (response && response.success && response.data && response.data.jobs) {
                 console.log('✅ [MyProjects] Jobs found:', response.data.jobs.length);
-                
+
                 const formattedCards = response.data.jobs.map(job => ({
                     id: job._id,
                     contractorName: job.contractorName || 'N/A',
@@ -42,7 +42,7 @@ const MyProjects = () => {
                     targetAudience: job.targetAudience || 'Labour',
                     createdAt: job.createdAt
                 }));
-                
+
                 console.log('✅ [MyProjects] Formatted cards (Labour only):', formattedCards);
                 setCards(formattedCards);
             } else {
@@ -60,13 +60,13 @@ const MyProjects = () => {
     useEffect(() => {
         console.log('🚀 [MyProjects] Component mounted');
         loadCards();
-        
+
         // Auto-refresh every 10 seconds
         const interval = setInterval(() => {
             console.log('🔄 [MyProjects] Auto-refresh triggered');
             loadCards();
         }, 10000);
-        
+
         return () => {
             console.log('🛑 [MyProjects] Component unmounting');
             clearInterval(interval);
@@ -82,11 +82,11 @@ const MyProjects = () => {
             // Always update in database - no localStorage
             const currentCard = cards.find(c => c.id === cardId);
             const newStatus = currentCard.profileStatus === 'Active' ? 'Closed' : 'Active';
-            
+
             await contractorAPI.updateContractorJob(cardId, {
                 profileStatus: newStatus
             });
-            
+
             // Reload cards from database
             await loadCards();
         } catch (error) {
@@ -103,13 +103,13 @@ const MyProjects = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
             {/* Custom Header with + icon in title row */}
-            <div className="bg-white shadow-sm p-4">
+            <div className="bg-white shadow-sm p-4 sticky top-0 z-10">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <button 
-                            onClick={() => navigate('/contractor/settings')} 
+                        <button
+                            onClick={() => navigate('/contractor/settings')}
                             className="text-gray-700"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,36 +128,38 @@ const MyProjects = () => {
                     )}
                 </div>
             </div>
-            
-            <div className="p-4">
-                {loading ? (
-                    <div className="flex items-center justify-center min-h-[60vh]">
-                        <div className="text-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-                            <p className="text-gray-500">Loading projects...</p>
+
+            <div className="flex-1 overflow-y-auto">
+                <div className="p-4 pb-24">
+                    {loading ? (
+                        <div className="flex items-center justify-center min-h-[60vh]">
+                            <div className="text-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+                                <p className="text-gray-500">Loading projects...</p>
+                            </div>
                         </div>
-                    </div>
-                ) : cards.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center min-h-[60vh]">
-                        <button
-                            onClick={handlePostJob}
-                            className="w-24 h-24 bg-yellow-400 hover:bg-yellow-500 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95"
-                        >
-                            <Plus className="w-12 h-12 text-gray-900" />
-                        </button>
-                        <h3 className="text-lg font-bold text-gray-900 mt-4">No Projects Yet</h3>
-                        <p className="text-gray-500 text-center mt-2">Create your first project card</p>
-                    </div>
-                ) : (
-                    cards.map((card) => (
-                        <ContractorProfileCard
-                            key={card.id}
-                            data={card}
-                            onViewDetails={() => handleViewDetails(card)}
-                            onToggleAvailability={handleToggleAvailability}
-                        />
-                    ))
-                )}
+                    ) : cards.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+                            <button
+                                onClick={handlePostJob}
+                                className="w-24 h-24 bg-yellow-400 hover:bg-yellow-500 rounded-full flex items-center justify-center shadow-lg transition-all active:scale-95"
+                            >
+                                <Plus className="w-12 h-12 text-gray-900" />
+                            </button>
+                            <h3 className="text-lg font-bold text-gray-900 mt-4">No Projects Yet</h3>
+                            <p className="text-gray-500 text-center mt-2">Create your first project card</p>
+                        </div>
+                    ) : (
+                        cards.map((card) => (
+                            <ContractorProfileCard
+                                key={card.id}
+                                data={card}
+                                onViewDetails={() => handleViewDetails(card)}
+                                onToggleAvailability={handleToggleAvailability}
+                            />
+                        ))
+                    )}
+                </div>
             </div>
 
             {/* Card Details Modal */}
@@ -173,7 +175,7 @@ const MyProjects = () => {
                                 ×
                             </button>
                         </div>
-                        
+
                         <div className="p-4 space-y-4">
                             <div>
                                 <label className="text-sm font-medium text-gray-500">Contractor Name</label>
@@ -225,19 +227,18 @@ const MyProjects = () => {
                             <div>
                                 <label className="text-sm font-medium text-gray-500">Budget</label>
                                 <p className="text-gray-900 font-medium">
-                                    {selectedCard.budgetType === 'Negotiable' 
-                                        ? 'Negotiable' 
+                                    {selectedCard.budgetType === 'Negotiable'
+                                        ? 'Negotiable'
                                         : `₹${selectedCard.budgetAmount}`}
                                 </p>
                             </div>
 
                             <div>
                                 <label className="text-sm font-medium text-gray-500">Profile Status</label>
-                                <p className={`font-medium ${
-                                    selectedCard.profileStatus === 'Active' 
-                                        ? 'text-green-600' 
+                                <p className={`font-medium ${selectedCard.profileStatus === 'Active'
+                                        ? 'text-green-600'
                                         : 'text-gray-600'
-                                }`}>
+                                    }`}>
                                     {selectedCard.profileStatus === 'Active' ? 'Open' : 'Closed'}
                                 </p>
                             </div>

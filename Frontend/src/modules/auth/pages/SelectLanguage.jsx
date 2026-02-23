@@ -35,20 +35,20 @@ const SelectLanguage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="bg-gray-50 flex flex-col" style={{ minHeight: '100dvh' }}>
             {/* Header */}
-            <div className="px-4 pt-4 pb-3 flex items-center bg-white border-b border-gray-100">
-                <button 
-                    onClick={() => navigate('/get-started')} 
-                    className="p-2 -ml-2"
+            <div className="px-2 pt-2 flex items-center">
+                <button
+                    onClick={() => navigate('/get-started')}
+                    className="p-2"
                 >
                     <ChevronLeft className="w-6 h-6 text-gray-800" />
                 </button>
             </div>
 
             {/* Content */}
-            <div className="flex-1 px-4 py-6 overflow-y-auto">
-                <div className="mb-6">
+            <div className="flex-1 px-4 py-2 overflow-y-auto pb-6">
+                <div className="mb-4">
                     <h1 className="text-xl font-bold text-gray-900 mb-1">Select language</h1>
                     <p className="text-sm text-gray-500">Choose your preferred language</p>
                 </div>
@@ -65,7 +65,7 @@ const SelectLanguage = () => {
                             <div className="text-lg font-bold text-gray-900 mb-1 text-center leading-tight break-words">
                                 {language.nativeName}
                             </div>
-                            
+
                             {/* English Name */}
                             <div className="text-xs text-gray-400 text-center">
                                 {language.name}

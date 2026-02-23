@@ -82,7 +82,7 @@ const LabourWorkDetails = () => {
         try {
             // Check if user has access token
             const token = localStorage.getItem('access_token');
-            
+
             if (!token) {
                 // No token - save to localStorage (fallback)
                 console.log('No access token found, saving to localStorage');
@@ -104,7 +104,7 @@ const LabourWorkDetails = () => {
 
             // Has token - save to backend with Cloudinary
             console.log('📤 Updating work details with backend API...');
-            
+
             const updateData = {
                 skillType: formData.skillType,
                 experience: formData.experience,
@@ -125,7 +125,7 @@ const LabourWorkDetails = () => {
             }
 
             const response = await labourAPI.updateWorkDetails(updateData);
-            
+
             console.log('✅ Work details updated:', response);
 
             // Update localStorage with response data
@@ -142,10 +142,10 @@ const LabourWorkDetails = () => {
                     availability: updatedLabour.availability
                 }));
             }
-            
+
             // Dispatch event to update header
             window.dispatchEvent(new Event('profileUpdated'));
-            
+
             toast.success('Work details saved successfully!');
         } catch (error) {
             console.error('❌ Error updating work details:', error);
@@ -154,14 +154,14 @@ const LabourWorkDetails = () => {
     };
 
     return (
-        <div className="h-screen bg-gray-50 flex flex-col">
-            <div className="bg-white px-4 py-4 shadow-sm flex items-center gap-3">
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+            <div className="bg-white px-4 py-4 shadow-sm flex items-center gap-3 sticky top-0 z-10">
                 <button onClick={() => navigate(-1)} className="p-1">
                     <ChevronLeft className="w-6 h-6" />
                 </button>
                 <h1 className="text-xl font-bold">Work Details</h1>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-4 pb-20">
                 {/* Primary Skill */}
                 <div className="mb-4">
@@ -233,7 +233,7 @@ const LabourWorkDetails = () => {
                         accept="image/*"
                         multiple
                     />
-                    
+
                     <div className="grid grid-cols-3 gap-3">
                         {formData.workPhotos.map((photo, index) => (
                             <div key={index} className="aspect-square rounded-xl overflow-hidden border-2 border-gray-200">
@@ -260,11 +260,10 @@ const LabourWorkDetails = () => {
                             <Star
                                 key={star}
                                 onClick={() => handleRating(star)}
-                                className={`w-10 h-10 cursor-pointer transition-all ${
-                                    star <= formData.rating
+                                className={`w-10 h-10 cursor-pointer transition-all ${star <= formData.rating
                                         ? 'fill-yellow-400 text-yellow-400'
                                         : 'fill-gray-200 text-gray-200'
-                                }`}
+                                    }`}
                             />
                         ))}
                     </div>
@@ -279,21 +278,19 @@ const LabourWorkDetails = () => {
                     <div className="grid grid-cols-2 gap-3">
                         <button
                             onClick={() => setFormData(prev => ({ ...prev, availability: 'Full Time' }))}
-                            className={`py-3 rounded-xl font-semibold text-sm transition-all ${
-                                formData.availability === 'Full Time'
+                            className={`py-3 rounded-xl font-semibold text-sm transition-all ${formData.availability === 'Full Time'
                                     ? 'bg-yellow-400 text-gray-900 border-2 border-yellow-400'
                                     : 'bg-white text-gray-600 border-2 border-gray-200'
-                            }`}
+                                }`}
                         >
                             Full Time
                         </button>
                         <button
                             onClick={() => setFormData(prev => ({ ...prev, availability: 'Part Time' }))}
-                            className={`py-3 rounded-xl font-semibold text-sm transition-all ${
-                                formData.availability === 'Part Time'
+                            className={`py-3 rounded-xl font-semibold text-sm transition-all ${formData.availability === 'Part Time'
                                     ? 'bg-yellow-400 text-gray-900 border-2 border-yellow-400'
                                     : 'bg-white text-gray-600 border-2 border-gray-200'
-                            }`}
+                                }`}
                         >
                             Part Time
                         </button>
@@ -308,7 +305,7 @@ const LabourWorkDetails = () => {
                     Save Work Details
                 </button>
             </div>
-            
+
             <LabourBottomNav />
         </div>
     );

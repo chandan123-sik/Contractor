@@ -83,30 +83,34 @@ const Settings = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
-            <PageHeader title="Settings" backPath="/user/hire-workers" />
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+            {/* Header (Sticky) */}
+            <PageHeader title="Settings" backPath="/user/hire-workers" sticky={true} />
 
-            <div className="mt-4">
-                {menuItems.map((item, index) => {
-                    const isLastTwo = index >= menuItems.length - 2;
-                    
-                    return (
-                        <div key={item.label}>
-                            <SettingsMenuItem
-                                icon={item.icon}
-                                label={item.label}
-                                color={item.color}
-                                onClick={() => handleMenuClick(item)}
-                            />
-                            {!isLastTwo && index < menuItems.length - 2 && (
-                                <div className="border-b border-gray-100" />
-                            )}
-                            {index === menuItems.length - 2 && (
-                                <div className="h-4 bg-gray-50" />
-                            )}
-                        </div>
-                    );
-                })}
+            {/* Scrollable Content Area */}
+            <div className="flex-1 overflow-y-auto pb-24">
+                <div className="mt-4">
+                    {menuItems.map((item, index) => {
+                        const isLastTwo = index >= menuItems.length - 2;
+
+                        return (
+                            <div key={item.label}>
+                                <SettingsMenuItem
+                                    icon={item.icon}
+                                    label={item.label}
+                                    color={item.color}
+                                    onClick={() => handleMenuClick(item)}
+                                />
+                                {!isLastTwo && index < menuItems.length - 2 && (
+                                    <div className="border-b border-gray-100" />
+                                )}
+                                {index === menuItems.length - 2 && (
+                                    <div className="h-4 bg-gray-50" />
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* Feedback Modal */}
@@ -134,9 +138,8 @@ const Settings = () => {
                                         onClick={() => setRating(star)}
                                         className="transition-transform hover:scale-110"
                                     >
-                                        <span className={`text-5xl ${
-                                            star <= rating ? 'text-green-600' : 'text-gray-300'
-                                        }`}>
+                                        <span className={`text-5xl ${star <= rating ? 'text-green-600' : 'text-gray-300'
+                                            }`}>
                                             ★
                                         </span>
                                     </button>

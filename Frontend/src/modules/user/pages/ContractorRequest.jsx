@@ -27,10 +27,10 @@ const ContractorRequest = () => {
     const loadContractorApplications = async () => {
         try {
             const response = await jobAPI.getContractorApplications();
-            
+
             if (response.success) {
                 console.log('✅ Loaded contractor applications:', response.data.applications);
-                
+
                 // Transform to match component expectations
                 const formattedRequests = response.data.applications.map(app => ({
                     id: app._id,
@@ -42,19 +42,19 @@ const ContractorRequest = () => {
                     location: app.location,
                     message: app.message,
                     appliedAt: app.appliedAt,
-                    date: new Date(app.appliedAt).toLocaleDateString('en-IN', { 
-                        day: '2-digit', 
-                        month: 'short', 
-                        year: 'numeric' 
+                    date: new Date(app.appliedAt).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
                     }),
-                    time: new Date(app.appliedAt).toLocaleTimeString('en-IN', { 
-                        hour: '2-digit', 
+                    time: new Date(app.appliedAt).toLocaleTimeString('en-IN', {
+                        hour: '2-digit',
                         minute: '2-digit',
                         hour12: true
                     }),
                     status: app.status
                 }));
-                
+
                 setRequests(formattedRequests);
             }
         } catch (error) {
@@ -138,42 +138,46 @@ const ContractorRequest = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
             {/* Header Section */}
-            <UserHeader />
+            <div className="sticky top-0 z-10 bg-white shadow-sm">
+                <UserHeader />
+            </div>
 
             {/* Main Content Area */}
-            <div className="p-4">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
-                    Contractor Requests
-                    <span className="text-sm font-normal text-gray-600 ml-2">({requests.length})</span>
-                </h2>
-                
-                {loading ? (
-                    <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-                        <p className="text-gray-600">Loading requests...</p>
-                    </div>
-                ) : requests.length === 0 ? (
-                    <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Users className="w-8 h-8 text-gray-400" />
+            <div className="flex-1 overflow-y-auto">
+                <div className="p-4 pb-24">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">
+                        Contractor Requests
+                        <span className="text-sm font-normal text-gray-600 ml-2">({requests.length})</span>
+                    </h2>
+
+                    {loading ? (
+                        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+                            <p className="text-gray-600">Loading requests...</p>
                         </div>
-                        <p className="text-gray-600 font-medium mb-1">No Contractor Requests</p>
-                        <p className="text-sm text-gray-500">Requests from contractors will appear here</p>
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {requests.map((request, index) => (
-                            <ContractorRequestCard
-                                key={request.id}
-                                request={request}
-                                index={index}
-                                onAccept={handleAccept}
-                                onDecline={handleDecline}
-                            />
-                        ))}
-                    </div>
-                )}
+                    ) : requests.length === 0 ? (
+                        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Users className="w-8 h-8 text-gray-400" />
+                            </div>
+                            <p className="text-gray-600 font-medium mb-1">No Contractor Requests</p>
+                            <p className="text-sm text-gray-500">Requests from contractors will appear here</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {requests.map((request, index) => (
+                                <ContractorRequestCard
+                                    key={request.id}
+                                    request={request}
+                                    index={index}
+                                    onAccept={handleAccept}
+                                    onDecline={handleDecline}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Bottom Navigation */}

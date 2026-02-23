@@ -28,15 +28,15 @@ const ContractorRequest = () => {
         try {
             console.log('🔵 Loading contractor hire requests from database...');
             const response = await labourAPI.getLabourHireRequests({ status: 'pending' });
-            
+
             if (response.success) {
                 console.log('✅ Requests loaded:', response.data.hireRequests.length);
-                
+
                 // Filter only contractor requests
                 const contractorRequests = response.data.hireRequests.filter(
                     req => req.requesterModel === 'Contractor'
                 );
-                
+
                 // Format for display
                 const formattedRequests = contractorRequests.map(req => ({
                     id: req._id,
@@ -50,7 +50,7 @@ const ContractorRequest = () => {
                     requestTime: new Date(req.createdAt).toLocaleTimeString(),
                     status: req.status
                 }));
-                
+
                 setRequests(formattedRequests);
             }
         } catch (error) {
@@ -67,15 +67,15 @@ const ContractorRequest = () => {
     const handleAccept = async (requestId) => {
         try {
             console.log('🟢 Accepting contractor request:', requestId);
-            
+
             const response = await labourAPI.updateHireRequestStatus(requestId, 'accepted');
-            
+
             if (response.success) {
                 toast.success('Request accepted!');
-                
+
                 // Trigger event for contractor to update their status
                 window.dispatchEvent(new Event('hire-request-updated'));
-                
+
                 // Refresh requests
                 await loadRequests();
             }
@@ -88,15 +88,15 @@ const ContractorRequest = () => {
     const handleDecline = async (requestId) => {
         try {
             console.log('🔴 Declining contractor request:', requestId);
-            
+
             const response = await labourAPI.updateHireRequestStatus(requestId, 'declined');
-            
+
             if (response.success) {
                 toast.success('Request declined');
-                
+
                 // Trigger event for contractor to update their status
                 window.dispatchEvent(new Event('hire-request-updated'));
-                
+
                 // Refresh requests
                 await loadRequests();
             }
@@ -107,9 +107,9 @@ const ContractorRequest = () => {
     };
 
     return (
-        <div className="h-screen bg-gray-50 flex flex-col">
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="bg-white px-4 py-4 shadow-sm flex items-center gap-3">
+            <div className="bg-white px-4 py-4 shadow-sm flex items-center gap-3 sticky top-0 z-10">
                 <button onClick={() => navigate(-1)} className="p-1">
                     <ChevronLeft className="w-6 h-6" />
                 </button>
@@ -138,8 +138,8 @@ const ContractorRequest = () => {
                 ) : (
                     <div className="space-y-4">
                         {requests.map((request, index) => (
-                            <div 
-                                key={request.id} 
+                            <div
+                                key={request.id}
                                 className="premium-card card-fade-in"
                                 style={{ animationDelay: `${index * 0.05}s` }}
                             >

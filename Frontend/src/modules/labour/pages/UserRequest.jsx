@@ -14,15 +14,15 @@ const UserRequest = () => {
         const loadRequests = async () => {
             try {
                 setLoading(true);
-                
+
                 const response = await labourAPI.getLabourHireRequests({ status: 'pending' });
-                
+
                 if (response.success) {
                     // Filter only User requests (requesterModel === 'User')
                     const userRequests = response.data.hireRequests.filter(
                         req => req.requesterModel === 'User'
                     );
-                    
+
                     // Transform API data to match UI format
                     const transformedRequests = userRequests.map(req => ({
                         id: req._id,
@@ -38,12 +38,12 @@ const UserRequest = () => {
                         requestTime: new Date(req.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
                         status: req.status
                     }));
-                    
+
                     setRequests(transformedRequests);
                 }
             } catch (error) {
                 console.error('Failed to load hire requests:', error);
-                
+
                 // Fallback to localStorage if API fails
                 const savedRequests = JSON.parse(localStorage.getItem('labour_user_requests') || '[]');
                 const sortedRequests = savedRequests.sort((a, b) => b.id - a.id);
@@ -75,7 +75,7 @@ const UserRequest = () => {
         try {
             // Update status in database
             const response = await labourAPI.updateHireRequestStatus(requestId, 'accepted');
-            
+
             if (response.success) {
                 // Remove from current requests
                 const filteredRequests = requests.filter(req => req.id !== requestId);
@@ -100,7 +100,7 @@ const UserRequest = () => {
         try {
             // Update status in database
             const response = await labourAPI.updateHireRequestStatus(requestId, 'declined');
-            
+
             if (response.success) {
                 // Remove from current requests
                 const filteredRequests = requests.filter(req => req.id !== requestId);
@@ -121,9 +121,9 @@ const UserRequest = () => {
     };
 
     return (
-        <div className="h-screen bg-gray-50 flex flex-col">
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="bg-white px-4 py-4 shadow-sm flex items-center gap-3">
+            <div className="bg-white px-4 py-4 shadow-sm flex items-center gap-3 sticky top-0 z-10">
                 <button onClick={() => navigate(-1)} className="p-1">
                     <ChevronLeft className="w-6 h-6" />
                 </button>
@@ -151,8 +151,8 @@ const UserRequest = () => {
                 ) : (
                     <div className="space-y-4">
                         {requests.map((request) => (
-                            <div 
-                                key={request.id} 
+                            <div
+                                key={request.id}
                                 className="bg-white rounded-xl shadow-md p-4"
                             >
                                 {/* User Info Header */}

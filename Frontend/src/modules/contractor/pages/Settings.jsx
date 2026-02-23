@@ -71,10 +71,14 @@ const Settings = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+            {/* Header (Sticky) */}
             <ContractorPageHeader title="Settings" backPath="/contractor/hire-workers" />
 
-            <SettingsMenu onMenuClick={handleMenuClick} />
+            {/* Scrollable Content Area */}
+            <div className="flex-1 overflow-y-auto pb-24">
+                <SettingsMenu onMenuClick={handleMenuClick} />
+            </div>
 
             {/* Feedback Modal */}
             {showFeedbackModal && (
@@ -101,9 +105,8 @@ const Settings = () => {
                                         onClick={() => setRating(star)}
                                         className="transition-transform hover:scale-110"
                                     >
-                                        <span className={`text-5xl ${
-                                            star <= rating ? 'text-green-600' : 'text-gray-300'
-                                        }`}>
+                                        <span className={`text-5xl ${star <= rating ? 'text-green-600' : 'text-gray-300'
+                                            }`}>
                                             ★
                                         </span>
                                     </button>
