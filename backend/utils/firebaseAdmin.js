@@ -1,18 +1,36 @@
 import admin from 'firebase-admin';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const serviceAccountPath = path.join(__dirname, '../config/majdoor-aa733-firebase-adminsdk-fbsvc-af716dcd7d.json');
-const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
+let serviceAccount;
 
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-    });
+try {
+    // 1. First try to load from Environment Variable (Render/Production)
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    } 
+    // 2. Fallback to Local JSON file (Localhost development)
+    else {
+        const serviceAccountPath = path.join(__dirname, '../config/majdoor-aa733-firebase-adminsdk-fbsvc-af716dcd7d.json');
+        if (existsSync(serviceAccountPath)) {
+            serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
+        }
+    }
+
+    if (serviceAccount && !admin.apps.length) {
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+        console.log('✅ Firebase Admin initialized successfully');
+    } else if (!serviceAccount) {
+        console.warn('⚠️ Firebase Credentials missing. Push notifications will not work.');
+    }
+} catch (error) {
+    console.error('🔥 Error Initializing Firebase Admin:', error.message);
 }
 
 /**
