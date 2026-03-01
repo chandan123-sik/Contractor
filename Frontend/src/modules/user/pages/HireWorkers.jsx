@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import UserBottomNav from '../components/UserBottomNav';
 import UserHeader from '../components/UserHeader';
-import PromotionalBanner from '../../../components/shared/PromotionalBanner';
 import { labourAPI } from '../../../services/api';
 
 const HireWorkers = () => {
@@ -331,9 +330,6 @@ const HireWorkers = () => {
             {/* Main Content Area - Scrollable */}
             <div className="flex-1 overflow-y-auto pb-24">
                 <div className="p-4">
-                    {/* Promotional Banners */}
-                    <PromotionalBanner />
-
                     <h2 className="text-xl font-bold text-gray-900 mb-4">
                         Available Workers
                         {selectedCategory && <span className="text-sm font-normal text-gray-600"> - {selectedCategory}</span>}

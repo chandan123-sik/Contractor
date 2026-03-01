@@ -32,6 +32,7 @@ import userJobRoutes from './modules/user/routes/user.routes.js';
 import labourRoutes from './modules/labour/routes/labour.routes.js';
 import contractorRoutes from './modules/contractor/routes/contractor.routes.js';
 import adminRoutes from './modules/admin/routes/admin.routes.js';
+import bannerRoutes from './modules/admin/routes/banner.admin.routes.js';
 
 // Connect to MongoDB
 connectDB();
@@ -190,6 +191,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/labour', labourRoutes);
 app.use('/api/contractor', contractorRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/banners', bannerRoutes); // Public banners route
 
 // Health check route
 app.get('/api/health', (req, res) => {

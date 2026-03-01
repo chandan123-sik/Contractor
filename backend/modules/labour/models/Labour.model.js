@@ -50,6 +50,11 @@ const labourSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    aadharNumber: {
+        type: String,
+        trim: true,
+        match: [/^[0-9]{12}$/, 'Please enter a valid 12-digit Aadhar number']
+    },
     rating: {
         type: Number,
         min: 0,

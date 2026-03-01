@@ -71,6 +71,11 @@ const contractorSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    aadharNumber: {
+        type: String,
+        trim: true,
+        match: [/^[0-9]{12}$/, 'Please enter a valid 12-digit Aadhar number']
+    },
     isVerified: {
         type: Boolean,
         default: false

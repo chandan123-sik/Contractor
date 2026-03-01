@@ -462,3 +462,36 @@ export const adminManagementAPI = {
         return response.data;
     }
 };
+
+// ==================== BANNER APIs ====================
+export const bannerAPI = {
+    getAll: async (params = {}) => {
+        const response = await adminApi.get('/banners', { params });
+        return response.data;
+    },
+
+    getById: async (id) => {
+        const response = await adminApi.get(`/banners/${id}`);
+        return response.data;
+    },
+
+    create: async (bannerData) => {
+        const response = await adminApi.post('/banners', bannerData);
+        return response.data;
+    },
+
+    update: async (id, bannerData) => {
+        const response = await adminApi.put(`/banners/${id}`, bannerData);
+        return response.data;
+    },
+
+    delete: async (id) => {
+        const response = await adminApi.delete(`/banners/${id}`);
+        return response.data;
+    },
+
+    toggleStatus: async (id) => {
+        const response = await adminApi.patch(`/banners/${id}/toggle`);
+        return response.data;
+    }
+};

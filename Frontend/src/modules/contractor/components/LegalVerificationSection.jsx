@@ -13,8 +13,39 @@ const LegalVerificationSection = () => {
     useEffect(() => {
         const contractorProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
         setAadharNumber(contractorProfile.aadharNumber || '');
+        fetchContractorProfile();
         fetchVerificationStatus();
     }, []);
+
+    const fetchContractorProfile = async () => {
+        try {
+            const token = localStorage.getItem('access_token');
+            if (!token) return;
+
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/contractor/profile`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.data.contractor) {
+                const contractor = data.data.contractor;
+                
+                // Update Aadhaar number from backend
+                if (contractor.aadharNumber) {
+                    setAadharNumber(contractor.aadharNumber);
+                    
+                    // Update localStorage with fresh data
+                    const updatedProfile = JSON.parse(localStorage.getItem('contractor_profile') || '{}');
+                    updatedProfile.aadharNumber = contractor.aadharNumber;
+                    localStorage.setItem('contractor_profile', JSON.stringify(updatedProfile));
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching contractor profile:', error);
+            // Fallback to localStorage if API fails
+        }
+    };
 
     const fetchVerificationStatus = async () => {
         try {

@@ -31,6 +31,13 @@ export const broadcastAPI = {
     })
 };
 
+// Public API for banners (no auth required)
+export const bannerAPI = {
+    getActiveBanners: (targetAudience) => axios.get(`${API_BASE_URL}/banners/active`, {
+        params: { targetAudience }
+    })
+};
+
 // Add token to requests
 api.interceptors.request.use(
     (config) => {

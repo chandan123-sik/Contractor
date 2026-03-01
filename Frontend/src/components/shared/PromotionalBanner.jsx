@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { bannerAPI } from '../../services/api';
 
 // Default banner data - Construction materials theme with realistic images
 const DEFAULT_BANNERS = [
@@ -9,15 +10,13 @@ const DEFAULT_BANNERS = [
         subtitle: 'Premium Quality Cement',
         description: 'High-grade cement for all construction needs',
         price: '₹350',
-        unit: 'per bag',
+        priceUnit: 'per bag',
         discount: 'Up to 20% Off',
-        badge: '🔥 Limited Time Offer',
-        bgImage: 'https://images.unsplash.com/photo-1590856029826-c7a73142bbf1?w=1200&q=80&auto=format&fit=crop',
+        badgeText: '🔥 Limited Time Offer',
+        backgroundImage: 'https://images.unsplash.com/photo-1590856029826-c7a73142bbf1?w=1200&q=80&auto=format&fit=crop',
         bgGradient: 'from-gray-800 via-gray-700 to-gray-900',
         icon: '🧱',
-        secondaryIcon: '🏗️',
-        ctaPrimary: 'Shop Now',
-        ctaSecondary: 'View Details'
+        secondaryIcon: '🏗️'
     },
     {
         id: 2,
@@ -25,15 +24,13 @@ const DEFAULT_BANNERS = [
         subtitle: 'Premium Steel & Sariya',
         description: 'Corrosion-resistant steel for maximum durability',
         price: '₹60',
-        unit: 'per kg',
+        priceUnit: 'per kg',
         discount: 'Save 15%',
-        badge: '⚡ Best Quality',
-        bgImage: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=1200&q=80&auto=format&fit=crop',
+        badgeText: '⚡ Best Quality',
+        backgroundImage: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=1200&q=80&auto=format&fit=crop',
         bgGradient: 'from-slate-800 via-slate-700 to-slate-900',
         icon: '🏗️',
-        secondaryIcon: '⚙️',
-        ctaPrimary: 'Order Now',
-        ctaSecondary: 'Learn More'
+        secondaryIcon: '⚙️'
     },
     {
         id: 3,
@@ -41,28 +38,62 @@ const DEFAULT_BANNERS = [
         subtitle: 'Cement + Steel Package',
         description: 'Complete construction material bundle',
         price: '₹25,000',
-        unit: 'combo pack',
+        priceUnit: 'combo pack',
         discount: 'Save ₹5,000',
-        badge: '💰 Best Deal',
-        bgImage: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=1200&q=80&auto=format&fit=crop',
+        badgeText: '💰 Best Deal',
+        backgroundImage: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=1200&q=80&auto=format&fit=crop',
         bgGradient: 'from-zinc-800 via-zinc-700 to-zinc-900',
         icon: '📦',
-        secondaryIcon: '🎯',
-        ctaPrimary: 'Get Combo',
-        ctaSecondary: 'View Offers'
+        secondaryIcon: '🎯'
     }
 ];
 
-const PromotionalBanner = () => {
+const PromotionalBanner = ({ targetAudience = 'ALL' }) => {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
     const [touchStart, setTouchStart] = useState(0);
     const [touchEnd, setTouchEnd] = useState(0);
+    const [apiBanners, setApiBanners] = useState([]);
+    const [loading, setLoading] = useState(true);
     const autoPlayRef = useRef(null);
     const sliderRef = useRef(null);
 
-    // Banners state - currently using default ones
-    const banners = DEFAULT_BANNERS;
+    // Fetch banners from API
+    useEffect(() => {
+        const fetchBanners = async () => {
+            try {
+                const response = await bannerAPI.getActiveBanners(targetAudience);
+                if (response.data.success && response.data.data.banners.length > 0) {
+                    // Transform API banners to match component format
+                    const transformedBanners = response.data.data.banners.map((banner, index) => ({
+                        id: banner._id || index,
+                        title: banner.title,
+                        subtitle: banner.subtitle,
+                        description: banner.description,
+                        price: banner.price,
+                        priceUnit: banner.priceUnit,
+                        discount: banner.discount,
+                        badgeText: banner.badgeText,
+                        backgroundImage: banner.backgroundImage,
+                        bgGradient: 'from-gray-800 via-gray-700 to-gray-900',
+                        icon: '🏗️',
+                        secondaryIcon: '📦'
+                    }));
+                    setApiBanners(transformedBanners);
+                }
+            } catch (error) {
+                console.error('Error fetching banners:', error);
+                // If API fails, use default banners
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchBanners();
+    }, [targetAudience]);
+
+    // Use API banners if available, otherwise use default banners
+    const banners = apiBanners.length > 0 ? [...DEFAULT_BANNERS, ...apiBanners] : DEFAULT_BANNERS;
     const totalSlides = banners.length;
 
     // Navigation functions - MUST be declared before startAutoPlay
@@ -163,7 +194,7 @@ const PromotionalBanner = () => {
                             <div className={`relative h-full bg-gradient-to-br ${banner.bgGradient}`}>
                                 {/* Background Image */}
                                 <img
-                                    src={banner.bgImage}
+                                    src={banner.backgroundImage}
                                     alt={banner.title}
                                     className="absolute inset-0 w-full h-full object-cover"
                                     loading="lazy"
@@ -190,7 +221,7 @@ const PromotionalBanner = () => {
                                     >
                                         {/* Offer Badge */}
                                         <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-bold mb-2 animate-pulse">
-                                            <span>{banner.badge}</span>
+                                            <span>{banner.badgeText}</span>
                                         </div>
 
                                         {/* Main Heading */}
@@ -214,7 +245,7 @@ const PromotionalBanner = () => {
                                                 {banner.price}
                                             </span>
                                             <span className="text-white text-xs sm:text-sm">
-                                                {banner.unit}
+                                                {banner.priceUnit}
                                             </span>
                                         </div>
 

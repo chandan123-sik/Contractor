@@ -16,8 +16,39 @@ const Legal = () => {
     useEffect(() => {
         const userProfile = JSON.parse(localStorage.getItem('user_profile') || '{}');
         setAadharNumber(userProfile.aadharNumber || '');
+        fetchUserProfile();
         fetchVerificationStatus();
     }, []);
+
+    const fetchUserProfile = async () => {
+        try {
+            const token = localStorage.getItem('access_token');
+            if (!token) return;
+
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/users/profile`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.data.user) {
+                const user = data.data.user;
+                
+                // Update Aadhaar number from backend
+                if (user.aadharNumber) {
+                    setAadharNumber(user.aadharNumber);
+                    
+                    // Update localStorage with fresh data
+                    const updatedProfile = JSON.parse(localStorage.getItem('user_profile') || '{}');
+                    updatedProfile.aadharNumber = user.aadharNumber;
+                    localStorage.setItem('user_profile', JSON.stringify(updatedProfile));
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching user profile:', error);
+            // Fallback to localStorage if API fails
+        }
+    };
 
     const fetchVerificationStatus = async () => {
         try {

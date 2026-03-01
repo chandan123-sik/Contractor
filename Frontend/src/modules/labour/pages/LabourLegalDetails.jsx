@@ -18,8 +18,39 @@ const LabourLegalDetails = () => {
         }
 
         // Fetch verification status from database
+        fetchLabourProfile();
         fetchVerificationStatus();
     }, []);
+
+    const fetchLabourProfile = async () => {
+        try {
+            const token = localStorage.getItem('access_token');
+            if (!token) return;
+
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/labour/profile`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.data.labour) {
+                const labour = data.data.labour;
+                
+                // Update Aadhaar number from backend
+                if (labour.aadharNumber) {
+                    setAadharNumber(labour.aadharNumber);
+                    
+                    // Update localStorage with fresh data
+                    const updatedProfile = JSON.parse(localStorage.getItem('labour_profile') || '{}');
+                    updatedProfile.aadharNumber = labour.aadharNumber;
+                    localStorage.setItem('labour_profile', JSON.stringify(updatedProfile));
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching labour profile:', error);
+            // Fallback to localStorage if API fails
+        }
+    };
 
     const fetchVerificationStatus = async () => {
         try {
