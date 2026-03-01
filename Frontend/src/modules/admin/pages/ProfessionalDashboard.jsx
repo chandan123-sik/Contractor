@@ -409,6 +409,8 @@ const ProfessionalDashboard = () => {
         localStorage.removeItem('adminAuth');
         localStorage.removeItem('adminRole');
         localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminUsername');
+        localStorage.removeItem('adminProfile');
         navigate('/admin/login');
     };
 

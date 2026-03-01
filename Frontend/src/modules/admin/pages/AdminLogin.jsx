@@ -30,7 +30,8 @@ const AdminLogin = () => {
                 console.log('   Admin role:', response.data.admin.role);
                 console.log('   Admin username:', response.data.admin.username);
 
-                // Store basic info (Not sensitive like token)
+                // Store token and basic info
+                localStorage.setItem('adminToken', token);
                 localStorage.setItem('adminAuth', 'true');
                 localStorage.setItem('adminRole', response.data.admin.role);
                 localStorage.setItem('adminUsername', response.data.admin.username);
