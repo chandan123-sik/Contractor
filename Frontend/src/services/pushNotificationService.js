@@ -37,9 +37,13 @@ export const getFCMToken = async () => {
         const registration = await registerServiceWorker();
         if (!registration) return null;
 
+        // CRITICAL FIX: Wait for the Service Worker to be fully active/ready 
+        // before requesting a token. This prevents the "AbortError: Subscription failed - no active Service Worker"
+        const readyRegistration = await navigator.serviceWorker.ready;
+
         const token = await getToken(messaging, {
             vapidKey: VAPID_KEY,
-            serviceWorkerRegistration: registration
+            serviceWorkerRegistration: readyRegistration
         });
 
         if (token) {
